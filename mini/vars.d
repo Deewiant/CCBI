@@ -9,11 +9,15 @@ import ccbi.space;
 
 // "real IP" OWTTE
 IP* rip;
+
+IP* miniIp;
 typeof(space)* mSpace;
+
 bool
-	mOver = false,
-	mNeedMove = true,
-	useMiniFunge = true;
+	mOver        = false,
+	mNeedMove    = true,
+	useMiniFunge = true,
+	inMini       = false;
 
 // needed by ccbi.ccbi as well as ccbi.mini.funge, might as well be here
 bool warnings = false;

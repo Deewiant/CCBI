@@ -32,6 +32,8 @@ struct MiniFungeInstruction {
 		ip     = &miniIp;
 		mSpace = &miniSpace;
 
+		inMini = true;
+		.miniIp = &miniIp;
 		for (;;) {
 			miniIp.gotoNextInstruction();
 
@@ -47,6 +49,7 @@ struct MiniFungeInstruction {
 			else
 				mNeedMove = true;
 		}
+		inMini = false;
 	}
 
 	private void execute(cell i) {
@@ -55,22 +58,8 @@ struct MiniFungeInstruction {
 				miniIp.mode ^= IP.STRING;
 			} else
 				miniIp.stack.push(i);
-		} else {
-			if (i < miniIns.length) {
-				auto instruction = miniIns[i];
-				if (instruction)
-					return instruction();
-			}
-
-			if (warnings) {
-				Stdout.flush;
-				Stderr.formatln(
-					"Unavailable instruction '{0}'({1:d}) (0x{1:x}) encountered at ({}, {}) in Mini-Funge.",
-					cast(char)i, i, miniIp.x, miniIp.y
-				);
-			}
-			miniIns['r']();
-		}
+		} else
+			miniExecuteInstruction(i);
 	}
 }
 

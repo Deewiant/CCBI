@@ -22,15 +22,13 @@ import ccbi.space;
 import ccbi.trace : tipSafe;
 import ccbi.utils;
 
-import ccbi.mini.instructions;
 import ccbi.mini.funge;
-import ccbi.mini.vars  : miniMode, Mini;
-
-typeof(miniIns) instructions;
+import ccbi.mini.instructions : miniUnimplemented;
+import ccbi.mini.vars         : miniMode, Mini, warnings, inMini;
 
 const cell
 	HANDPRINT      = HexCode!("CCBI"),
-	VERSION_NUMBER = 104; // remember to change ccbi.ccbi.VERSION_STRING too!
+	VERSION_NUMBER = 105; // remember to change ccbi.ccbi.VERSION_STRING too!
 
 int returnVal;
 char[][] fungeArgs;
@@ -47,97 +45,104 @@ else
 // such as 'i', 'o', '&', '~', and other fingerprints with IO, but we're copying RC/Funge-98 here
 typeof(ticks) printAfter;
 
-static this() {
-	instructions['>']  =& goEast;
-  	instructions['<']  =& goWest;
-	instructions['^']  =& goNorth;
-	instructions['v']  =& goSouth;
-	instructions['?']  =& goAway;
-	instructions[']']  =& turnRight;
-	instructions['[']  =& turnLeft;
-	instructions['r']  =& reverse;
-	instructions['x']  =& absoluteVector;
-	instructions[' ']  =& ascii32;
-	instructions['#']  =& trampoline;
-	instructions['@']  =& stop;
-	instructions[';']  =& jumpOver;
-	instructions['z']  =& noOperation;
-	instructions['j']  =& jumpForward;
-	instructions['q']  =& quit;
-	instructions['k']  =& iterate;
-	instructions['!']  =& logicalNot;
-	instructions['`']  =& greaterThan;
-	instructions['_']  =& eastWestIf;
-	instructions['|']  =& northSouthIf;
-	instructions['w']  =& compare;
-	instructions['0']  =& mixin (PushNumber!(0));
-	instructions['1']  =& mixin (PushNumber!(1));
-	instructions['2']  =& mixin (PushNumber!(2));
-	instructions['3']  =& mixin (PushNumber!(3));
-	instructions['4']  =& mixin (PushNumber!(4));
-	instructions['5']  =& mixin (PushNumber!(5));
-	instructions['6']  =& mixin (PushNumber!(6));
-	instructions['7']  =& mixin (PushNumber!(7));
-	instructions['8']  =& mixin (PushNumber!(8));
-	instructions['9']  =& mixin (PushNumber!(9));
-	instructions['a']  =& mixin (PushNumber!(10));
-	instructions['b']  =& mixin (PushNumber!(11));
-	instructions['c']  =& mixin (PushNumber!(12));
-	instructions['d']  =& mixin (PushNumber!(13));
-	instructions['e']  =& mixin (PushNumber!(14));
-	instructions['f']  =& mixin (PushNumber!(15));
-	instructions['+']  =& add;
-	instructions['*']  =& multiply;
-	instructions['-']  =& subtract;
-	instructions['/']  =& divide;
-	instructions['%']  =& remainder;
-	instructions['"']  =& toggleStringMode;
-	instructions['\''] =& fetchCharacter;
-	instructions['s']  =& storeCharacter;
-	instructions['$']  =& pop;
-	instructions[':']  =& duplicate;
-	instructions['\\'] =& swap;
-	instructions['n']  =& clearStack;
-	instructions['{']  =& beginBlock;
-	instructions['}']  =& endBlock;
-	instructions['u']  =& stackUnderStack;
-	instructions['g']  =& get;
-	instructions['p']  =& put;
-	instructions['.']  =& outputDecimal;
-	instructions[',']  =& outputCharacter;
-	instructions['&']  =& inputDecimal;
-	instructions['~']  =& inputCharacter;
-	instructions['i']  =& inputFile;
-	instructions['o']  =& outputFile;
-	instructions['=']  =& execute;
-	instructions['y']  =& getSysInfo;
-	instructions['(']  =& loadSemantics;
-	instructions[')']  =& unloadSemantics;
-	instructions['t']  =& splitIP;
+void executeInstruction(cell i) {
+switch (i) {
+	case '>' : goEast;                  break;
+	case '<' : goWest;                  break;
+	case '^' : goNorth;                 break;
+	case 'v' : goSouth;                 break;
+	case '?' : goAway;                  break;
+	case ']' : turnRight;               break;
+	case '[' : turnLeft;                break;
+	case 'r' : reverse;                 break;
+	case 'x' : absoluteVector;          break;
+	case ' ' : ascii32;                 break;
+	case '#' : trampoline;              break;
+	case '@' : stop;                    break;
+	case ';' : jumpOver;                break;
+	case 'z' : noOperation;             break;
+	case 'j' : jumpForward;             break;
+	case 'q' : quit;                    break;
+	case 'k' : iterate;                 break;
+	case '!' : logicalNot;              break;
+	case '`' : greaterThan;             break;
+	case '_' : eastWestIf;              break;
+	case '|' : northSouthIf;            break;
+	case 'w' : compare;                 break;
+	case '0' : mixin (PushNumber!(0));  break;
+	case '1' : mixin (PushNumber!(1));  break;
+	case '2' : mixin (PushNumber!(2));  break;
+	case '3' : mixin (PushNumber!(3));  break;
+	case '4' : mixin (PushNumber!(4));  break;
+	case '5' : mixin (PushNumber!(5));  break;
+	case '6' : mixin (PushNumber!(6));  break;
+	case '7' : mixin (PushNumber!(7));  break;
+	case '8' : mixin (PushNumber!(8));  break;
+	case '9' : mixin (PushNumber!(9));  break;
+	case 'a' : mixin (PushNumber!(10)); break;
+	case 'b' : mixin (PushNumber!(11)); break;
+	case 'c' : mixin (PushNumber!(12)); break;
+	case 'd' : mixin (PushNumber!(13)); break;
+	case 'e' : mixin (PushNumber!(14)); break;
+	case 'f' : mixin (PushNumber!(15)); break;
+	case '+' : add;                     break;
+	case '*' : multiply;                break;
+	case '-' : subtract;                break;
+	case '/' : divide;                  break;
+	case '%' : remainder;               break;
+	case '"' : toggleStringMode;        break;
+	case '\'': fetchCharacter;          break;
+	case 's' : storeCharacter;          break;
+	case '$' : pop;                     break;
+	case ':' : duplicate;               break;
+	case '\\': swap;                    break;
+	case 'n' : clearStack;              break;
+	case '{' : beginBlock;              break;
+	case '}' : endBlock;                break;
+	case 'u' : stackUnderStack;         break;
+	case 'g' : get;                     break;
+	case 'p' : put;                     break;
+	case '.' : outputDecimal;           break;
+	case ',' : outputCharacter;         break;
+	case '&' : inputDecimal;            break;
+	case '~' : inputCharacter;          break;
+	case 'i' : inputFile;               break;
+	case 'o' : outputFile;              break;
+	case '=' : execute;                 break;
+	case 'y' : getSysInfo;              break;
+	case '(' : loadSemantics;           break;
+	case ')' : unloadSemantics;         break;
+	case 't' : splitIP;                 break;
+	default  : unimplemented;           break;
+}}
+void executeSemantics(Stack!(Semantics)* sem) {
+	if (sem && sem.size) with (sem.top) {
+		if (type == BUILTIN)
+			return instruction();
+		else
+			return miniFunge();
+	}
+	unimplemented();
+}
 
-	// no concurrency + tracing, no need for ' ' and ';'
-	auto ins = [
-		'>', '<', '^', 'v', '?',
-		']', '[',
-		'r',
-		'z',
-		'#',
-		'j',
-		'!',
-		'`',
-		'_', '|', 'w',
-		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-		'a', 'b', 'c', 'd', 'e', 'f',
-		'+', '*', '-', '/', '%',
-		'"',
-		'$', ':', '\\', 'n',
-		'.', ',',
-		'&', '~',
-		'y',
-		'g', 'p'];
+bool isSemantics(cell i) {
+	return i <= 'Z' && i >= 'A';
+}
 
-	foreach (i; ins)
-		miniIns[i] = instructions[i];
+void unimplemented() {
+	if (warnings) {
+		Stdout.flush;
+		if (inMini)
+			miniUnimplemented();
+		else {
+			auto i = space.unsafeGet(ip.x, ip.y);
+			Stderr.formatln(
+				"Unimplemented instruction '{}' ({1:d}) (0x{1:x}) encountered at ({}, {}).",
+				cast(char)i, i, ip.x, ip.y
+			);
+		}
+	}
+	reverse;
 }
 
 // The instructions are ordered according to the order in which they
@@ -152,18 +157,23 @@ static this() {
 // Befunge-93
 
 // Go East, Go West, Go North, Go South
-void goEast () { ip.dx =  1; ip.dy =  0; }
-void goWest () { ip.dx = -1; ip.dy =  0; }
-void goNorth() { ip.dx =  0; ip.dy = -1; }
-void goSouth() { ip.dx =  0; ip.dy =  1; }
+void goEast () { if (ip.mode & IP.HOVER) ++ip.dx; else reallyGoEast;  }
+void goWest () { if (ip.mode & IP.HOVER) --ip.dx; else reallyGoWest;  }
+void goNorth() { if (ip.mode & IP.HOVER) --ip.dy; else reallyGoNorth; }
+void goSouth() { if (ip.mode & IP.HOVER) ++ip.dy; else reallyGoSouth; }
+
+void reallyGoEast () { ip.dx =  1; ip.dy =  0; } 
+void reallyGoWest () { ip.dx = -1; ip.dy =  0; } 
+void reallyGoNorth() { ip.dx =  0; ip.dy = -1; } 
+void reallyGoSouth() { ip.dx =  0; ip.dy =  1; } 
 
 // Go Away
 void goAway() {
 	switch (rand_up_to!(4)()) {
-		case 0: goEast (); break;
-		case 1: goWest (); break;
-		case 2: goNorth(); break;
-		case 3: goSouth(); break;
+		case 0: reallyGoEast (); break;
+		case 1: reallyGoWest (); break;
+		case 2: reallyGoNorth(); break;
+		case 3: reallyGoSouth(); break;
 		default: assert (false);
 	}
 }
@@ -172,6 +182,9 @@ void goAway() {
 
 // Turn Right
 void turnRight() {
+	if (ip.mode & IP.SWITCH)
+		space[ip.x, ip.y] = '[';
+
 	// x = cos(90) x - sin(90) y = -y
 	// y = sin(90) x + cos(90) y =  x
 	cellidx x = ip.dx;
@@ -181,6 +194,9 @@ void turnRight() {
 
 // Turn Left
 void turnLeft() {
+	if (ip.mode & IP.SWITCH)
+		space[ip.x, ip.y] = ']';
+
 	// x = cos(-90) x - sin(-90) y =  y
 	// y = sin(-90) x + cos(-90) y = -x
 	cellidx x = ip.dx;
@@ -287,8 +303,6 @@ void iterate() {
 	if (ip.x == x && ip.y == y && ip.dx == dx && ip.dy == dy)
 		ip.move();
 
-	auto ins = instructions[i];
-
 	// more optimization
 	// many instructions have the same behaviour regardless of iteration
 	// so they need to be done only once
@@ -296,19 +310,22 @@ void iterate() {
 	// haven't profiled to see where it'd start to matter
 	if (n >= 10) switch (i) {
 		case 'v', '^', '<', '>', 'n', '?', '@', 'q':
-			return ins();
+			return executeInstruction(i);
 		case 'r':
 			if (i & 1)
 				reverse();
 			return;
 		default:
-			if (ins is null)
-				goto case 'r';
 			break;
 	}
 
-	while (n--)
-		ins();
+	if (isSemantics(i)) {
+		auto sem = i in ip.semantics;
+		while (n--)
+			executeSemantics(sem);
+	} else
+		while (n--)
+			executeInstruction(i);
 }
 
 // Decision Making
@@ -353,24 +370,8 @@ void compare() {
 
 // Push Zero - Push Niner
 template PushNumber(uint n) {
-	const PushNumber = "push" ~ ToUtf8!(n);
+	const PushNumber = "ip.stack.push(" ~ ToUtf8!(n) ~ ");";
 }
-template PushNumberFunc(uint n) {
-	const PushNumberFunc = "void " ~ PushNumber!(n) ~ "() { ip.stack.push(" ~ ToUtf8!(n) ~ "); }";
-}
-template MixinFunc(uint from) {
-	const MixinFunc = "mixin (PushNumberFunc!(" ~ ToUtf8!(from) ~ "));";
-}
-template PushNumberFuncs(uint from, uint to) {
-	static assert (from <= to);
-
-	static if (from == to)
-		const PushNumberFuncs = MixinFunc!(from);
-	else
-		const PushNumberFuncs = MixinFunc!(from) ~ PushNumberFuncs!(from + 1, to);
-}
-
-mixin (PushNumberFuncs!(0, 9));
 
 // Add
 void add()      { with (ip.stack) push(pop + pop); }
@@ -411,7 +412,7 @@ void remainder() {
 }
 
 // Push Ten - Push Fifteen
-mixin (PushNumberFuncs!(10, 15));
+// see 'Push Niner' above
 
 // Strings
 // -------
@@ -470,6 +471,9 @@ void clearStack() { ip.stack.clear(); }
 
 // Begin Block
 void beginBlock() {
+	if (ip.mode & IP.SWITCH)
+		space[ip.x, ip.y] = '}';
+
 	try ip.stackStack.push(ip.newStack());
 	catch {
 		return reverse();
@@ -504,6 +508,9 @@ void beginBlock() {
 
 // End Block
 void endBlock() {
+	if (ip.mode & IP.SWITCH)
+		space[ip.x, ip.y] = '{';
+
 	if (ip.stackStack.size == 1)
 		return reverse();
 
@@ -855,7 +862,7 @@ void getSysInfo() {
 		push(0, 0);
 
 		bool wasNull = false;
-		foreach (farg; fungeArgs) {
+		foreach_reverse (farg; fungeArgs) {
 			if (farg.length) {
 				push(0);
 				foreach_reverse (c; farg)
@@ -940,6 +947,9 @@ void getSysInfo() {
 
 // Load Semantics
 void loadSemantics() {
+	if (ip.mode & IP.SWITCH)
+		space[ip.x, ip.y] = ')';
+
 	auto n = ip.stack.pop;
 
 	if (n <= 0)
@@ -988,6 +998,9 @@ void loadSemantics() {
 
 // Unload Semantics
 void unloadSemantics() {
+	if (ip.mode & IP.SWITCH)
+		space[ip.x, ip.y] = '(';
+
 	auto n = ip.stack.pop;
 
 	if (n <= 0)

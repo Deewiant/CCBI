@@ -5,8 +5,8 @@
 module ccbi.fingerprints.cats_eye.roma; private:
 
 import ccbi.fingerprint;
-import ccbi.instructions : PushNumber, PushNumberFunc;
 import ccbi.ip;
+import ccbi.utils : ToUtf8;
 
 // 0x524f4d41: ROMA
 // Funge-98 Roman Numerals
@@ -22,6 +22,13 @@ static this() {
 	fingerprints[ROMA]['C'] =& mixin (PushNumber!(100));
 	fingerprints[ROMA]['D'] =& mixin (PushNumber!(500));
 	fingerprints[ROMA]['M'] =& mixin (PushNumber!(1000));
+}
+
+template PushNumber(uint n) {
+	const PushNumber = "push" ~ ToUtf8!(n);
+}
+template PushNumberFunc(uint n) {
+	const PushNumberFunc = "void " ~ PushNumber!(n) ~ "() { ip.stack.push(" ~ ToUtf8!(n) ~ "); }";
 }
 
 mixin (PushNumberFunc!(1));

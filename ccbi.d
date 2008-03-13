@@ -23,13 +23,13 @@ import ccbi.space;
 import ccbi.trace;
 import ccbi.utils;
 
-import ccbi.mini.vars : miniMode, Mini, warnings;
+import ccbi.mini.vars : miniMode, Mini;
 
 import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
 
 // remember to change ccbi.instructions.VERSION_NUMBER too!
 const char[]
-	VERSION_STRING = "CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.4a",
+	VERSION_STRING = "CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.5",
 	HELP           = VERSION_STRING ~ `
 
  Copyright (c) 2006-2008 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
@@ -625,33 +625,16 @@ void execute(cell i) {
 		else
 			ip.stack.push(i);
 	} else {
-		if (fingerprintsEnabled && i <= 'Z' && i >= 'A') {
-			auto tmp = i in ip.semantics;
-			if (tmp && tmp.size)
-			with (tmp.top) {
-				if (type == BUILTIN)
-					return instruction();
-				else
-					return miniFunge();
-			}
-		} else if (i < instructions.length && i >= 0) {
+		if (fingerprintsEnabled) {
 			// IMAP fingerprint
-			static assert (ip.mapping.length <= instructions.length);
-			i = ip.mapping[i];
+			if (i >= 0 && i < ip.mapping.length) {
+				i = ip.mapping[i];
 
-			auto instruction = instructions[i];
-			if (instruction)
-				return instruction();
+				if (isSemantics(i))
+					return executeSemantics(i in ip.semantics);
+			}
 		}
 
-		if (warnings) {
-			Stdout.flush;
-			Stderr.formatln(
-				"Unimplemented instruction '{}' ({1:d}) (0x{1:x}) encountered at ({}, {}).",
-				cast(char)i, i, ip.x, ip.y
-			);
-		}
-
-		reverse();
+		executeInstruction(i);
 	}
 }

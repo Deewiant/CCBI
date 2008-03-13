@@ -22,7 +22,7 @@ static this() {
 	fingerprints[INDV]['V'] =& getVec;
 	fingerprints[INDV]['W'] =& putVec;
 
-	fingerprints[PNTR] = fingerprints[INDV];
+	fingerprints[PNTR][] = fingerprints[INDV];
 }
 
 void getNum() {
