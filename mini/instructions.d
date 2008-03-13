@@ -4,30 +4,41 @@
 
 module ccbi.mini.instructions;
 
+import tango.io.Stdout : Stderr;
+
+import ccbi.instructions;
 import ccbi.ip;
 import ccbi.utils : popVector;
 
 import ccbi.mini.vars;
 
-void function()[128] miniIns;
+void miniExecuteInstruction(cell i) {
+switch (i) {
+	case '@' : miniStop;            break; 
+	case ' ' : miniAscii32;         break; 
+	case ';' : miniJumpOver;        break; 
+	case '\'': miniFetchCharacter;  break; 
+	case 's' : miniStoreCharacter;  break; 
+	case 'k' : miniIterate;         break; 
+	case 'B' : miniB;               break; 
+	case 'D' : miniD;               break; 
+	case 'E' : miniE;               break; 
+	case 'F' : miniF;               break; 
+	case 'G' : miniG;               break; 
+	case 'K' : miniK;               break; 
+	case 'L' : miniL;               break; 
+	case 'O' : miniO;               break; 
+	case 'P' : miniP;               break; 
+	case 'R' : miniR;               break; 
+	default: executeInstruction(i); break;
+}}
 
-static this() {
-	miniIns['@']  =& miniStop;
-	miniIns[' ']  =& miniAscii32;
-	miniIns[';']  =& miniJumpOver;
-	miniIns['\''] =& miniFetchCharacter;
-	miniIns['s']  =& miniStoreCharacter;
-	miniIns['k']  =& miniIterate;
-	miniIns['B']  =& miniB;
-	miniIns['D']  =& miniD;
-	miniIns['E']  =& miniE;
-	miniIns['F']  =& miniF;
-	miniIns['G']  =& miniG;
-	miniIns['K']  =& miniK;
-	miniIns['L']  =& miniL;
-	miniIns['O']  =& miniO;
-	miniIns['P']  =& miniP;
-	miniIns['R']  =& miniR;
+void miniUnimplemented() {
+	auto i = miniIp.space.unsafeGet(miniIp.x, miniIp.y);
+	Stderr.formatln(
+		"Unavailable instruction '{0}'({1:d}) (0x{1:x}) encountered at ({}, {}) in Mini-Funge.",
+		cast(char)i, i, miniIp.x, miniIp.y
+	);
 }
 
 void miniStop() { mOver = true; }
@@ -67,10 +78,8 @@ void miniIterate() {
 	if (i == ' ' || i == ';' || i == 'z')
 		return;
 
-	if (i == '$') {
-		ip.stack.pop(n);
-		return;
-	}
+	if (i == '$')
+		return ip.stack.pop(n);
 
 	ip.x = x;
 	ip.y = y;
@@ -78,23 +87,19 @@ void miniIterate() {
 	if (ip.x == x && ip.y == y && ip.dx == dx && ip.dy == dy)
 		ip.move();
 
-	auto ins = miniIns[i];
-
-	if (n >= 10)
-	switch (i) {
-		case 'v', '^', '<', '>', 'n', '?', '@', 'q': return ins();
+	if (n >= 10) switch (i) {
+		case 'v', '^', '<', '>', 'n', '?', '@', 'q':
+			return executeInstruction(i);
 		case 'r':
 			if (i & 1)
-				miniIns['r']();
+				reverse();
 			return;
 		default:
-			if (ins is null)
-				goto case 'r';
 			break;
 	}
 
 	while (n--)
-		ins();
+		executeInstruction(i);
 }
 
 void miniB() {

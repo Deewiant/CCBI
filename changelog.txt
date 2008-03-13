@@ -1,6 +1,27 @@
 CCBI changelog
 --------------
 
+2008-03-13, 1.0.5
+	'y' now pushes the command line arguments in such a way that the first is
+	topmost, not lowest.
+
+	'k':
+		Now works for fingerprint instructions.
+
+		The multi-execute optimization is no longer performed for unimplemented
+		instructions.
+
+	Optimization:
+		A switch statement is used for executing ordinary (non-fingerprint)
+		instructions, instead of function pointers. This results in an
+		unfortunate import cycle, but resolving it would require shoving most of
+		Mini-Funge into the already large enough instructions.d, or something
+		equally silly.
+
+2008-03-12, 1.0.4a
+	Optimization:
+		Fingerprints are now held in dynamic arrays, not associative arrays.
+
 2008-03-12, 1.0.4
 	The TERM fingerprint is now disabled on Posix, as it never worked properly
 	and I can't make it work.
