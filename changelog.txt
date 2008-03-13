@@ -1,6 +1,13 @@
 CCBI changelog
 --------------
 
+2008-03-13, 1.0.6
+	Output is now properly flushed when the program ends.
+
+	Removed the annoying pragma(msg) regarding environment variables.
+
+	environment() now returns a char[][], not a char[][char[]].
+
 2008-03-13, 1.0.5
 	'y' now pushes the command line arguments in such a way that the first is
 	topmost, not lowest.

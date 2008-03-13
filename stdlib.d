@@ -38,7 +38,8 @@ template ToUtf8(uint n) {
 		const ToUtf8 = ToUtf8!(n / 10) ~ ToUtf8!(n % 10);
 }
 
-private alias char[][char[]] environment_t;
+private alias char[][] environment_t;
+private size_t envSize = 0x20;
 
 private environment_t env;
 bool envChanged = true;
@@ -50,6 +51,8 @@ version (Win32) {
 		void* GetEnvironmentStringsA();
 		bool  FreeEnvironmentStringsA(in char**);
 	}
+
+	private size_t maxSize = 0x80;
 
 	environment_t environment() {
 		if (!envChanged)
@@ -65,41 +68,36 @@ version (Win32) {
 				throw new PlatformException("Couldn't free environment");
 		}
 
-		environment_t arr;
+		auto arr = new typeof(environment_t)(envSize);
 
-		auto key = new char[20];
-		auto val = new char[40];
-
+		size_t i = 0;
 		for (auto str = cast(char*)env; *str; ++str) {
-			size_t k = 0, v = 0;
 
-			while (*str != '=') {
-				if (k == key.length)
-					key.length = 2 * key.length;
+			auto val = new char[maxSize];
 
-				key[k++] = *str++;
-			}
-
-			++str;
+			size_t j = 0;
 
 			while (*str) {
-				if (v == val.length)
+				if (j == val.length)
 					val.length = 2 * val.length;
-
-				val[v++] = *str++;
+				val[j++] = *str++;
 			}
+			val.length = j;
 
-			arr[key[0..k].dup] = val[0..v].dup;
+			if (j > maxSize)
+				maxSize = j;
+
+			if (i == arr.length)
+				arr.length = 2 * arr.length;
+			arr[i++] = val;
 		}
-
-		envChanged = false;
-
+		arr.length = envSize = i;
+		envChanged = false; 
+		arr.sort; 
 		return (.env = arr);
 	}
-} else {
-	pragma (msg, "If this is not a Posix-compliant platform, trying to access environment\n"
-	             "variables might cause an access violation and thereby a crash."
-	);
+} else version (Posix) {
+	import tango.stdc.string : strlen;
 
 	extern (C) extern char** environ;
 
@@ -107,29 +105,19 @@ version (Win32) {
 		if (!envChanged)
 			return .env;
 
-		environment_t arr;
+		auto arr = new typeof(environment_t)(envSize);
 
+		size_t i = 0;
 		for (auto p = environ; *p; ++p) {
-			size_t i = 0;
+			auto j = strlen(*p);
 
-			auto str = *p;
-
-			while (*str++ != '=')
-				++i;
-
-			auto key = (*p)[0..i];
-
-			i = 0;
-
-			auto val = str;
-			while (*str++)
-				++i;
-
-			arr[key] = val[0..i];
+			if (i == arr.length)
+				arr.length = 2 * arr.length;
+			arr[i++] = (*p)[0..j];
 		}
-
-		envChanged = false;
-
+		arr.length = envSize = i; 
+		envChanged = false; 
+		arr.sort; 
 		return (.env = arr);
 	}
 }
@@ -242,4 +230,11 @@ private:
 			return written;
 		}
 	}
+}
+
+static ~this() {
+	// Tango only flushes Cout and Cerr
+	// we capture output before it gets that far
+	Stdout.flush;
+	Stderr.flush;
 }

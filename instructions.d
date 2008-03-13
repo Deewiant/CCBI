@@ -840,22 +840,9 @@ void getSysInfo() {
 
 		// environment
 
-		auto env = environment();
-
 		push(0);
-		foreach (name; env.keys.sort.reverse) {
-			auto value = env[name];
-
-			push(0);
-
-			foreach_reverse (c; value)
-				push(cast(cell)c);
-
-			push(cast(cell)'=');
-
-			foreach_reverse (c; name)
-				push(cast(cell)c);
-		}
+		foreach_reverse (v; environment())
+			pushStringz(v);
 
 		// command line arguments
 

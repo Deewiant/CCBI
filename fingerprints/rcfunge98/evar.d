@@ -32,24 +32,30 @@ static this() {
 	fingerprints[EVAR]['V'] =& getNthEnv;
 }
 
+private size_t getEqualsSign(char[] s) {
+	foreach (i, c; s)
+	if (c == '=')
+		return i;
+	return s.length;
+}
+
 void getEnv() {
-	// Windows isn't case sensitive...
-	version (Win32) {
-		auto s = popString();
+	auto s = popString();
 
-		foreach (k, v; environment())
-		if (icompare(k, s) == 0)
-			return pushStringz(v);
+	foreach (v; environment()) {
+		auto i = getEqualsSign(v);
 
-		reverse();
-	} else {
-		auto e = popString() in environment();
+		// Windows isn't case sensitive...
+		version (Win32) {
+			if (icompare(v[0..i], s) == 0)
+				return pushStringz(v[i+1..$]);
 
-		if (e)
-			pushStringz(*e);
-		else
-			reverse();
+		} else {
+			if (v[0..i] == s)
+				return pushStringz(v[i+1..$]);
+		}
 	}
+	reverse();
 }
 
 void getEnvCount() {
@@ -59,11 +65,7 @@ void getEnvCount() {
 void putEnv() {
 	auto s = popString!(true)();
 
-	auto idx = s.length;
-	foreach (i, c; s) if (c == '=') {
-		idx = i;
-		break;
-	}
+	auto idx = getEqualsSign(s);
 
 	if (idx == s.length)
 		return reverse();
@@ -87,7 +89,5 @@ void getNthEnv() {
 	if (n >= env.length)
 		return reverse();
 
-	auto key = env.keys.sort[n];
-
-	pushStringz(key ~ '=' ~ env[key]);
+	pushStringz(env[n]);
 }
