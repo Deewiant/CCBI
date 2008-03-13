@@ -1,0 +1,193 @@
+CCBI changelog
+--------------
+
+2008-03-12, 1.0.4
+	The TERM fingerprint is now disabled on Posix, as it never worked properly
+	and I can't make it work.
+
+	Added the --disable-fprints argument.
+
+	Optimizations:
+		Everything possible when fingerprints are disabled, of course.
+
+		Input and output are now properly buffered.
+
+		Funge-Space is rehashed after being created.
+
+		memcpy() is now used in Befunge98Space.copy and IP.copy.
+
+2008-03-11, 1.0.3e
+	Optimizations:
+		Instructions are now held in an ordinary static array, not an
+		associative array.
+
+		scope(success) instead of scope(exit) in the code for the 'k'
+		instruction.
+
+2008-03-10, 1.0.3d
+	Updated for compatibility with Tango 0.99.5 and x86-64, no functionality
+	change.
+
+2008-01-22, 1.0.3c
+	Removed single dependency on tango.core.Array, no functionality change.
+
+2007-12-29, 1.0.3b
+	Updated for compatibility with Tango 0.99.4. No version number change, as
+	functionality is the same.
+
+2007-12-02, 1.0.3
+	Tracing now prints which IPs triggered the global or cell breakpoint, if
+	there is more than one IP alive.
+
+	Changes in Tango's formatting led to bugs in the TURT fingerprint output,
+	which have been fixed.
+
+	Fixed a bug in main:
+		First command line argument passed to Befunge program was the name of
+		the interpreter, not the name of the Befunge program.
+
+2007-11-26, 1.0.2
+	Updated for compatibility with Tango revision 2935.
+	HRTI now works with microseconds as it should, I think S and G may have
+	used milliseconds before this.
+
+	Now compiling with -I.. so you don't have to mess with the directory
+	structure or with the -I yourself.
+
+	Now compiling with -version=Win32SansUnicode so that the DIRF fingerprint
+	doesn't require UTF-8 input, but uses the locale, just like everything else
+	and the spec specifies.
+
+	Fixed a bug in getSysInfo:
+		Null command line argument handling was borked.
+
+2007-09-22, 1.0.1
+	Helptext now points to correct web site.
+	Added a note to IMPLEMENTATION about Mini-Funge library format.
+	Stdout is now flushed prior to emitting a warning to Stderr.
+
+2007-09-20
+	Public release.
+
+2007-07-22, 1.0.0
+	Renamed the project to CCBI (Conforming Concurrent Befunge-98 Interpreter).
+
+	Implemented '(' and ')' and the following fingerprints:
+		Official (Cat's-Eye Technologies):
+			HRTI
+	 		MODE
+			MODU
+			NULL
+			ORTH
+			REFC
+			ROMA
+			TOYS
+			TURT (no display, only saving to file)
+
+		RC/Funge-98 extensions:
+			BASE
+			CPLI
+			DIRF
+			EVAR
+			FILE
+			FPDP
+			FPSP
+			FRTH
+			FIXP
+			IIPC
+			IMAP
+			INDV aka PNTR
+			SOCK
+			STRN
+			SUBR
+			TERM
+			TIME
+			TRDS
+
+		Jesse van Herk's extensions to RC/Funge-98:
+			JSTR
+			NCRS
+
+		GLFunge98 extensions:
+			SCKE
+
+	Also added notes to FINGERPRINT_INFO about why FNGR, SGNL, and WIND aren't,
+	and will very unlikely ever be, implemented.
+
+	Implemented dynamic fingerprints (*.fl).
+
+	Added the --script argument.
+
+	Switched to the Tango library.
+
+	Random numbers are now evenly distributed, not just "rand() % range" which may cause
+	some numbers in range to be more common than others.
+
+	'&' and '~' now flush stdout prior to reading stdin: added note to IMPLEMENTATION.
+	The way '&' eats line breaks added to IMPLEMENTATION.
+	Note about '#' edge jumping added to IMPLEMENTATION.
+	Note about 'i' not copying spaces removed from IMPLEMENTATION: it's clearly in the spec.
+
+	I/O is no longer in UTF-8/16/32, after I read the spec more carefully: if the system stores characters
+	in one byte, like all the systems CCBI supports, each individual byte should be its own Funge-Space
+	cell. I read the spec as speaking of multibyte encodings when it meant multibyte systems.
+	Thus, input and output are both now character set independent. Removed UTF warnings from IMPLEMENTATION.
+	Internally, ubyte is used instead of [wd]char, since char is meant for UTF-8 code units.
+	This unfortunately results in a lot of type casting since all library string functions expect chars.
+
+	Changed the way wrapping around works to a more expensive, but spec-conforming method.
+	Ditto for 'k'.
+
+	Spaces and semicolons now execute in zero ticks instead of one.
+
+	Changed calls like instructions['>']() to goEast() to remove needless array lookup.
+
+	The array property of the stack is now private, and thus only used internally.
+	Added opApply()	methods to take care of the few places where it was actually needed.
+
+	Massive re-moduling of the code, and removal of circular dependencies.
+
+	Rewrote the simple number pushing instructions: they used to check the value of the cell the IP was on
+	to figure out which number to push on the stack, which obviously failed when called from iterate().
+
+	Changed cell and cellidx from ptrdiff_t to int_fast32_t.
+
+	Changes in doTrace:
+		Tracing is done only once per tick, instead of once per IP per tick.
+		Since tracing can't be done more than once per tick, spaces and semicolons are no longer traced.
+		"a[rea]" doesn't append needless spaces to each line.
+		Added command "(c)break" to break on a given cell value.
+
+	Fixed a bug in duplicate():
+		ip.stack.push(ip.stack.top) doesn't work properly when the stack is empty.
+	Fixed a bug in main():
+		fungeArgs didn't contain the name of the program being run.
+	Fixed a bug in loadIntoFungeSpace():
+		When not in binary mode, only \n was considered a line break, not \r or \r\n.
+	Fixed bugs in doTrace():
+		Concurrent tracing wasn't working: tip could be null, the global breakpoint didn't work, and such.
+	Fixed a bug in beginBlock(), endBlock(), and stackUnderStack():
+		The stack's mode field wasn't properly transferred onto the new TOSS in all cases.
+
+2007-01-04, 1.0.0 RC4
+	Changed for loops to use foreach_reverse where applicable.
+	Other minor code changes here and there.
+
+2006-11-04, 1.0.0 RC3
+	Changed most imports to the new import types of DMD 0.163. Removed explicit private.
+	Fixed bugs in outputFile():
+		"Sub-rows" (see comment in dcbefunge.d) were not considered.
+	Addition to outputFile():
+		Line breaks are converted to the system's line separator.
+	Added notes about 'o' behaviour to the IMPLEMENTATION string.
+
+2006-11-03, 1.0.0 RC2
+	Some changes to make it compile in DMD 0.172 under Linux.
+	Fixed a bug in myOpen():
+		New files couldn't be created, since it was checking for their existence even when writing.
+	Fixed bugs in outputFile():
+		Line breaks were "\r", "\n", or "\n\r". The last should have been "\r\n".
+
+2006-06-12, 1.0.0 RC1
+	First changelog-worthy version.
+	Everything should work.
