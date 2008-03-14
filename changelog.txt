@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2008-03-14, 1.0.6b
+	Optimization:
+		MurmurHash 2.0 is now used for Funge-Space, which speeds things up
+		noticeably.
+
 2008-03-14, 1.0.6a
 	Optimization:
 		I/O should now be somewhat faster: using a TypedOutput!(ubyte) or

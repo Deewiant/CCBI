@@ -14,7 +14,6 @@ import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Buffer;
 import tango.io.FileConduit;
 import tango.io.Stdout;
-import tango.io.stream.TypedStream;
 import regex = tango.text.Regex;
 
 import ccbi.instructions;
@@ -30,7 +29,7 @@ import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
 
 // remember to change ccbi.instructions.VERSION_NUMBER too!
 const char[]
-	VERSION_STRING = "CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.6a",
+	VERSION_STRING = "CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.6b",
 	HELP           = VERSION_STRING ~ `
 
  Copyright (c) 2006-2008 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
