@@ -8,7 +8,7 @@ module ccbi.instructions;
 import tango.io.Buffer;
 import tango.io.Console : Cin;
 import tango.io.FileConduit;
-import tango.io.Stdout  : Stdout;
+import tango.io.stream.TypedStream;
 import tango.text.Util  : join, splitLines;
 import tango.time.Clock;
 
@@ -38,6 +38,9 @@ version (Win32)
 	const cell PATH_SEPARATOR = '\\';
 else
 	const cell PATH_SEPARATOR = '/';
+
+// for fast putchar-like output, tied to Stdout's stream
+TypedOutput!(ubyte) Out;
 
 // for TRDS: when jumping backwards in time, don't output until the jump target
 // only needed because we rerun time from point 0 to do jumping
@@ -595,18 +598,20 @@ void put() {
 // Output Decimal
 void outputDecimal() {
 	auto n = ip.stack.pop;
-	if (ticks >= printAfter)
-		Stdout(n)(' ');
+	if (ticks >= printAfter) {
+		Stdout(n);
+		Out.write(' ');
+	}
 }
 
 // Output Character
 void outputCharacter() {
-	auto c = cast(char)ip.stack.pop;
+	auto c = cast(ubyte)ip.stack.pop;
 	if (ticks >= printAfter) {
 		if (c == '\n')
 			Stdout.newline;
 		else
-			Stdout(c);
+			Out.write(c);
 	}
 }
 
@@ -851,9 +856,7 @@ void getSysInfo() {
 		bool wasNull = false;
 		foreach_reverse (farg; fungeArgs) {
 			if (farg.length) {
-				push(0);
-				foreach_reverse (c; farg)
-					push(cast(cell)c);
+				pushStringz(farg);
 				wasNull = false;
 
 			// ignore consecutive null arguments

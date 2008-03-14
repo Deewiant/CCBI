@@ -8,6 +8,7 @@ import tango.io.Stdout : Stdout;
 import tango.math.Math : sqrt;
 
 import ccbi.fingerprint;
+import ccbi.instructions : Out;
 import ccbi.ip;
 
 // 0x43504c49: CPLI
@@ -82,6 +83,9 @@ void cplxOut() {
 	with (ip.stack) {
 		cell i = pop,
 		     r = pop;
-		Stdout(r)(i > 0 ? "+" : "")(i)("i ");
+		Stdout(r);
+		if (i > 0)
+			Out.write('+');
+		Stdout(i)("i ");
 	}
 }

@@ -11,7 +11,7 @@ import tango.text.Util            : repeat;
 
 import ccbi.cell;
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
+import ccbi.instructions : reverse, Out;
 import ccbi.ip;
 import ccbi.stdlib;
 import ccbi.utils;
@@ -30,9 +30,9 @@ static this() {
 	fingerprints[BASE]['O'] =& outputOctal;
 }
 
-void outputBinary() { Stdout(toString(ip.stack.pop, Style.Binary))(' '); }
-void outputHex   () { Stdout(toString(ip.stack.pop, Style.Hex   ))(' '); }
-void outputOctal () { Stdout(toString(ip.stack.pop, Style.Octal ))(' '); }
+void outputBinary() { Stdout(toString(ip.stack.pop, Style.Binary)); Out.write(' '); }
+void outputHex   () { Stdout(toString(ip.stack.pop, Style.Hex   )); Out.write(' '); }
+void outputOctal () { Stdout(toString(ip.stack.pop, Style.Octal )); Out.write(' '); }
 
 void outputBase() {
 	auto base = ip.stack.pop,
@@ -58,7 +58,8 @@ void outputBase() {
 			result[i++] = DIGITS[val % base];
 	}
 
-	Stdout(result[0..i].reverse)(' ');
+	Stdout(result[0..i].reverse);
+	Out.write(' ');
 }
 
 void inputBase() {

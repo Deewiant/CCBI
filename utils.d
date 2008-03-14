@@ -5,8 +5,8 @@
 // Helpful utility functions and constants.
 module ccbi.utils;
 
-import tango.io.Buffer;
 import tango.io.FileConduit;
+import tango.io.stream.TypedStream;
 import tango.sys.Environment;
 
        import ccbi.ip;
@@ -38,28 +38,25 @@ void loadIntoFungeSpace
 
 	void put(ubyte t) { (*space)[x++, y] = cast(cell)t; }
 
-	auto file = new Buffer(fc);
+	auto file = new TypedInput!(ubyte)(fc);
+	scope (exit)
+		file.close();
 
 	bool lineBreak = false;
 
 	for (uint ungot = 0x100;;) {
-		ubyte[1] ar;
 		ubyte c, d;
 
 		if (ungot < 0x100) {
 			c = cast(ubyte)ungot;
 			ungot = 0x100;
-		} else {
-			if (file.read(ar) == Buffer.Eof)
-				break;
-			c = ar[0];
-		}
+		} else if (!file.read(c))
+			break;
 
 		if (c == '\r') {
 			lineBreak = true;
-			if (file.read(ar) != Buffer.Eof && ar[0] != '\n')
-				ungot = ar[0];
-			d = ar[0];
+			if (file.read(d) && d != '\n')
+				ungot = d;
 
 		} else if (c == '\n')
 			lineBreak = true;
@@ -95,8 +92,6 @@ void loadIntoFungeSpace
 				put('\n');
 		}
 	}
-
-	fc.close();
 }
 
 void popVector(bool offset = false)(out cellidx x, out cellidx y) {
