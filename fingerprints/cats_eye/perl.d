@@ -29,7 +29,7 @@ static this() {
 void shelled() { ip.stack.push(1); /+ this is not Perl, this is D +/ }
 
 void eval(bool convertToInteger)() {
-	auto s = cast(char[])popString();
+	auto s = popString();
 	try {
 		auto p = new Process("perl", "-e print 'A',eval(" ~ s ~ ")");
 		p.execute();
@@ -64,7 +64,7 @@ void eval(bool convertToInteger)() {
 
 			cell c = void;
 
-			try  c = cast(cell)parse(string[pos..$]);
+			try c = cast(cell)parse(string[pos..$]);
 			catch {
 				c = -1;
 			}

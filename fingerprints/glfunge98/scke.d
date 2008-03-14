@@ -24,7 +24,7 @@ static this() {
 }
 
 void getHostByName() {
-	scope h = new NetHost;
+	auto h = new NetHost;
 
 	try if (!h.getHostByName(cast(char[])popString()))
 		return reverse();
@@ -44,7 +44,7 @@ void peek() {
 	timeval t;
 	t.tv_sec = t.tv_usec = 0;
 
-	scope ss = new SocketSet(1);
+	auto ss = new SocketSet(1);
 
 	ss.add(sockets[s]);
 

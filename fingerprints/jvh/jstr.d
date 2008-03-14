@@ -47,13 +47,11 @@ void pushN() {
 	if (n < 0)
 		return reverse();
 
-	auto buf = new char[n];
+	ip.stack.push(0);
 
 	while (n--) {
-		buf[n] = cast(char)space[x, y];
+		ip.stack.push(space[x, y]);
 		x += dx;
 		y += dy;
 	}
-
-	pushStringz(buf);
 }

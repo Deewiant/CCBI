@@ -78,11 +78,10 @@ void fclose() {
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
 
-	scope (success)
-		handles[h].handle = null;
-
 	if (c.fclose(handles[h].handle) == c.EOF)
-		return reverse();
+		reverse();
+
+	handles[h].handle = null;
 }
 
 void fgets() {
@@ -129,7 +128,6 @@ void fgets() {
 					}
 			}
 		}
-
 		str.length = s;
 
 		pushStringz(str);

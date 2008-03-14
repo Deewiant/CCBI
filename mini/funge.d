@@ -79,7 +79,7 @@ in {
 	fingStr[2] = cast(char)(fing >> 8);
 	fingStr[3] = cast(char)(fing);
 
-	scope FileConduit fc;
+	FileConduit fc;
 	try fc = new typeof(fc)(fingStr);
 	catch {
 		return false;
