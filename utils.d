@@ -107,8 +107,10 @@ void pushVector(bool offset = false)(cellidx x, cellidx y) {
 	}
 }
 
+char[] s;
+static this() { s = new char[80]; }
+
 char[] popString(bool keepZero = false)() {
-	auto s = new char[80];
 	cell c;
 
 	size_t j;
@@ -119,14 +121,14 @@ char[] popString(bool keepZero = false)() {
 		s[j] = ip.stack.pop;
 	} while (s[j++]);
 
-	s.length = j - !keepZero;
+	auto ret = s[0 .. j - !keepZero];
 
 	static if (keepZero)
-		assert (!s.length || s[$-1] == 0);
+		assert (!ret.length || ret[$-1] == 0);
 	else
-		assert (!s.length || s[$-1] != 0);
+		assert (!ret.length || ret[$-1] != 0);
 
-	return s;
+	return ret;
 }
 
 char* popStringz() {

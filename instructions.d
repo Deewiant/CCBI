@@ -472,6 +472,8 @@ void clearStack() { ip.stack.clear(); }
 // ------------------------
 // Funge-98
 
+cell[] buf;
+
 // Begin Block
 void beginBlock() {
 	if (ip.mode & IP.SWITCH)
@@ -487,13 +489,15 @@ void beginBlock() {
 	cell n = ip.stack.pop;
 
 	if (n > 0) {
+		if (n > buf.length)
+			buf.length = n;
+
 		// order must be preserved
-		auto elems = new cell[n];
-		while (n--)
-			elems[n] = ip.stack.pop;
-		foreach (c; elems)
+		for (size_t i = n; i--;)
+			buf[i] = ip.stack.pop;
+		foreach (c; buf[0..n])
 			ip.stackStack.top.push(c);
-	} else if (n < 0)
+	} else
 		while (n++)
 			ip.stack.push(0);
 
@@ -526,13 +530,15 @@ void endBlock() {
 	popVector(ip.offsetX, ip.offsetY);
 
 	if (n > 0) {
+		if (n > buf.length)
+			buf.length = n;
+
 		// order must be preserved
-		auto elems = new cell[n];
-		while (n--)
-			elems[n] = oldStack.pop;
-		foreach (c; elems)
+		for (size_t i = n; i--;)
+			buf[i] = oldStack.pop;
+		foreach (c; buf[0..n])
 			ip.stack.push(c);
-	} else if (n < 0)
+	} else
 		ip.stack.pop(-n);
 }
 
@@ -713,7 +719,7 @@ void inputFile() {
 
 	popVector!(true)(vaX, vaY);
 
-	scope FileConduit file;
+	FileConduit file;
 	try file = new typeof(file)(filename);
 	catch {
 		return reverse();
@@ -751,12 +757,12 @@ void outputFile() {
 	popVector!(true)(vaX, vaY);
 	popVector       (vbX, vbY);
 
-	scope FileConduit f;
+	FileConduit f;
 	try f = new typeof(f)(filename, WriteCreate);
 	catch {
 		return reverse();
 	}
-	scope file = new Buffer(f);
+	auto file = new Buffer(f);
 	scope (exit)
 		file.close();
 
@@ -799,7 +805,7 @@ void outputFile() {
 		}
 		toBeWritten.length = l;
 
-		// writeLine puts an ending line break anyway, so the last line needn't have one
+		// we put an ending line break anyway, so the last line needn't have one
 		toBeWritten[$-1] = stripr(toBeWritten[$-1]);
 
 		foreach (row; toBeWritten)

@@ -38,7 +38,7 @@ static this() {
 }
 
 void append() {
-	auto top = popString(),
+	auto top = popString().dup,
 	     bot = popString();
 
 	pushStringz(bot);
@@ -46,7 +46,7 @@ void append() {
 }
 
 void compare() {
-	auto s = popString();
+	auto s = popString().dup;
 
 	ip.stack.push(cast(cell)compare(s, popString()));
 }
@@ -54,10 +54,14 @@ void compare() {
 void display() { Stdout(popString()); }
 
 void search() {
-	auto s = popString();
+	auto s = popString().dup;
 
 	pushStringz(s[locatePattern(s, popString())..$]);
 }
+
+// buffer for get() and input()
+char[] buf;
+static this() { buf = new char[80]; }
 
 void get() {
 	cellidx x, y;
@@ -66,42 +70,40 @@ void get() {
 	if (y > space.endY)
 		return reverse();
 
-	auto s = new char[80];
 	size_t i = 0;
 	do {
-		if (i == s.length)
-			s.length = s.length * 2;
+		if (i == buf.length)
+			buf.length = buf.length * 2;
 
 		if (x > space.endX)
 			return reverse();
 
-		s[i++] = space[x, y];
+		buf[i++] = space[x, y];
 
 	} while (space.unsafeGet(x++, y) != 0);
 
-	pushStringz(s[0..i]);
+	pushStringz(buf[0..i]);
 }
 
 void input() {
 	Stdout.flush;
 
-	auto s = new char[80];
 	size_t i = 0;
 	try {
 		do {
-			if (i == s.length)
-				s.length = s.length * 2;
+			if (i == buf.length)
+				buf.length = buf.length * 2;
 
-			s[i] = cget();
-		} while (s[i++] != '\n');
+			buf[i] = cget();
+		} while (buf[i++] != '\n');
 	} catch {
 		return reverse();
 	}
 
 	// lose the \r?\n
-	if (s[i-2] == '\r')
+	if (buf[i-2] == '\r')
 		--i;
-	pushStringz(s[0..i-1]);
+	pushStringz(buf[0..i-1]);
 }
 
 void left() {
