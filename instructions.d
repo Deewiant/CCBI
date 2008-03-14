@@ -769,7 +769,6 @@ void outputFile() {
 		auto toBeWritten = new char[][](vbY, vbX);
 
 		for (cellidx y = vaY; y < maxY; ++y)
-		if (space.rowInRange(y))
 		for (cellidx x = vaX; x < maxX; ++x) {
 			if (space.cellInRange(x, y))
 				toBeWritten[y - vaY][x - vaX] = cast(char)space.unsafeGet(x, y);
@@ -812,7 +811,6 @@ void outputFile() {
 		for (cellidx y = vaY; y < maxY; ++y) {
 			row[] = ' ';
 
-			if (space.rowInRange(y))
 			for (cellidx x = vaX; x < maxX; ++x)
 			if (space.cellInRange(x, y))
 				row[x - vaX] = cast(char)space.unsafeGet(x, y);

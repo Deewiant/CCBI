@@ -11,12 +11,30 @@ public import ccbi.cell;
 
 Befunge98Space space;
 
-struct Befunge98Space {
-	bool rowInRange(cellidx y) {
-		return (y in space) !is null;
+private struct CoordPair {
+	cellidx x, y;
+
+	// MurmurHash 2.0, thanks to Austin Appleby
+	// at http://murmurhash.googlepages.com/
+	static assert (cellidx.sizeof == 4);
+	hash_t toHash() {
+		const hash_t m = 0x_c6a4_a793;
+
+		hash_t h = 0x7fd6_52ad ^ (8 * m), k;
+
+		k = x; k *= m; k ^= k >> 16; k *= m; h += k; h *= m;
+		k = y; k *= m; k ^= k >> 16; k *= m; h += k; h *= m;
+
+		h *= m; h ^= h >> 10;
+		h *= m; h ^= h >> 17;
+
+		return h;
 	}
+}
+
+struct Befunge98Space {
 	bool cellInRange(cellidx x, cellidx y) {
-		return (x in space[y]) !is null;
+		return (CoordPair(x, y) in space) !is null;
 	}
 	bool inBounds(cellidx x, cellidx y) {
 		return (
@@ -27,8 +45,10 @@ struct Befunge98Space {
 
 	// most of the time we want range checking, unsafeGet is separate
 	cell opIndex(cellidx x, cellidx y) {
-		if (!rowInRange(y) || !cellInRange(x, y))
+		if (!cellInRange(x, y)) {
 			(*this)[x, y] = ' ';
+			return ' ';
+		}
 
 		return unsafeGet(x, y);
 	}
@@ -36,14 +56,14 @@ struct Befunge98Space {
 		if (x == lastX && y == lastY)
 			lastGet = c;
 
-		space[y][x] = c;
+		space[CoordPair(x, y)] = c;
 	}
 
 	cell unsafeGet(cellidx x, cellidx y) {
 		if (!(x == lastX && y == lastY)) {
 			lastX = x;
 			lastY = y;
-			lastGet = space[y][x];
+			lastGet = space[CoordPair(x, y)];
 		}
 		return lastGet;
 	}
@@ -61,12 +81,11 @@ struct Befunge98Space {
 		endY;
 
 	// cache the last get, speeds up most programs
-	// thanks to GLFunge98 for the idea
-	// lastGet is externally initialized to space[0,0], hence lastX and lastY mustn't be 0
-	private cellidx lastX = cellidx.min, lastY = cellidx.max;
+	// lastGet is externally initialized to space[0,0], hence these two mustn't be 0,0
+	private cellidx lastX = cellidx.max, lastY = cellidx.min;
 	cell lastGet;
 
-	private cell[cellidx][cellidx] space;
+	private cell[CoordPair] space;
 
 	void rehash() { space.rehash; }
 
@@ -75,9 +94,8 @@ struct Befunge98Space {
 		memcpy(&cp, this, cp.sizeof);
 
 		cp.space = null;
-		foreach (i, row; space)
-			foreach (j, col; row)
-				cp.space[i][j] = col;
+		foreach (k, v; space)
+			cp.space[k] = v;
 
 		return cp;
 	}
@@ -111,8 +129,6 @@ struct Befunge98Space {
 
 		assert (s.unsafeGet(-1, -2) == ' ');
 
-		assert (!s.rowInRange(666));
-		assert (s.rowInRange(66));
 		assert (s.cellInRange(55, 66));
 		assert (!s.cellInRange(54, 66));
 	}
