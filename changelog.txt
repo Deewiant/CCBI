@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2008-03-14, 1.0.6a
+	Optimization:
+		I/O should now be somewhat faster: using a TypedOutput!(ubyte) or
+		TypedInput!(ubyte) where possible.
+
 2008-03-13, 1.0.6
 	Output is now properly flushed when the program ends.
 

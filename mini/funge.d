@@ -4,9 +4,9 @@
 
 module ccbi.mini.funge;
 
-import tango.io.Buffer;
 import tango.io.FileConduit;
 import tango.io.Stdout;
+import tango.io.stream.TypedStream;
 
 import ccbi.ip;
 
@@ -85,7 +85,10 @@ in {
 		return false;
 	}
 
-	auto file = new Buffer(fc);
+	auto file = new TypedInput!(ubyte)(fc);
+	scope (exit)
+		file.close();
+
 	auto ins = new MiniFungeInstruction; (*ins).init();
 	ubyte i = 0; // the instruction char
 
@@ -96,17 +99,13 @@ in {
 	bool lineBreak, expected = false;
 
 	for (uint ungot = 0x100;;) {
-		ubyte[1] ar;
 		ubyte c, d;
 
 		if (ungot < 0x100) {
 			c = cast(ubyte)ungot;
 			ungot = 0x100;
-		} else {
-			if (file.read(ar) == Buffer.Eof)
-				break;
-			c = ar[0];
-		}
+		} else if (!file.read(c))
+			break;
 
 		if (c == '=') {
 			if (!(i >= 'A' && i <= 'Z'))
@@ -118,22 +117,16 @@ in {
 				x = y = 0;
 			}
 
-			if (file.read(ar) == Buffer.Eof)
+			if (!file.read(i) || !file.read(c))
 				return false;
-			i = ar[0];
-
-			if (file.read(ar) == Buffer.Eof)
-				return false;
-			c = ar[0];
 
 			expected = true;
 		}
 
 		if (c == '\r') {
 			lineBreak = true;
-			if (file.read(ar) != Buffer.Eof && ar[0] != '\n')
-				ungot = ar[0];
-			d = ar[0];
+			if (file.read(d) && d != '\n')
+				ungot = d;
 
 		} else if (c == '\n')
 			lineBreak = true;
@@ -164,7 +157,6 @@ in {
 			put(c);
 		}
 	}
-	fc.close();
 
 	minis[fing][i] = ins;
 
