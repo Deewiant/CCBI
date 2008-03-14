@@ -271,7 +271,6 @@ The last is related to the TRDS fingerprint.`
 				for (cellidx y = tlY; y < brY; ++y) {
 					line[] = ' ';
 
-					if (space.rowInRange(y))
 					for (cellidx x = tlX; x < brX; ++x)
 					if (space.cellInRange(x, y))
 						line[x - tlX] = cast(char)space.unsafeGet(x, y);
