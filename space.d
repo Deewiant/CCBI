@@ -87,8 +87,6 @@ struct Befunge98Space {
 
 	private cell[CoordPair] space;
 
-	void rehash() { space.rehash; }
-
 	typeof(*this) copy() {
 		typeof(*this) cp;
 		memcpy(&cp, this, cp.sizeof);

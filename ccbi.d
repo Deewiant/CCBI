@@ -405,7 +405,6 @@ int main(char[][] args) {
 			space = initialSpace.copy;
 		else
 			space = initialSpace;
-		space.rehash;
 
 		ips[0] = IP();
 		if (script && space[0,0] == '#' && space[1,0] == '!')
