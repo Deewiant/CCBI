@@ -35,6 +35,8 @@ static this() {
 	fingerprints[STRN]['R'] =& right;
 	fingerprints[STRN]['S'] =& itoa;
 	fingerprints[STRN]['V'] =& atoi;
+	
+	fingerprintConstructors[STRN] =& ctor;
 }
 
 void append() {
@@ -61,7 +63,7 @@ void search() {
 
 // buffer for get() and input()
 char[] buf;
-static this() { buf = new char[80]; }
+void ctor() { buf = new char[80]; }
 
 void get() {
 	cellidx x, y;
