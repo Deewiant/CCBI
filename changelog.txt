@@ -1,6 +1,18 @@
 CCBI changelog
 --------------
 
+2008-03-29, 1.0.7
+	General cleanup here and there.
+	Fixed a bug in tumbler() in TOYS fingerprint:
+		^ and v were the wrong way around.
+	Optimizations:
+		Some general heap activity avoidance.
+
+		.rehash on Funge-Space only slowed things down.		
+
+		Accessing Buffer.read directly and thus making fewer calls appears
+		to be faster than using TypedInput in loadIntoFungeSpace.
+
 2008-03-14, 1.0.6b
 	Optimization:
 		MurmurHash 2.0 is now used for Funge-Space, which speeds things up
@@ -181,7 +193,7 @@ CCBI changelog
 	Changed calls like instructions['>']() to goEast() to remove needless array lookup.
 
 	The array property of the stack is now private, and thus only used internally.
-	Added opApply()	methods to take care of the few places where it was actually needed.
+	Added opApply() methods to take care of the few places where it was actually needed.
 
 	Massive re-moduling of the code, and removal of circular dependencies.
 
