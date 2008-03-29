@@ -345,8 +345,8 @@ void tumbler() {
 	switch (rand_up_to!(4)()) {
 		case 0: space[ip.x, ip.y] = '<'; goWest (); break;
 		case 1: space[ip.x, ip.y] = '>'; goEast (); break;
-		case 2: space[ip.x, ip.y] = '^'; goSouth(); break;
-		case 3: space[ip.x, ip.y] = 'v'; goNorth(); break;
+		case 2: space[ip.x, ip.y] = 'v'; goSouth(); break;
+		case 3: space[ip.x, ip.y] = '^'; goNorth(); break;
 		default: assert (false);
 	}
 }
