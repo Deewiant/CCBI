@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2008-03-29, 1.0.7a
+	Fixed a bug in getSysInfo():
+		y acting as a pick instruction would clear the rest of the stack due to
+		unsigned integer overflow.
+
 2008-03-29, 1.0.7
 	General cleanup here and there.
 	Fixed a bug in tumbler() in TOYS fingerprint:
@@ -8,7 +13,7 @@ CCBI changelog
 	Optimizations:
 		Some general heap activity avoidance.
 
-		.rehash on Funge-Space only slowed things down.		
+		.rehash on Funge-Space only slowed things down.
 
 		Accessing Buffer.read directly and thus making fewer calls appears
 		to be faster than using TypedInput in loadIntoFungeSpace.

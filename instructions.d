@@ -924,11 +924,11 @@ void getSysInfo() {
 		if (arg > 0) {
 			pop(arg-1);
 
-			cell tmp = pop;
-
-			pop(size - oldStackSize);
-
-			push(tmp);
+			if (oldStackSize <= size) {
+				auto tmp = pop;
+				pop(size - oldStackSize);
+				push(tmp);
+			}
 		}
 	}
 }
