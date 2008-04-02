@@ -65,7 +65,7 @@ void loadIntoFungeSpace
 						continue reading;
 					}
 				case '\n': lineBreak = true;
-				default:   break;
+				default: break;
 			}
 
 			// in binary mode, just put the EOL characters in Funge-Space as well
