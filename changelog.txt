@@ -1,6 +1,10 @@
 CCBI changelog
 --------------
 
+2008-04-02, 1.0.8
+	Fixed a bug in REFC.dereference():
+		Reflect on out-of-bounds array access, instead of crash.
+
 2008-03-29, 1.0.7a
 	Fixed a bug in getSysInfo():
 		y acting as a pick instruction would clear the rest of the stack due to

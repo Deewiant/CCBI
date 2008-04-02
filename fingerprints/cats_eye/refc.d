@@ -5,6 +5,7 @@
 module ccbi.fingerprints.cats_eye.refc; private:
 
 import ccbi.fingerprint;
+import ccbi.instructions : reverse;
 import ccbi.ip;
 import ccbi.utils;
 
@@ -31,6 +32,10 @@ void reference() {
 
 // Dereference
 void dereference() {
-	auto vec = references[ip.stack.pop];
+	auto idx = ip.stack.pop;
+	if (idx >= references.length)
+		return reverse();
+
+	auto vec = references[idx];
 	pushVector(vec[0], vec[1]);
 }
