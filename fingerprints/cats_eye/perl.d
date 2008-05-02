@@ -29,32 +29,48 @@ static this() {
 void shelled() { ip.stack.push(1); /+ this is not Perl, this is D +/ }
 
 void eval(bool convertToInteger)() {
-	auto s = popString();
+	auto program = popString();
 	try {
-		auto p = new Process("perl", "-e print 'A',eval(" ~ s ~ ")");
+		/+ The code below combines stderr and stdout for the Perl, so that we may
+			pass it all through to our stdout.
+
+		   This is done so that:
+		   	- We can easily get to the eval return value - it's stderr.
+		   	- The Perl program can nevertheless print on both stdout and stderr
+		   	  (we don't eat either stream, we just combine them into stdout).
+
+		   The code is in the $f subroutine so that it can't touch $real_stderr.
+
+		   It can still do something like open($my_stderr, ">&2") though, and be
+		   able to write to the real stderr, and we can't do anything about that.
+
+		   Thanks to Heikki Kallasjoki for the Perl.
+		+/
+		const PERLCODE =
+			`my $f = sub { eval($ARGV[0]) };
+			open my $real_stderr, ">&STDERR";
+			open STDERR, ">&STDOUT";
+			print $real_stderr $f->();`;
+
+		auto p = new Process("perl", "-e", PERLCODE, program);
 		p.execute();
 
+		uint written = 0;
+		do written += p.stdin.write(program[written..$]);
+		while (written < program.length);
+		p.stdin.detach();
+
+		Stdout.copy(p.stdout);
+
 		char[] string;
-		char[80] buf;
-		size_t read;
+		char[80] buf = void;
 		for (;;) {
-			read = p.stdout.input.read(buf);
-			if (read != typeof(p.stdout).Eof)
-				string ~= buf[0..read];
-			else
+			auto read = p.stderr.read(buf);
+			if (read == p.stderr.Eof)
 				break;
+			else
+				string ~= buf[0..read];
 		}
-
-		// find the part of the string we care about, marked with the A
-		size_t pos = string.length;
-
-		foreach_reverse (i, c; string)
-		if (c == 'A') {
-			pos = i + 1;
-			break;
-		}
-
-		assert (pos <= string.length);
 
 		static if (convertToInteger) {
 			static assert (
@@ -64,14 +80,14 @@ void eval(bool convertToInteger)() {
 
 			cell c = void;
 
-			try c = cast(cell)parse(string[pos..$]);
+			try c = cast(cell)parse(string);
 			catch {
 				c = -1;
 			}
 			ip.stack.push(c);
 		} else
-			pushStringz(string[pos..$]);
+			pushStringz(string);
 
-	} catch (ProcessException e)
+	} catch (ProcessException)
 		return reverse();
 }
