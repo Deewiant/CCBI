@@ -647,6 +647,10 @@ void inputDecimal() {
 			if (c < '0' || c > '9')
 				break;
 
+			// overflow: can't read more chars
+			if (n > n.max / 10)
+				break;
+
 			if (j == s.length)
 				s.length = 2 * s.length;
 
@@ -654,16 +658,14 @@ void inputDecimal() {
 
 			cell tmp = 0;
 			foreach (i, ch; s[0..j]) {
-				tmp += ipow(10u, j-i-1) * (ch - '0');
+				auto add = ipow(10, j-i-1) * (ch - '0');
 
-				if (tmp < 0)
+				// overflow: can't add add
+				if (tmp > tmp.max - add)
 					break reading;
+
+				tmp += add;
 			}
-
-			// oops, overflow, stop here
-			if (tmp < 0)
-				break;
-
 			n = tmp;
 		}
 
