@@ -165,6 +165,11 @@ Other notes:
 
       The result of 'E' and 'I' which is pushed is what eval() returned.
 
+      Anything that the Perl program writes to stdout or stderr is passed on to
+      CCBI's stdout. Trying to forcibly write to stderr from within the Perl
+      (through tricks such as 'open($my_stderr, ">&2")') is deemed undefined
+      behaviour and you do so at your own risk.
+
     "REFC"  0x52454643  Referenced Cells Extension
 
       Since there is no way of removing a vector from the list, prolific use of
