@@ -49,6 +49,7 @@ union Union {
 	float f;
 	cell c;
 }
+static assert (Union.sizeof == float.sizeof);
 Union u;
 float f;
 

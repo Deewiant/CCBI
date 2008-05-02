@@ -49,6 +49,7 @@ union Union {
 	double d;
 	align (1) struct { cell h, l; }
 }
+static assert (Union.sizeof == double.sizeof);
 Union u;
 double d;
 
