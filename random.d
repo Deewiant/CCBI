@@ -153,6 +153,9 @@ public {
 	}
 
 	uint rand_up_to(float dummy = 0)(uint max) {
+		if (max == 0)
+			return 0;
+
 		auto mod = uint.max - uint.max % max;
 
 		uint val;
