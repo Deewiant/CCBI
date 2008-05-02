@@ -32,8 +32,7 @@ void cplxAdd() {
 		     br = pop,
 		     ai = pop,
 		     ar = pop;
-		push(ar + br);
-		push(ai + bi);
+		push(ar + br, ai + bi);
 	}
 }
 
@@ -43,8 +42,7 @@ void cplxSub() {
 		     br = pop,
 		     ai = pop,
 		     ar = pop;
-		push(ar - br);
-		push(ai - bi);
+		push(ar - br, ai - bi);
 	}
 }
 
@@ -54,8 +52,7 @@ void cplxMul() {
 		     br = pop,
 		     ai = pop,
 		     ar = pop;
-		push(ar*br - ai*bi);
-		push(ar*bi + ai*br);
+		push(ar*br - ai*bi, ar*bi + ai*br);
 	}
 }
 
@@ -66,8 +63,12 @@ void cplxDiv() {
 		     ai = pop,
 		     ar = pop,
 		     denom = bi*bi + br*br;
-		push((ai*bi + ar*br) / denom);
-		push((ai*br - ar*bi) / denom);
+		if (denom)
+			push(
+				(ai*bi + ar*br) / denom,
+				(ai*br - ar*bi) / denom);
+		else
+			push(0, 0);
 	}
 }
 
