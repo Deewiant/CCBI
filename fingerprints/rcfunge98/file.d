@@ -33,13 +33,16 @@ struct FileHandle {
 	cellidx x, y; // IO buffer in Funge-Space
 }
 
-FileHandle[c.FOPEN_MAX] handles;
+FileHandle[] handles;
 
 cell nextFreeHandle() {
 	foreach (i, h; handles)
 		if (h.handle is null)
 			return cast(cell)i;
-	return -1;
+
+	auto n = handles.length;
+	handles.length = handles.length * 2;
+	return handles[n];
 }
 
 void fopen() {
@@ -49,8 +52,6 @@ void fopen() {
 	popVector(x, y);
 
 	cell h = nextFreeHandle();
-	if (h < 0)
-		return reverse();
 
 	c.FILE* file;
 	switch (modeCell) {
