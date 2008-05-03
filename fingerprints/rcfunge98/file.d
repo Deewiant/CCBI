@@ -54,17 +54,14 @@ void fopen() {
 
 	c.FILE* file;
 	switch (modeCell) {
-		case 0: file = c.fopen(name, "rb");  break;
-		case 1: file = c.fopen(name, "wb");  break;
-		case 2: file = c.fopen(name, "ab");  c.rewind(file); break;
-		case 3: file = c.fopen(name, "r+b"); break;
-		case 4: file = c.fopen(name, "w+b"); break;
-		case 5: file = c.fopen(name, "a+b"); c.rewind(file); break;
+		case 0: file = c.fopen(name,  "rb"); if (!file) goto default; break;
+		case 1: file = c.fopen(name,  "wb"); if (!file) goto default; break;
+		case 2: file = c.fopen(name,  "ab"); if (!file) goto default; c.rewind(file); break;
+		case 3: file = c.fopen(name, "r+b"); if (!file) goto default; break;
+		case 4: file = c.fopen(name, "w+b"); if (!file) goto default; break;
+		case 5: file = c.fopen(name, "a+b"); if (!file) goto default; c.rewind(file); break;
 		default: return reverse();
 	}
-
-	if (file is null)
-		return reverse();
 
 	handles[h].handle = file;
 	handles[h].x = x;
