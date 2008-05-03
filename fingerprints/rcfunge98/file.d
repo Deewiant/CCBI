@@ -110,7 +110,7 @@ void fgets() {
 					ch = c.fgetc(hnd);
 					if (ch != '\n') {
 						c.ungetc(ch, hnd);
-						break;
+						break loop;
 					}
 
 				case '\n': append(); break loop;
