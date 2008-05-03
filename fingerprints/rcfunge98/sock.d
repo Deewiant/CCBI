@@ -73,9 +73,8 @@ void create() {
 			auto sock = new Socket(fam, type, protocol);
 
 			if (s == sockets.length)
-				sockets ~= sock;
-			else
-				sockets[s] = sock;
+				sockets.length = sockets.length * 2;
+			sockets[s] = sock;
 
 			push(cast(cell)s);
 		} catch {
