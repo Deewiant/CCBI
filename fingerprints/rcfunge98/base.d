@@ -6,7 +6,7 @@ module ccbi.fingerprints.rcfunge98.base; private:
 
 import tango.core.BitManip        : bsr;
 import tango.io.Stdout            : Stdout;
-import tango.text.convert.Integer : toString, Style;
+import tango.text.convert.Integer : toString;
 import tango.text.Util            : repeat;
 
 import ccbi.cell;
@@ -30,9 +30,9 @@ static this() {
 	fingerprints[BASE]['O'] =& outputOctal;
 }
 
-void outputBinary() { Stdout(toString(ip.stack.pop, Style.Binary)); Out.write(' '); }
-void outputHex   () { Stdout(toString(ip.stack.pop, Style.Hex   )); Out.write(' '); }
-void outputOctal () { Stdout(toString(ip.stack.pop, Style.Octal )); Out.write(' '); }
+void outputBinary() { Stdout(toString(ip.stack.pop, "b")); Out.write(' '); }
+void outputHex   () { Stdout(toString(ip.stack.pop, "x")); Out.write(' '); }
+void outputOctal () { Stdout(toString(ip.stack.pop, "o")); Out.write(' '); }
 
 void outputBase() {
 	auto base = ip.stack.pop,

@@ -10,8 +10,8 @@ import tango.core.Traits    : isUnsignedIntegerType;
 import tango.io.Conduit     : OutputFilter;
 import tango.io.Console     : Cin;
 import tango.io.Stdout      : Stdout, Stderr;
-import tango.io.FileConst;
 import tango.io.FileConduit;
+import tango.io.model.IFile : FileConst;
 import tango.math.Math      : min;
 import tango.sys.Common;
 
