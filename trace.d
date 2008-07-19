@@ -430,9 +430,9 @@ bool read(cellidx*[] cs...) {
 	}
 
 	// the toInt below will have to be changed if this fails
-	// cheers to Thomas Kühne at http://d.puremagic.com/issues/show_bug.cgi?id=196
-	static if (is(cellidx == typedef) && is(cellidx base == typedef))
-		static assert (is(typeof(base) == int), "cellidx is not int: change conversion function used in ccbi.trace.read()");
+	// cheers to Walter Bright at http://d.puremagic.com/issues/show_bug.cgi?id=196
+	static if (is (cellidx base == typedef))
+		static assert (is (base == int), "cellidx is not int: change conversion function used in ccbi.trace.read()");
 	else
 		static assert (false, "cellidx is not a typedef: something's wrong");
 

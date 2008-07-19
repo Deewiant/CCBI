@@ -68,7 +68,7 @@ version (Win32) {
 				throw new PlatformException("Couldn't free environment");
 		}
 
-		auto arr = new typeof(environment_t)(envSize);
+		auto arr = new environment_t(envSize);
 
 		size_t i = 0;
 		for (auto str = cast(char*)env; *str; ++str) {
