@@ -189,7 +189,7 @@ Other notes:
 
     "TURT"  0x54555254  Simple Turtle Graphics Library
 
-      'I' creates an SVGT file.
+      'I' creates an SVG 1.1 file.
 
   RC/Funge-98 fingerprints:
 
