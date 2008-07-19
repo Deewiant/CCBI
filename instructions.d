@@ -119,13 +119,10 @@ switch (i) {
 	default  : unimplemented;           break;
 }}
 void executeSemantics(Stack!(Semantics)* sem) {
-	if (sem && sem.size) with (sem.top) {
-		if (type == BUILTIN)
-			return instruction();
-		else
-			return miniFunge();
-	}
-	unimplemented();
+	if (sem && sem.size) with (sem.top)
+		return type == BUILTIN ? instruction() : miniFunge();
+
+	unimplemented;
 }
 
 bool isSemantics(cell i) {
@@ -1045,6 +1042,24 @@ void unloadSemantics() {
 /+++++++ Concurrent Funge-98 +++++++/
 
 // Split IP
-void splitIP() { tipSafe({ips ~= IP.newIP();}); }
+void splitIP() {
+	tipSafe({ips ~= ip.copy();});
+
+	with (ips[$-1]) {
+		id = ++currentID;
+
+		parentID = ip.id;
+
+		dx      = -ip.dx;
+		dy      = -ip.dy;
+		x       =  ip.x;
+		y       =  ip.y;
+		offsetX =  ip.offsetX;
+		offsetY =  ip.offsetY;
+
+		// move past the 't' or forkbomb
+		move();
+	}
+}
 
 /+++++++ That's all, folks +++++++/

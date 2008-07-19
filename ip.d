@@ -45,7 +45,13 @@ struct IP {
 			stack      = new Stack!(cell);
 			stackStack.push(stack);
 
-			commonInit();
+			foreach (j, inout i; mapping)
+				i = cast(cell)j;
+
+			for (cell i = 'A'; i <= 'Z'; ++i)
+				semantics[i] = new typeof(semantics[i])('Z' - 'A' + 1u);
+
+			space = &.space;
 		}
 		return ip;
 	}
@@ -61,56 +67,37 @@ struct IP {
 		return ip;
 	}
 
-	static IP newIP() {
+	IP copy() {
 		IP i;
-		with (i) {
-			id = ++currentID;
+		memcpy(&i, this, i.sizeof);
 
-			parentID = ip.id;
+		i.stackStack = new typeof(stackStack)(this.stackStack);
 
-			stackStack = new typeof(stackStack)(ip.stackStack);
+		/+ new each stack with itself as an argument
+		 + so that they are copies,
+		 + not pointing to the same data
+		 +/
+		bool deque = cast(Deque)this.stack !is null;
 
-			/+ new each stack with itself as an argument
-			 + so that they are copies,
-			 + not pointing to the same data
-			 +/
-			bool deque = cast(Deque)ip.stack !is null;
+		foreach (inout stack; i.stackStack) {
+			alias Container!(cell) CC;
+			alias Stack    !(cell) Ctack;
 
-			foreach (inout stack; stackStack) {
-				alias Container!(cell) CC;
-				alias Stack    !(cell) Ctack;
-
-				stack = (deque
-					? cast(CC)new Deque(cast(Deque)stack)
-					: cast(CC)new Ctack(cast(Ctack)stack)
-				);
-			}
-
-			stack = stackStack.top;
-
-			dx      = -ip.dx;
-			dy      = -ip.dy;
-			x       =  ip.x;
-			y       =  ip.y;
-			offsetX =  ip.offsetX;
-			offsetY =  ip.offsetY;
-
-			commonInit();
-
-			// move past the 't' or forkbomb
-			move();
+			stack = (deque
+				? cast(CC)new Deque(cast(Deque)stack)
+				: cast(CC)new Ctack(cast(Ctack)stack)
+			);
 		}
+
+		i.stack = i.stackStack.top;
+
+		i.semantics = null; // allocate a new semantics for the child
+		foreach (key, st; semantics) {
+			i.semantics[key] = new Stack!(Semantics);
+			i.semantics[key].push(st.elementsBottomToTop);
+		}
+
 		return i;
-	}
-
-	private void commonInit() {
-		for (cell i = 'A'; i <= 'Z'; ++i)
-			semantics[i] = new typeof(semantics[i])('Z' - 'A' + 1u);
-
-		foreach (j, inout i; mapping)
-			i = cast(cell)j;
-
-		space = &.space;
 	}
 
 	void move() {
@@ -228,24 +215,4 @@ struct IP {
 
 	// int because the TRDS specs don't take into account more than 32 bits
 	int tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
-
-	IP copy() {
-		IP i;
-		memcpy(&i, this, i.sizeof);
-
-		i.stackStack = new typeof(stackStack);
-		foreach (s; this.stackStack) {
-			auto stack = this.newStack();
-			stack.pushHead(s.elementsBottomToTop);
-			i.stackStack.push(stack);
-		}
-		i.stack = i.stackStack.top;
-
-		foreach (key, st; semantics) {
-			i.semantics[key] = new Stack!(Semantics);
-			i.semantics[key].push(st.elementsBottomToTop);
-		}
-
-		return i;
-	}
 }
