@@ -378,14 +378,12 @@ int main(char[][] args) {
 		return 1;
 	}
 
-	fungeArgs = new typeof(fungeArgs)(args.length - filePos);
-	for (size_t i = 0; i < fungeArgs.length; ++i)
-		fungeArgs[i] = args[filePos+i];
+	fungeArgs = args[filePos..$];
 
 	FileConduit file;
-	try file = new typeof(file)(args[filePos]);
+	try file = new typeof(file)(fungeArgs[0]);
 	catch {
-		Stderr("Couldn't open file '")(args[filePos])("' for reading.").newline;
+		Stderr("Couldn't open file '")(fungeArgs[0])("' for reading.").newline;
 		return -1;
 	}
 
