@@ -1,0 +1,15 @@
+syntax: glob
+*.bat
+*.exe
+*.lib
+*.map
+*.png
+*.zip
+bef
+ccbi_linux
+ccbi_src
+ccbi_win32
+fprints
+fungus
+obj
+others
