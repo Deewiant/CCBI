@@ -1,6 +1,42 @@
 CCBI changelog
 --------------
 
+2008-07-19, 1.0.9
+	Fixed a bug in rand_up_to():
+		Avoid dividing by zero when max is zero.
+	Fixed a bug in CPLI.cplxDiv():
+		Push two zeros when dividing by zero.
+	Fixed a bug in FILE.fopen():
+		Check for fopen failure before calling rewind, not after.
+	Fixed a bug in FILE.fgets():
+		Break out of reading loop on \r.
+	Fixed a bug in inputDecimal():
+		Overflow checking should now work properly for all inputs.
+
+	Now double the length of the sockets array in SOCK.create() instead of just
+	appending.
+
+	Rewrote half of PERL.eval().
+
+	Compiled against a version of Tango which fixes its Ticket 1053, making
+	PERL.eval() work properly on Windows even with quotes and/or backslashes in
+	the argument string.
+
+	Added note about PERL.eval()'s new behaviour to FINGERPRINT_INFO.
+
+	Added sanity checking for FPSP and FPDP unions.
+
+	Changed FILE to use a dynamic array for handles as FOPEN_MAX is unreliable.
+
+	Rewrote half of TURT, it should actually work now.
+
+	Child IPs now copy their loaded fingerprints from their parents, since most
+	other interpreters appear to do this.
+
+	DMD 1.033 support: fix a few typeof(type) issues.
+
+	Updated for Tango 0.99.7.
+
 2008-04-02, 1.0.8
 	Fixed a bug in REFC.dereference():
 		Reflect on out-of-bounds array access, instead of crash.
