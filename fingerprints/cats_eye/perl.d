@@ -54,12 +54,7 @@ void eval(bool convertToInteger)() {
 
 		auto p = new Process("perl", "-e", PERLCODE, program);
 		p.execute();
-
-		uint written = 0;
-		do written += p.stdin.write(program[written..$]);
-		while (written < program.length);
 		p.stdin.detach();
-
 		Stdout.copy(p.stdout);
 
 		char[] string;
