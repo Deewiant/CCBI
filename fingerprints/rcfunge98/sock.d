@@ -73,7 +73,7 @@ void create() {
 			auto sock = new Socket(fam, type, protocol);
 
 			if (s == sockets.length)
-				sockets.length = sockets.length * 2;
+				sockets.length = (sockets.length+1) * 2;
 			sockets[s] = sock;
 
 			push(cast(cell)s);

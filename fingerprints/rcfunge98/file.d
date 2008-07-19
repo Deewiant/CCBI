@@ -41,8 +41,8 @@ cell nextFreeHandle() {
 			return cast(cell)i;
 
 	auto n = handles.length;
-	handles.length = handles.length * 2;
-	return handles[n];
+	handles.length = (handles.length + 1) * 2;
+	return cast(cell)n;
 }
 
 void fopen() {
