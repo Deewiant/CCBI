@@ -1,6 +1,10 @@
 CCBI changelog
 --------------
 
+2008-07-26, 1.0.11
+	Fixed a bug in SOCK.accept():
+		Do not overwrite the original socket.
+
 2008-07-26, 1.0.10
 	k changes:
 		It's not meant to skip over its operand, according to the Cats-Eye
