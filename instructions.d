@@ -292,27 +292,21 @@ void iterate() {
 	ip.x = x;
 	ip.y = y;
 
-	// special case optimization
-	if (i == '$')
-		return ip.stack.pop(n);
-
-	if (i == 'z')
-		return;
-
-	// more optimization
+	// optimization
 	// many instructions have the same behaviour regardless of iteration
 	// so they need to be done only once
-	// arbitrary choice - just iterate if it's a really small number
-	// haven't profiled to see where it'd start to matter
-	if (n >= 10) switch (i) {
+	// or can be short-cut, like 'z' and '$'
+	switch (i) {
+		case '$':
+			return ip.stack.pop(n);
 		case 'v', '^', '<', '>', 'n', '?', '@', 'q':
 			return executeInstruction(i);
 		case 'r':
 			if (i & 1)
 				reverse();
+		case 'z':
 			return;
-		default:
-			break;
+		default: break;
 	}
 
 	if (isSemantics(i)) {
