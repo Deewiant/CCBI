@@ -1,6 +1,14 @@
 CCBI changelog
 --------------
 
+2008-07-26, 1.0.10
+	k changes:
+		It's not meant to skip over its operand, according to the Cats-Eye
+		Befunge diagnostics as well as Chris Pressey (via Mike Riley).
+
+		It is meant to execute the next instruction found after reaching past
+		spaces and such, according to Chris Pressey (via Arvid Norlander).
+
 2008-07-19, 1.0.9
 	Fixed a bug in rand_up_to():
 		Avoid dividing by zero when max is zero.
