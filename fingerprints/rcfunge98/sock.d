@@ -138,18 +138,25 @@ void accept() {
 		return reverse();
 
 	try {
-		sockets[s].accept(sockets[s]);
+		auto as = sockets[s].accept(sockets[s]);
 
-		auto a = cast(IPv4Address)sockets[s].remoteAddress;
+		auto i = sockets.length;
+		foreach (j, sock; sockets)
+		if (sock is null) {
+			i = j;
+			break;
+		}
+		if (i == sockets.length)
+			sockets.length = sockets.length * 2;
+		sockets[i] = as;
 
-		if (a)
-			ip.stack.push(
-				cast(cell)a.port,
-				cast(cell)a.addr,
-				cast(cell)s
-			);
-		else
-			ip.stack.push(0, 0, cast(cell)s);
+		auto addr = cast(IPv4Address)as.remoteAddress;
+
+		ip.stack.push(
+			cast(cell)addr.port,
+			cast(cell)addr.addr,
+			cast(cell)i
+		);
 	} catch {
 		reverse();
 	}
