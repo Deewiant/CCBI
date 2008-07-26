@@ -287,15 +287,14 @@ void iterate() {
 		i = space.unsafeGet(ip.x, ip.y);
 	}
 
-	// special case optimization
-	// the +1 is because k doesn't skip the instruction
-	if (i == '$')
-		return ip.stack.pop(n+1);
-
 	// k executes its operand from where k is
 	// and doesn't move past it
 	ip.x = x;
 	ip.y = y;
+
+	// special case optimization
+	if (i == '$')
+		return ip.stack.pop(n);
 
 	if (i == 'z')
 		return;
