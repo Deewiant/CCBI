@@ -341,18 +341,19 @@ The last is related to the TRDS fingerprint.`
 
 			case "w", "switch":
 				Stderr("Enter the index of the IP to switch to: ");
-				size_t idx;
-				if (!read(cast(cell*)&idx)) {
+				cell idxc;
+				if (!read(&idxc)) {
 					Stderr.formatln("Cancelled IP switch.");
 					break;
 				}
+				auto idx = cast(size_t)idxc;
 
-				if (idx < ipCount) {
+				if (idx < ips.length) {
 					tip = &ips[idx];
 					index = idx;
 					Stderr.formatln("Traced IP switched to IP {}.", idx);
 				} else
-					Stderr.formatln("IP {} not found. Valid indices are in the range [0, {}).", idx, ipCount);
+					Stderr.formatln("IP {} not found.", idx);
 				break;
 
 			case "p", "position":
