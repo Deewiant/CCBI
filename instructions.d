@@ -28,7 +28,7 @@ import ccbi.mini.vars         : miniMode, Mini, warnings, inMini;
 
 const cell
 	HANDPRINT      = HexCode!("CCBI"),
-	VERSION_NUMBER = 109; // remember to change ccbi.ccbi.VERSION_STRING too!
+	VERSION_NUMBER = 1010; // remember to change ccbi.ccbi.VERSION_STRING too!
 
 int returnVal;
 char[][] fungeArgs;
@@ -270,11 +270,9 @@ void quit() {
 // Iterate
 void iterate() {
 	auto
-		n  = ip.stack.pop,
-		x  = ip.x,
-		y  = ip.y,
-		dx = ip.dx,
-		dy = ip.dy;
+		n = ip.stack.pop,
+		x = ip.x,
+		y = ip.y;
 
 	ip.move();
 
@@ -284,24 +282,23 @@ void iterate() {
 
 	auto i = space[ip.x, ip.y];
 
-	if (i == ' ' || i == ';' || i == 'z')
-		return;
+	if (i == ' ' || i == ';') {
+		ip.gotoNextInstruction();
+		i = space.unsafeGet(ip.x, ip.y);
+	}
 
 	// special case optimization
+	// the +1 is because k doesn't skip the instruction
 	if (i == '$')
-		return ip.stack.pop(n);
+		return ip.stack.pop(n+1);
 
-	// 0k^ doesn't execute ^
-	// 1k^ does    execute ^
-	/+ meaning: k executes its operand from where k is, but skips over its operand
-	 + this, in turn, means that we have to get the next operand, go back and execute it,
-	 + and if it didn't affect our delta or position, move past it
-	 +/
+	// k executes its operand from where k is
+	// and doesn't move past it
 	ip.x = x;
 	ip.y = y;
-	scope (success)
-	if (ip.x == x && ip.y == y && ip.dx == dx && ip.dy == dy)
-		ip.move();
+
+	if (i == 'z')
+		return;
 
 	// more optimization
 	// many instructions have the same behaviour regardless of iteration
