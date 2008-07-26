@@ -6,6 +6,7 @@ syntax: glob
 *.png
 *.zip
 bef
+catseye
 ccbi_linux
 ccbi_src
 ccbi_win32
