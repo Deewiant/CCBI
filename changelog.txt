@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2008-08-07, 1.0.12
+	Fixed a bug in SOCK.kill():
+		Do not delete the socket, as due to the change in 1.0.11 it may not be
+		allocated by new. (This segfaulted on Linux.)
+
 2008-07-26, 1.0.11
 	Fixed a bug in SOCK.accept():
 		Do not overwrite the original socket.

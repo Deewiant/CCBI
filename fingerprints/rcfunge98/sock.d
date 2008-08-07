@@ -91,7 +91,6 @@ void kill() {
 
 	sockets[s].shutdown(SocketShutdown.BOTH);
 	sockets[s].detach();
-	delete sockets[s];
 
 	if (s == sockets.length - 1)
 		sockets.length = s;
