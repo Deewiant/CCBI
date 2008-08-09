@@ -5,8 +5,8 @@
 // Helpful utility functions and constants.
 module ccbi.utils;
 
-import tango.io.FileConduit;
 import tango.io.Buffer;
+import tango.io.device.FileConduit;
 import tango.sys.Environment;
 import tango.stdc.stdlib;
 

@@ -5,14 +5,14 @@
 // Stuff that could/should be in the standard library.
 module ccbi.stdlib;
 
-import tango.core.Exception : IOException, PlatformException;
-import tango.core.Traits    : isUnsignedIntegerType;
-import tango.io.Conduit     : OutputFilter;
-import tango.io.Console     : Cin;
-import tango.io.Stdout      : Stdout, Stderr;
-import tango.io.FileConduit;
-import tango.io.model.IFile : FileConst;
-import tango.math.Math      : min;
+import tango.core.Exception         : IOException, PlatformException;
+import tango.core.Traits            : isUnsignedIntegerType;
+import tango.io.Console             : Cin;
+import tango.io.Stdout              : Stdout, Stderr;
+import tango.io.device.Conduit      : OutputFilter;
+import tango.io.device.FileConduit;
+import tango.io.model.IFile         : FileConst;
+import tango.math.Math              : min;
 import tango.sys.Common;
 
 const FileConduit.Style WriteCreate = { FileConduit.Access.Write, FileConduit.Open.Create, FileConduit.Share.init, FileConduit.Cache.Stream, };

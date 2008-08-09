@@ -12,8 +12,8 @@ module ccbi.ccbi;
 
 import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Buffer;
-import tango.io.FileConduit;
 import tango.io.Stdout;
+import tango.io.device.FileConduit;
 import regex = tango.text.Regex;
 
 import ccbi.instructions;

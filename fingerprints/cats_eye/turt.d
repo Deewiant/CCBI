@@ -4,7 +4,7 @@
 
 module ccbi.fingerprints.cats_eye.turt; private:
 
-import tango.io.FileConduit;
+import tango.io.device.FileConduit;
 import tango.math.Math            : PI, cos, sin, round = rndint, abs;
 import tango.text.convert.Integer : format;
 import tango.text.xml.Document;
