@@ -38,8 +38,8 @@ out {
 		do resolution = Clock.now() - time;
 		while (resolution == TimeSpan.zero);
 
-		oneSecond  = TimeSpan.seconds(1).ticks,
-		oneMicro   = TimeSpan.micros (1).ticks;
+		oneSecond  = TimeSpan.fromSeconds(1).ticks,
+		oneMicro   = TimeSpan.fromMicros (1).ticks;
 	}
 }
 

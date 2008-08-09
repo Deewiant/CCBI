@@ -4,8 +4,8 @@
 
 module ccbi.mini.funge;
 
-import tango.io.FileConduit;
 import tango.io.Stdout;
+import tango.io.device.FileConduit;
 import tango.io.stream.TypedStream;
 
 import ccbi.ip;

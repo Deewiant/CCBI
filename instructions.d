@@ -7,7 +7,7 @@ module ccbi.instructions;
 
 import tango.io.Buffer;
 import tango.io.Console : Cin;
-import tango.io.FileConduit;
+import tango.io.device.FileConduit;
 import tango.io.stream.TypedStream;
 import tango.text.Util  : join, splitLines;
 import tango.time.Clock;
