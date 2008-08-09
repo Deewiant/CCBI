@@ -4,6 +4,7 @@
 
 module ccbi.fingerprints.rcfunge98.file; private:
 
+import Path = tango.io.Path;
 import c = tango.stdc.stdio;
 
 import ccbi.fingerprint;
@@ -19,6 +20,7 @@ static this() {
 	mixin (Code!("FILE"));
 
 	fingerprints[FILE]['C'] =& fclose;
+	fingerprints[FILE]['D'] =& unlink;
 	fingerprints[FILE]['G'] =& fgets;
 	fingerprints[FILE]['L'] =& ftell;
 	fingerprints[FILE]['O'] =& fopen;
@@ -80,6 +82,15 @@ void fclose() {
 		reverse();
 
 	handles[h].handle = null;
+}
+
+void unlink() {
+	auto fp = popString();
+	if (Path.exists(fp) && !Path.isFolder(fp)) {
+		try Path.remove(fp);
+		catch { reverse(); }
+	} else
+		reverse();
 }
 
 void fgets() {
