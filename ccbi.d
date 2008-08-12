@@ -246,13 +246,6 @@ Other notes:
       'A' reverses if the IP is the initial IP and thus has no ancestor.
 
     "IMAP"  0x494d4150  Instruction remap extension
-
-      The remapping is per-IP, and works only for ASCII values (0-127).
-
-      "Chains" of mappings aren't allowed: if you map A to B and B to C, A will
-      do what B normally does, and B will do what C normally does. A _won't_ do
-      what C normally does.
-
     "INDV"  0x494e4456  Pointer functions
 
       Like RC/Funge-98, 'V' and 'W' push and pop the vector in different orders,

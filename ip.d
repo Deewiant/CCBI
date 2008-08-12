@@ -184,7 +184,7 @@ struct IP {
 	Stack!(typeof(stack)) stackStack;
 	Stack!(Semantics)[char] semantics;
 
-	cell[128] mapping = void; // for IMAP
+	cell[256] mapping = void; // for IMAP
 
 	enum : typeof(mode) {
 		STRING    = 1 << 0,

@@ -6,6 +6,8 @@ CCBI changelog
 
 	Remove PNTR (the alias of INDV), it wasn't meant to exist at all.
 
+	IMAP updated to the current spec, can now map 0-255.
+
 	Updated for Tango 0.99.8.
 
 2008-08-07, 1.0.12
