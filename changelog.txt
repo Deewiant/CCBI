@@ -1,8 +1,10 @@
 CCBI changelog
 --------------
 
-2008-08-09, 1.0.13
+2008-??-??, 1.0.13
 	Add the new D instruction to FILE.
+
+	Remove PNTR (the alias of INDV), it wasn't meant to exist at all.
 
 	Updated for Tango 0.99.8.
 
