@@ -254,7 +254,6 @@ Other notes:
       what C normally does.
 
     "INDV"  0x494e4456  Pointer functions
-    "PNTR"  0x504e5452  (an alias of "INDV")
 
       Like RC/Funge-98, 'V' and 'W' push and pop the vector in different orders,
       so that a vector put with 'W' and subsequently got with 'V' will have its
