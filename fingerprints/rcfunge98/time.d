@@ -44,15 +44,10 @@ template DateTimeFunc(char[] internal_f, char[] f, char[] offset = "0") {
 }
 
 mixin (DateTimeFunc!("day",       "toDate.date.day"));
-// not implemented in Tango 0.99.4? mixin (DateTimeFunc!("dayOfYear", "toDate.date.doy"));
+mixin (DateTimeFunc!("dayOfYear", "toDate.date.doy"));
 mixin (DateTimeFunc!("hour",      "now.time.hours"));
 mixin (DateTimeFunc!("minute",    "now.time.minutes"));
 mixin (DateTimeFunc!("month",     "toDate.date.month"));
 mixin (DateTimeFunc!("second",    "now.time.seconds"));
 mixin (DateTimeFunc!("dayOfWeek", "toDate.date.dow", "1"));
 mixin (DateTimeFunc!("year",      "toDate.date.year"));
-
-void dayOfYear() {
-	if (utc) ip.stack.push(cast(cell)Gregorian.generic.getDayOfYear(Clock.now()));
-	else     ip.stack.push(cast(cell)Gregorian.generic.getDayOfYear(WallClock.now()));
-}
