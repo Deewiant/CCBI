@@ -18,15 +18,16 @@ private struct CoordPair {
 	// at http://murmurhash.googlepages.com/
 	static assert (cellidx.sizeof == 4);
 	hash_t toHash() {
-		const hash_t m = 0x_c6a4_a793;
+		const hash_t m = 0x_5bd1_e995;
 
-		hash_t h = 0x7fd6_52ad ^ (8 * m), k;
+		hash_t h = 0x7fd6_52ad ^ (x.sizeof + y.sizeof), k;
 
-		k = x; k *= m; k ^= k >> 16; k *= m; h += k; h *= m;
-		k = y; k *= m; k ^= k >> 16; k *= m; h += k; h *= m;
+		k = x; k *= m; k ^= k >> 24; k *= m; h *= m; h ^= k;
+		k = y; k *= m; k ^= k >> 24; k *= m; h *= m; h ^= k;
 
-		h *= m; h ^= h >> 10;
-		h *= m; h ^= h >> 17;
+		h ^= h >> 13;
+		h *= m;
+		h ^= h >> 15;
 
 		return h;
 	}
