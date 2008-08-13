@@ -34,20 +34,26 @@ bool utc = false;
 void useGMT()   { utc = true;  }
 void useLocal() { utc = false; }
 
-template DateTimeFunc(char[] internal_f, char[] f, char[] offset = "0") {
-	const DateTimeFunc =
+template TimeFunc(char[] internal_f, char[] f, char[] offset = "0") {
+	const TimeFunc =
 		"void " ~ internal_f ~ "() {"
-		"	if (utc) ip.stack.push(cast(cell)(    Clock." ~ f ~ " + " ~ offset ~ "));"
-		"	else     ip.stack.push(cast(cell)(WallClock." ~ f ~ " + " ~ offset ~ "));"
+		"	ip.stack.push(cast(cell)((utc ? Clock.now : WallClock.now).time." ~f~ " + " ~offset~ "));"
+		"}"
+	;
+}
+template DateFunc(char[] internal_f, char[] f, char[] offset = "0") {
+	const DateFunc =
+		"void " ~ internal_f ~ "() {"
+		"	ip.stack.push(cast(cell)(Gregorian.generic." ~f~ "(utc ? Clock.now : WallClock.now) + " ~offset~ "));"
 		"}"
 	;
 }
 
-mixin (DateTimeFunc!("day",       "toDate.date.day"));
-mixin (DateTimeFunc!("dayOfYear", "toDate.date.doy"));
-mixin (DateTimeFunc!("hour",      "now.time.hours"));
-mixin (DateTimeFunc!("minute",    "now.time.minutes"));
-mixin (DateTimeFunc!("month",     "toDate.date.month"));
-mixin (DateTimeFunc!("second",    "now.time.seconds"));
-mixin (DateTimeFunc!("dayOfWeek", "toDate.date.dow", "1"));
-mixin (DateTimeFunc!("year",      "toDate.date.year"));
+mixin (DateFunc!("day",       "getDayOfMonth"));
+mixin (DateFunc!("dayOfYear", "getDayOfYear"));
+mixin (TimeFunc!("hour",      "hours"));
+mixin (TimeFunc!("minute",    "minutes"));
+mixin (DateFunc!("month",     "getMonth"));
+mixin (TimeFunc!("second",    "seconds"));
+mixin (DateFunc!("dayOfWeek", "getDayOfWeek", "1"));
+mixin (DateFunc!("year",      "getYear"));
