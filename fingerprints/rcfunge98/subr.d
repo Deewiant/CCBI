@@ -50,10 +50,8 @@ void call() {
 	for (size_t i = 0; i < n; ++i)
 		push(ip.stack.pop());
 
-	ip.stack.push(
-		cast(cell)ip. x, cast(cell)ip. y,
-		cast(cell)ip.dx, cast(cell)ip.dy
-	);
+	pushVector        (ip. x, ip. y);
+	pushVector!(false)(ip.dx, ip.dy);
 
 	while (n--)
 		ip.stack.push(pop());
