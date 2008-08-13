@@ -211,7 +211,7 @@ public void reverse() {
 }
 
 // Absolute Vector
-void absoluteVector() { popVector(ip.dx, ip.dy); }
+void absoluteVector() { popVector!(false)(ip.dx, ip.dy); }
 
 // Flow Control
 // ------------
@@ -488,7 +488,7 @@ void beginBlock() {
 		while (n++)
 			ip.stack.push(0);
 
-	pushVector(ip.offsetX, ip.offsetY);
+	pushVector!(false)(ip.offsetX, ip.offsetY);
 
 	ip.move();
 
@@ -514,7 +514,7 @@ void endBlock() {
 
 	cell n = oldStack.pop;
 
-	popVector(ip.offsetX, ip.offsetY);
+	popVector!(false)(ip.offsetX, ip.offsetY);
 
 	if (n > 0) {
 		if (n > buf.length)
@@ -559,7 +559,7 @@ void stackUnderStack() {
 // Get
 void get() {
 	cellidx x, y;
-	popVector!(true)(x, y);
+	popVector(x, y);
 
 	ip.stack.push(space[x, y]);
 }
@@ -567,7 +567,7 @@ void get() {
 // Put
 void put() {
 	cellidx x, y;
-	popVector!(true)(x, y);
+	popVector(x, y);
 
 	auto c = ip.stack.pop;
 
@@ -706,7 +706,7 @@ void inputFile() {
 	// the size of the rectangle where the file is eventually put
 	        vbX, vbY;
 
-	popVector!(true)(vaX, vaY);
+	popVector(vaX, vaY);
 
 	FileConduit file;
 	try file = new typeof(file)(filename);
@@ -743,8 +743,8 @@ void outputFile() {
 	cellidx vaX, vaY,
 	        vbX, vbY;
 
-	popVector!(true)(vaX, vaY);
-	popVector       (vbX, vbY);
+	popVector        (vaX, vaY);
+	popVector!(false)(vbX, vbY);
 
 	FileConduit f;
 	try f = new typeof(f)(filename, WriteCreate);

@@ -24,48 +24,44 @@ static this() {
 
 void getNum() {
 	cellidx x, y;
-
 	popVector(x, y);
 
 	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x, y];
+	        y2 = cast(cellidx)space[x,                y];
 
 	ip.stack.push(space[x2, y2]);
 }
 
 void putNum() {
 	cellidx x, y;
-
 	popVector(x, y);
 
 	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x, y];
+	        y2 = cast(cellidx)space[x,                y];
 
 	space[x2, y2] = ip.stack.pop;
 }
 
 void getVec() {
 	cellidx x, y;
-
 	popVector(x, y);
 
 	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x, y];
+	        y2 = cast(cellidx)space[x,                y];
 
 	ip.stack.push(
-		space[x2, y2],
+		space[x2,                y2],
 		space[x2+cast(cellidx)1, y2]
 	);
 }
 
 void putVec() {
 	cellidx x, y;
-
 	popVector(x, y);
 
 	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x, y];
+	        y2 = cast(cellidx)space[x,                y];
 
-	space[x2, y2] = ip.stack.pop;
+	space[x2,                y2] = ip.stack.pop;
 	space[x2+cast(cellidx)1, y2] = ip.stack.pop;
 }

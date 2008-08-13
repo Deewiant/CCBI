@@ -41,7 +41,7 @@ void bitXor() { with (ip.stack) push(pop ^ pop); }
 void orthoGet() {
 	cellidx x, y;
 
-	popVector(y, x);
+	popVector!(false)(y, x);
 
 	ip.stack.push(space[x, y]);
 }
@@ -50,7 +50,7 @@ void orthoGet() {
 void orthoPut() {
 	cellidx x, y;
 
-	popVector(y, x);
+	popVector!(false)(y, x);
 
 	cell c = ip.stack.pop;
 

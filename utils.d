@@ -103,16 +103,16 @@ void loadIntoFungeSpace
 	file.close;
 }
 
-void popVector(bool offset = false)(out cellidx x, out cellidx y) {
+void popVector(bool offset = true)(out cellidx x, out cellidx y) {
 	with (ip.stack) {
 		y = cast(cellidx)(pop + (offset ? ip.offsetY : 0));
 		x = cast(cellidx)(pop + (offset ? ip.offsetX : 0));
 	}
 }
-void pushVector(bool offset = false)(cellidx x, cellidx y) {
+void pushVector(bool offset = true)(cellidx x, cellidx y) {
 	with (ip.stack) {
-		push(cast(cell)(x + (offset ? ip.offsetX : 0)));
-		push(cast(cell)(y + (offset ? ip.offsetY : 0)));
+		push(cast(cell)(x - (offset ? ip.offsetX : 0)));
+		push(cast(cell)(y - (offset ? ip.offsetY : 0)));
 	}
 }
 

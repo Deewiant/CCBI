@@ -7,9 +7,12 @@ CCBI changelog
 
 	Add the new D instruction to FILE.
 
-	Remove PNTR (the alias of INDV), it wasn't meant to exist at all.
+	Removed PNTR (the alias of INDV), it wasn't meant to exist at all.
 
 	IMAP updated to the current spec, can now map 0-255.
+
+	Verified all popVector and pushVector calls so that the storage offset is
+	correctly applied.
 
 	Updated for Tango 0.99.8.
 

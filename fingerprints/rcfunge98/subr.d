@@ -76,8 +76,8 @@ void ret() {
 	for (size_t i = 0; i < n; ++i)
 		push(ip.stack.pop());
 
-	popVector(ip.dx, ip.dy);
-	popVector(ip. x, ip. y);
+	popVector!(false)(ip.dx, ip.dy);
+	popVector        (ip. x, ip. y);
 
 	while (n--)
 		ip.stack.push(pop());

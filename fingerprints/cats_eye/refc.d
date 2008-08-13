@@ -25,7 +25,7 @@ cellidx[2][] references;
 // Reference
 void reference() {
 	cellidx x, y;
-	popVector(x, y);
+	popVector!(false)(x, y);
 	references ~= [x, y];
 	ip.stack.push(cast(cell)(references.length - 1));
 }
@@ -37,5 +37,5 @@ void dereference() {
 		return reverse();
 
 	auto vec = references[idx];
-	pushVector(vec[0], vec[1]);
+	pushVector!(false)(vec[0], vec[1]);
 }

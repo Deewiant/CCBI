@@ -24,8 +24,8 @@ void popN() {
 	auto n = ip.stack.pop;
 	cellidx x, y, dx, dy;
 
-	popVector( x,  y);
-	popVector(dx, dy);
+	popVector        ( x,  y);
+	popVector!(false)(dx, dy);
 
 	if (n < 0)
 		return reverse();
@@ -41,8 +41,8 @@ void pushN() {
 	auto n = ip.stack.pop;
 	cellidx x, y, dx, dy;
 
-	popVector( x,  y);
-	popVector(dx, dy);
+	popVector        ( x,  y);
+	popVector!(false)(dx, dy);
 
 	if (n < 0)
 		return reverse();
