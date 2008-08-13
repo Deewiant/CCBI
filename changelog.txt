@@ -14,6 +14,9 @@ CCBI changelog
 	Verified all popVector and pushVector calls so that the storage offset is
 	correctly applied.
 
+	TIME now uses Gregorian.generic instead of toDate everywhere, to avoid
+	dependence on the OS's precision.
+
 	Updated for Tango 0.99.8.
 
 2008-08-07, 1.0.12
