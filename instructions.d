@@ -911,12 +911,41 @@ void getSysInfo() {
 		// phew, done pushing
 
 		if (arg > 0) {
-			pop(arg-1);
+			auto diff = size - oldStackSize;
 
-			if (oldStackSize <= size) {
+			// Handle the two cases differently for speed
+
+			// Simpler, but breaks the stack abstraction and is slower with a
+			// deque (where elementsBottomToTop() has to duplicate the whole
+			// stack):
+			//
+			// auto pick = elementsBottomToTop()[size() - arg];
+			// pop(size() - oldStackSize);
+			// push(pick);
+
+			if (arg < diff) {
+				// Common case: the arg is one we pushed above
+				// So pop up to it, copy it, pop the rest, and push it.
+				pop(arg-1);
+
 				auto tmp = pop;
 				pop(size - oldStackSize);
 				push(tmp);
+
+			} else {
+				// y as a 'pick' instruction
+				// Pop what we pushed, pop up to the cell to be picked, push them
+				// back and push the picked cell once more.
+				pop(diff);
+				arg -= diff;
+
+				auto tmp = new cell[arg];
+				foreach_reverse (inout c; tmp)
+					c = pop;
+
+				foreach (c; tmp)
+					push(c);
+				push(tmp[0]);
 			}
 		}
 	}

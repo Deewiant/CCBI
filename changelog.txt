@@ -2,6 +2,9 @@ CCBI changelog
 --------------
 
 2008-??-??, 1.0.13
+	Fixed a bug in getSysInfo():
+		y as a pick instruction didn't work correctly.
+
 	Add the new D instruction to FILE.
 
 	Remove PNTR (the alias of INDV), it wasn't meant to exist at all.
