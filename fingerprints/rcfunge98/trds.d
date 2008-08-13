@@ -220,5 +220,5 @@ void relTime() {
 void vector() {
 	ip.mode |= IP.DELTA_SET;
 
-	popVector(ip.tardisDx, ip.tardisDy);
+	popVector!(false)(ip.tardisDx, ip.tardisDy);
 }

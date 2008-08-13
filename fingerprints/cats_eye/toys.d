@@ -49,9 +49,9 @@ static this() {
 void bracelet() {
 	cellidx ox, oy, dx, dy, tx, ty;
 
-	popVector!(true)(tx, ty);
-	popVector       (dx, dy);
-	popVector!(true)(ox, oy);
+	popVector        (tx, ty);
+	popVector!(false)(dx, dy);
+	popVector        (ox, oy);
 
 	if (!dx || !dy)
 		return;
@@ -72,9 +72,9 @@ void bracelet() {
 void scissors() {
 	cellidx ox, oy, dx, dy, tx, ty;
 
-	popVector!(true)(tx, ty);
-	popVector       (dx, dy);
-	popVector!(true)(ox, oy);
+	popVector        (tx, ty);
+	popVector!(false)(dx, dy);
+	popVector        (ox, oy);
 
 	if (!dx || !dy)
 		return;
@@ -92,9 +92,9 @@ void scissors() {
 void kittycat() {
 	cellidx ox, oy, dx, dy, tx, ty;
 
-	popVector!(true)(tx, ty);
-	popVector       (dx, dy);
-	popVector!(true)(ox, oy);
+	popVector        (tx, ty);
+	popVector!(false)(dx, dy);
+	popVector        (ox, oy);
 
 	if (!dx || !dy)
 		return;
@@ -115,9 +115,9 @@ void kittycat() {
 void dixiecup() {
 	cellidx ox, oy, dx, dy, tx, ty;
 
-	popVector!(true)(tx, ty);
-	popVector       (dx, dy);
-	popVector!(true)(ox, oy);
+	popVector        (tx, ty);
+	popVector!(false)(dx, dy);
+	popVector        (ox, oy);
 
 	if (!dx || !dy)
 		return;
@@ -138,8 +138,8 @@ void dixiecup() {
 
 void chicane() {
 	cellidx x, y, dx, dy;
-	popVector!(true)( x,  y);
-	popVector       (dx, dy);
+	popVector        ( x,  y);
+	popVector!(false)(dx, dy);
 
 	cell c = ip.stack.pop;
 
@@ -292,7 +292,7 @@ void mailbox() {
 void calipers() {
 	cellidx tx, ty, i, j;
 
-	popVector!(true)(tx, ty);
+	popVector(tx, ty);
 
 	with (ip.stack) {
 		// j's location not in spec...
@@ -307,7 +307,7 @@ void calipers() {
 void counterclockwise() {
 	cellidx ox, oy, i, j;
 
-	popVector!(true)(ox, oy);
+	popVector(ox, oy);
 
 	with (ip.stack) {
 		// j's location not in spec...
@@ -354,14 +354,14 @@ void tumbler() {
 // television antenna
 void televisionAntenna() {
 	cellidx x, y;
-	popVector!(true)(x, y);
+	popVector(x, y);
 
 	auto v = ip.stack.pop,
 	     c = space[x, y];
 
 	if (c < v) with (ip.stack) {
 		push(v);
-		pushVector(x - ip.offsetX, y - ip.offsetY);
+		pushVector(x, y);
 		reverse();
 		ip.move();
 		reverse();
