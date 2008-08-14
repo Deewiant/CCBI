@@ -199,6 +199,7 @@ Other notes:
       'N' and 'I' reverse unless 0 < base < 36.
 
     "CPLI"  0x43504c49  Complex Integer extension
+    "DATE"  0x44415445  Date Functions
     "DIRF"  0x44495246  Directory functions extension
     "EVAR"  0x45564152  Environment variables extension
 
