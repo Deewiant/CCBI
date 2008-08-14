@@ -194,13 +194,6 @@ Other notes:
 
   RC/Funge-98 fingerprints:
 
-    Precise semantics have been read from the RC/Funge-98 source where not
-    properly documented. Any changes and important undocumented features
-    (though I would call some bugs) are noted here.
-
-    For all fingerprints involving vectors, RC/Funge-98 doesn't, for some
-    reason, use the IP's storage offset. Thus, neither does CCBI.
-
     "BASE"  0x42415345  I/O for numbers in other bases
 
       'N' and 'I' reverse unless 0 < base < 36.
