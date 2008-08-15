@@ -81,7 +81,7 @@ void addDays() {
 void dayDiff() {
 	try {
 		auto t2 = popYMD().span, t1 = popYMD().span;
-		ip.stack.push(cast(cell)((t2 -= t1).days));
+		ip.stack.push(cast(cell)((t1 -= t2).days));
 	} catch {}
 }
 
