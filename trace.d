@@ -5,9 +5,9 @@
 // The tracing facilities.
 module ccbi.trace;
 
-       import tango.io.Stdout;
-static import tango.text.convert.Integer;
-       import tango.text.Util : trim, split;
+import tango.io.Stdout;
+import tango.text.convert.Integer : toInt, toLong;
+import tango.text.Util            : trim, split;
 
 import ccbi.container;
 import ccbi.ip;
@@ -429,14 +429,18 @@ bool read(cellidx*[] cs...) {
 	}
 
 	// the toInt below will have to be changed if this fails
-	// cheers to Walter Bright at http://d.puremagic.com/issues/show_bug.cgi?id=196
+	// cheers to Walter Bright at
+	// http://d.puremagic.com/issues/show_bug.cgi?id=196
 	static if (is (cellidx base == typedef))
-		static assert (is (base == int), "cellidx is not int: change conversion function used in ccbi.trace.read()");
+		static assert (
+			is (base == int),
+			"cellidx is not int: "
+			"change conversion function used in ccbi.trace.read()");
 	else
 		static assert (false, "cellidx is not a typedef: something's wrong");
 
 	foreach (i, c; cs) {
-		try *c = cast(cellidx)tango.text.convert.Integer.toInt(apart[i]);
+		try *c = cast(cellidx)toInt(apart[i]);
 		catch {
 			Stderr.formatln("'{}' is invalid.", apart[i]);
 			return false;
@@ -451,7 +455,7 @@ bool read(long* ul) {
 	char[] line;
 	Cin.readln(line);
 
-	try *ul = tango.text.convert.Integer.toLong(line);
+	try *ul = toLong(line);
 	catch {
 		Stderr.formatln("'{}' is invalid.", line);
 		return false;
@@ -464,7 +468,10 @@ char[] stackString(in IP* ip) {
 	char[] stackStr = "[".dup;
 
 	cell[8] onesToShow;
-	auto numShown = (ip.stack.size > onesToShow.length ? onesToShow.length : ip.stack.size);
+	auto numShown =
+		ip.stack.size > onesToShow.length
+			? onesToShow.length
+			: ip.stack.size;
 
 	foreach_reverse (inout c; onesToShow)
 		c = ip.stack.popHead;
@@ -489,7 +496,6 @@ char[] modeString(in IP* ip) {
 	size_t i = 0;
 
 	if (ip.mode & IP.STRING) str[i++] = '"';
-
 	if (ip.mode & IP.HOVER)  str[i++] = 'H';
 
 	auto q = cast(Deque)ip.stack;
@@ -498,8 +504,7 @@ char[] modeString(in IP* ip) {
 		if (q.mode & INVERT_MODE) str[i++] = 'I';
 	}
 
-	if (ip.mode & IP.SWITCH) str[i++] = 'S';
-
+	if (ip.mode & IP.SWITCH)      str[i++] = 'S';
 	if (ip.mode & IP.FROM_FUTURE) str[i++] = 'T';
 
 	return str;
