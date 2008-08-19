@@ -35,9 +35,7 @@ void tipSafe(void delegate() messWithIps) {
 	messWithIps();
 
 	if (ips.ptr != prev)
-	foreach (inout i; ips)
-	if (i.id == id)
-		return tip = &i;
+		return tip = findIP(id);
 }
 
 bool doTrace() {

@@ -34,32 +34,21 @@ void ownID() { ip.stack.push(ip.id); }
 void goDormant() { ip.mode |= IP.DORMANT; }
 
 void topIP() {
-	auto id = ip.stack.pop;
-
-	foreach (i; ips)
-	if (i.id == id) {
+	if (auto i = findIP(ip.stack.pop))
 		ip.stack.push(i.stack.top);
-		break;
-	}
 }
 void popIP() {
-	auto id = ip.stack.pop;
-
-	foreach (inout i; ips)
-	if (i.id == id) {
+	if (auto i = findIP(ip.stack.pop)) {
 		ip.stack.push(i.stack.pop);
 		i.mode &= ~IP.DORMANT;
-		break;
 	}
 }
 void pushIP() {
 	auto id = ip.stack.pop,
 	      c = ip.stack.pop;
 
-	foreach (inout i; ips)
-	if (i.id == id) {
+	if (auto i = findIP(id)) {
 		i.stack.push(c);
 		i.mode &= ~IP.DORMANT;
-		break;
 	}
 }

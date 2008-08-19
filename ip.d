@@ -24,6 +24,16 @@ enum State : byte {
 }
 State stateChange;
 
+IP* findIP(cell id) {
+	for (size_t i = 0; i < ips.length; ++i)
+		if (ips[i].id == id)
+			return &ips[i];
+	return null;
+}
+
+bool needMove = true;
+ulong ticks;
+
 // for TRDS
 struct StoppedIPData {
 	cell id;
@@ -31,9 +41,6 @@ struct StoppedIPData {
 }
 StoppedIPData[] stoppedIPdata;
 IP[] travelers;
-
-bool needMove = true;
-ulong ticks;
 
 struct IP {
 	static IP opCall() {
