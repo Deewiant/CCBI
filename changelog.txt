@@ -1,8 +1,14 @@
 CCBI changelog
 --------------
 
-2008-??-??, 1.0.13
-	New fingerprint, from RC/Funge-98: DATE.
+2008-08-19, 1.0.13
+	New fingerprints, from RC/Funge-98:
+		3DSP
+		DATE
+
+	Updated fingerprints to current spec:
+		IMAP - can now map 0-255
+		INDV - V no longer uses old incorrect RC/Funge-98 vector ordering
 
 	Fixed a bug in main():
 		If an IP changed the next instruction of an IP to be executed later the
@@ -11,11 +17,9 @@ CCBI changelog
 	Fixed a bug in getSysInfo():
 		y as a pick instruction didn't work correctly.
 
-	Add the new D instruction to FILE.
+	Added the new D instruction to FILE.
 
 	Removed PNTR (the alias of INDV), it wasn't meant to exist at all.
-
-	IMAP updated to the current spec, can now map 0-255.
 
 	Verified all popVector and pushVector calls so that the storage offset is
 	correctly applied.
