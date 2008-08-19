@@ -105,7 +105,7 @@ version (Win32) {
 		if (!envChanged)
 			return .env;
 
-		auto arr = new typeof(environment_t)(envSize);
+		auto arr = new environment_t(envSize);
 
 		size_t i = 0;
 		for (auto p = environ; *p; ++p) {
