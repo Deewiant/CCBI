@@ -4,6 +4,10 @@ CCBI changelog
 2008-??-??, 1.0.13
 	New fingerprint, from RC/Funge-98: DATE.
 
+	Fixed a bug in main():
+		If an IP changed the next instruction of an IP to be executed later the
+		same tick to a space or semicolon, it would take one instead of zero
+		ticks to process.
 	Fixed a bug in getSysInfo():
 		y as a pick instruction didn't work correctly.
 

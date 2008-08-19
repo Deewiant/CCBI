@@ -493,8 +493,8 @@ int main(char[][] args) {
 		// note that if an IP modifies the space where another IP is with an instruction like p,
 		// and does it in the same tick but before this other IP executes,
 		// that one might run into a space or a semicolon which isn't caught by the above
-		// hence we still need the functions for ' ' and ';' in instructions
-		// and tracing can't catch this since you can't trace an IP at a time, only a tick at a time
+		// hence we still need to do gotoNextInstruction before executing
+		// tracing can't catch this since you can't trace an IP at a time, only a tick at a time
 
 		bool tracing = trace;
 
@@ -502,6 +502,7 @@ int main(char[][] args) {
 		for (auto j = ips.length; j--;)
 		if (executable(ips[j])) {
 			.ip = &ips[j];
+			ip.gotoNextInstruction();
 
 			auto i = space[ip.x, ip.y];
 
