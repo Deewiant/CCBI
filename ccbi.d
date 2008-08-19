@@ -253,11 +253,6 @@ Other notes:
 
     "IMAP"  0x494d4150  Instruction remap extension
     "INDV"  0x494e4456  Pointer functions
-
-      Like RC/Funge-98, 'V' and 'W' push and pop the vector in different orders,
-      so that a vector put with 'W' and subsequently got with 'V' will have its
-      components reversed.
-
     "SOCK"  0x534f434b  tcp/ip [sic] socket extension
 
       'A' will push zeroes for both the port and address if the address is not

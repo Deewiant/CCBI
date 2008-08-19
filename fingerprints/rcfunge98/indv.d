@@ -50,8 +50,8 @@ void getVec() {
 	        y2 = cast(cellidx)space[x,                y];
 
 	ip.stack.push(
-		space[x2,                y2],
-		space[x2+cast(cellidx)1, y2]
+		space[x2+cast(cellidx)1, y2],
+		space[x2,                y2]
 	);
 }
 
