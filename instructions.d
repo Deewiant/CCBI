@@ -59,10 +59,8 @@ switch (i) {
 	case '[' : turnLeft;                break;
 	case 'r' : reverse;                 break;
 	case 'x' : absoluteVector;          break;
-	case ' ' : ascii32;                 break;
 	case '#' : trampoline;              break;
 	case '@' : stop;                    break;
-	case ';' : jumpOver;                break;
 	case 'z' : noOperation;             break;
 	case 'j' : jumpForward;             break;
 	case 'q' : quit;                    break;
@@ -223,26 +221,10 @@ void trampoline() { ip.move(); }
 // Stop
 void stop() { stateChange = State.STOPPING; }
 
-// Space
-void ascii32() {
-	// no operation until next non-' ', takes no time
-	do ip.move();
-	while (space[ip.x, ip.y] == ' ');
-
-	needMove = false;
-}
-
 // Funge-98
 
 // No Operation
 void noOperation() {}
-
-// Jump Over
-void jumpOver() {
-	// no operation until next ';', takes no time
-	do ip.move();
-	while (space[ip.x, ip.y] != ';');
-}
 
 // Jump Forward
 void jumpForward() {
