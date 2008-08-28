@@ -6,6 +6,7 @@ CCBI changelog
 
 	Updated fingerprints to current spec:
 		FRTH - P and L (PICK and ROLL) are now affected by MODE
+		SUBR - added A and O, general storage offset usage correction
 
 2008-08-19, 1.0.13
 	New fingerprints, from RC/Funge-98:
