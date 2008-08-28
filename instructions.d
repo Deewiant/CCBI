@@ -678,7 +678,6 @@ void inputCharacter() {
 
 // Input File
 void inputFile() {
-	cell c;
 	auto filename = popString();
 
 	auto binary = cast(bool)(ip.stack.pop & 1);
@@ -716,7 +715,6 @@ void inputFile() {
 
 // Output File
 void outputFile() {
-	cell c;
 	auto filename = popString();
 
 	// vaY and vaX are the offsets to whence to read the file
@@ -759,6 +757,8 @@ void outputFile() {
 			/+ since this may be a 1000x1-type "row" with many line breaks within,
 			   we have to treat each "sub-row" as well +/
 
+			// TODO: don't use splitLines here, may split on UTF-8 line breaks in
+			// a future Tango version, which we don't want, only \n \r \r\n
 			auto lines = splitLines(row);
 			foreach (inout line; lines)
 				line = stripr(line);
@@ -792,7 +792,9 @@ void outputFile() {
 			if (space.cellInRange(x, y))
 				row[x - vaX] = cast(char)space.unsafeGet(x, y);
 
-			file.append(row).append(NewlineString);
+			file.append(row);
+			if (y != maxY-1)
+				file.append(NewlineString);
 		}
 	}
 	file.flush;
