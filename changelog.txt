@@ -4,6 +4,9 @@ CCBI changelog
 2008-08-28, 1.0.14
 	'o' no longer puts a newline after the last line in binary mode.
 
+	Updated fingerprints to current spec:
+		FRTH - P and L (PICK and ROLL) are now affected by MODE
+
 2008-08-19, 1.0.13
 	New fingerprints, from RC/Funge-98:
 		3DSP
