@@ -93,8 +93,11 @@ void kill() {
 	sockets[s].detach();
 	sockets[s] = null;
 
-	if (s == sockets.length - 1)
-		sockets.length = s;
+	if (s == sockets.length - 1) {
+		do --s;
+		while (s < sockets.length && sockets[s] is null);
+		sockets.length = s+1;
+	}
 }
 
 void connect() {
