@@ -2,6 +2,17 @@ CCBI changelog
 --------------
 
 2008-08-28, 1.0.14
+	Various changes to SOCK:
+		Bugfix: in accept(), do not overwrite the original socket. The fix in
+		        1.0.11 was bogus.
+
+		Bugfix: set a dead socket to null, many instructions depended on this
+		        but after 1.0.12 it was no longer happening.
+
+		The socket array size is fully minimized when a socket is killed.
+
+		R no longer pushes the received data size if it errored instead.
+
 	'o' no longer puts a newline after the last line in binary mode.
 
 	Updated fingerprints to current spec:
