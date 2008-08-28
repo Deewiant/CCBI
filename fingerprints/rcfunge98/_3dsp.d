@@ -5,7 +5,6 @@
 module ccbi.fingerprints.rcfunge98._3dsp; private:
 
 import tango.math.Math;
-import tango.io.Stdout; // FOR DEBUGGING ONLY
 
 import ccbi.fingerprint;
 import ccbi.instructions : reverse;
@@ -53,26 +52,12 @@ void popVec(float[] v) {
 	v[1] = pop();
 	v[0] = pop();
 }
-void popVec(Union[] v) {
-	assert (v.length == 3);
-
-	v[2].f = pop();
-	v[1].f = pop();
-	v[0].f = pop();
-}
 void pushVec(float[] v) {
 	assert (v.length == 3);
 
 	push(v[0]);
 	push(v[1]);
 	push(v[2]);
-}
-void popMtx(float[] v) {
-	assert (v.length == 9);
-
-	popVec(v[6..9]);
-	popVec(v[3..6]);
-	popVec(v[0..3]);
 }
 
 //////////
@@ -334,9 +319,6 @@ void transform() {
 
 	float[4] r = void;
 	mulMatrices!(4,4,4,1)(m, v, r);
-Stdout(m).newline;
-Stdout(v).newline;
-Stdout(r).newline;
 	pushVec(r[0..3]);
 }
 
