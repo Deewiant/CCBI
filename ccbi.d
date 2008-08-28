@@ -242,11 +242,6 @@ Other notes:
       'L' and 'P' both push a zero if the argument they pop is greater than or
                   equal to the size of the stack after the pop.
 
-      All commands push on top of the stack regardless of whether invert mode
-      (from the MODE fingeprint) is on, since the FORTH ANSI standard speaks
-      not of pushing, but only of the top of the stack, which is unaffected by
-      invert mode.
-
     "IIPC"  0x49495043  Inter IP [sic] communicaiton [sic] extension
 
       'A' reverses if the IP is the initial IP and thus has no ancestor.
