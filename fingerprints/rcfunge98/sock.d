@@ -141,7 +141,7 @@ void accept() {
 		return reverse();
 
 	try {
-		auto as = sockets[s].accept(sockets[s]);
+		auto as = sockets[s].accept();
 
 		auto i = sockets.length;
 		foreach (j, sock; sockets)
