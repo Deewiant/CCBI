@@ -194,18 +194,18 @@ struct IP {
 	cell[256] mapping = void; // for IMAP
 
 	enum : typeof(mode) {
-		STRING    = 1 << 0,
-		BREAK_SET = 1 << 1,
-		HOVER     = 1 << 2, // these two for MODE
-		SWITCH    = 1 << 3,
-		DORMANT   = 1 << 4, // for IIPC
-		ABS_SPACE = 1 << 5, // the rest for TRDS
-		SPACE_SET = 1 << 6,
-		ABS_TIME  = 1 << 7,
-		TIME_SET  = 1 << 8,
-		DELTA_SET = 1 << 9,
-
-		FROM_FUTURE = 1 << 10 // for tracing TRDS
+		STRING        = 1 <<  0,
+		BREAK_SET     = 1 <<  1,
+		HOVER         = 1 <<  2, // these two for MODE
+		SWITCH        = 1 <<  3,
+		DORMANT       = 1 <<  4, // for IIPC
+		ABS_SPACE     = 1 <<  5, // next five for TRDS
+		SPACE_SET     = 1 <<  6,
+		ABS_TIME      = 1 <<  7,
+		TIME_SET      = 1 <<  8,
+		DELTA_SET     = 1 <<  9,
+		FROM_FUTURE   = 1 << 10, // for tracing TRDS
+		SUBR_RELATIVE = 1 << 11  // for SUBR
 	}
 
 	ushort mode = 0;
