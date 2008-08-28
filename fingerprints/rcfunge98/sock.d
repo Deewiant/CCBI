@@ -183,10 +183,10 @@ void receive() {
 
 		auto got = sockets[s].receive(buffer);
 
-		push(cast(cell)got);
-
 		if (got == Socket.ERROR)
 			return reverse();
+
+		push(cast(cell)got);
 
 		for (cellidx i = 0; i < cast(cellidx)got; ++i)
 			space[x + i, y] = cast(cell)buffer[i];
