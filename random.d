@@ -12,9 +12,7 @@ Added the static this().
 
 +/
 
-static this() {
-	init_genrand(42, true);
-}
+static this() { init_genrand(42, true); }
 
 /*
    A D-program ported by Derek Parnell 2006/04/12,

@@ -17,25 +17,21 @@ import tango.sys.Common;
 
 const FileConduit.Style WriteCreate = { FileConduit.Access.Write, FileConduit.Open.Create, FileConduit.Share.init, FileConduit.Cache.Stream, };
 
-version (Posix)
-         import tango.stdc.posix.unistd : isatty;
-
 public alias FileConst.NewlineString NewlineString;
 
-A ipow(A, B)(A z, B exp) {
+A ipow(A, B)(A x, B exp) {
 	static assert (isUnsignedIntegerType!(B));
 
 	A n = 1;
-	while (exp--)
-		n *= z;
+	while (exp) {
+		if (exp % 2) {
+			n *= x;
+			--exp;
+		}
+		x   *= x;
+		exp /= 2;
+	}
 	return n;
-}
-
-template ToUtf8(uint n) {
-	static if (n < 10)
-		const ToUtf8 = "" ~ cast(char)(n + '0');
-	else
-		const ToUtf8 = ToUtf8!(n / 10) ~ ToUtf8!(n % 10);
 }
 
 private alias char[][] environment_t;
@@ -157,7 +153,11 @@ class RawCoutFilter(bool stderr) : OutputFilter {
 private:
 	void error() {throw new IOException("RawCoutFilter :: " ~ SysError.lastMsg);}
 
-	typeof(Stdout.stream()) superArgs() {return stderr ? Stderr.stream : Stdout.stream;}
+	typeof(Stdout.stream()) superArgs() {
+		return stderr
+			? Stderr.stream
+			: Stdout.stream;
+	}
 
 	version (Win32) {
 		HANDLE handle;
@@ -207,8 +207,8 @@ private:
 					return 0;
 
 				for (auto p = src.ptr, end = src.ptr + i; p < end; p += i)
-					// avoid console buffer size limitations, write in smaller chunks
-					if (!WriteConsoleA(handle, p, min(end - p, 32 * 1024), &i, null))
+					// avoid console buffer size limitations, write in chunks
+					if (!WriteConsoleA(handle, p, min(end - p, 32*1024), &i, null))
 						error();
 
 				return src.length;
@@ -230,11 +230,4 @@ private:
 			return written;
 		}
 	}
-}
-
-static ~this() {
-	// Tango only flushes Cout and Cerr
-	// we capture output before it gets that far
-	Stdout.flush;
-	Stderr.flush;
 }

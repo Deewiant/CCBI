@@ -5,81 +5,43 @@
 // The Instruction Pointer.
 module ccbi.ip;
 
-import tango.stdc.string : memcpy;
 import tango.time.Time;
 
 public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
        import ccbi.space;
+       import ccbi.utils;
 
-IP*  ip; // the current ip
-IP[] ips;
+final class IP(int dim) {
+	alias   .Coords!(dim) Coords;
+	alias Dimension!(dim).Coords InitCoords;
 
-enum State : byte {
-	UNCHANGING = 0,
-	STOPPING,
-	QUITTING,
-	TIMEJUMP // for TRDS
-}
-State stateChange;
+	this(FungeSpace!(dim) s) {
+		id = parentID = 0;
 
-// for TRDS
-struct StoppedIPData {
-	cell id;
-	int jumpedAt, jumpedTo;
-}
-StoppedIPData[] stoppedIPdata;
-IP[] travelers;
+		stackStack = new typeof(stackStack)(1u);
+		stack      = new Stack!(cell);
+		stackStack.push(stack);
 
-bool needMove = true;
-ulong ticks;
+		foreach (j, inout i; mapping)
+			i = cast(cell)j;
 
-struct IP {
-	static IP opCall() {
-		IP ip;
-		with (ip) {
-			id = parentID = 0;
+		for (cell i = 'A'; i <= 'Z'; ++i)
+			semantics[i] = new typeof(semantics[i])('Z' - 'A' + 1u);
 
-			stackStack = new typeof(stackStack)(1u);
-			stack      = new Stack!(cell);
-			stackStack.push(stack);
-
-			foreach (j, inout i; mapping)
-				i = cast(cell)j;
-
-			for (cell i = 'A'; i <= 'Z'; ++i)
-				semantics[i] = new typeof(semantics[i])('Z' - 'A' + 1u);
-
-			space = &.space;
-		}
-		return ip;
+		space = s;
 	}
 
-	// only used for Mini-Funge IPs
-	static IP opCall(typeof(.space)* s, typeof(ip) i) {
-		IP ip;
-		with (ip) {
-			id = i.id;
-			stack = i.stack;
-			space = s;
-		}
-		return ip;
-	}
+	this(IP o) {
+		shallowCopy(this, o);
 
-	IP copy() {
-		IP i;
-		memcpy(&i, this, i.sizeof);
+		// deep copy stack stack
+		stackStack = new typeof(stackStack)(o.stackStack);
 
-		i.stackStack = new typeof(stackStack)(this.stackStack);
+		bool deque = cast(Deque)stack !is null;
 
-		/+ new each stack with itself as an argument
-		 + so that they are copies,
-		 + not pointing to the same data
-		 +/
-		bool deque = cast(Deque)this.stack !is null;
-
-		foreach (inout stack; i.stackStack) {
+		foreach (inout stack; stackStack) {
 			alias Container!(cell) CC;
 			alias Stack    !(cell) Ctack;
 
@@ -88,61 +50,56 @@ struct IP {
 				: cast(CC)new Ctack(cast(Ctack)stack)
 			);
 		}
+		stack = stackStack.top;
 
-		i.stack = i.stackStack.top;
-
-		i.semantics = null; // allocate a new semantics for the child
-		foreach (key, st; semantics) {
-			i.semantics[key] = new Stack!(Semantics);
-			i.semantics[key].push(st.elementsBottomToTop);
+	 	// deep copy semantics
+		semantics = null;
+		foreach (key, st; o.semantics) {
+			semantics[key] = new Stack!(Semantics);
+			semantics[key].push(st.elementsBottomToTop);
 		}
-
-		return i;
 	}
 
+	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
+	final {
 	void move() {
-		auto nx = x + dx;
-		auto ny = y + dy;
+		auto next = pos; next += delta;
 
-		if (!space.inBounds(nx, ny)) {
-			do {
-				nx -= dx;
-				ny -= dy;
-			} while (space.inBounds(nx, ny));
-			nx += dx;
-			ny += dy;
+		if (!space.inBounds(next)) {
+			do next -= delta;
+			while (space.inBounds(next));
+			next += delta;
 		}
 
-		x = nx;
-		y = ny;
+		pos = next;
 	}
+
+	void reverse() { delta *= -1; }
 
 	// eat spaces and semicolons, the zero-tick instructions
 	void gotoNextInstruction() {
 		if (mode & STRING) {
-			if ((*space)[x, y] == ' ') {
+			if (space[pos] == ' ') {
 				// SGML spaces: move past all but one space
-				cellidx nx = void, ny = void;
+				Coords next = void;
 				do {
-					nx = x;
-					ny = y;
+					next = pos;
 					move();
-				} while ((*space)[x, y] == ' ');
+				} while (space[pos] == ' ');
 
-				x = nx;
-				y = ny;
+				pos = next;
 			}
 		} else for (;;) {
-			if ((*space)[x, y] == ' ') {
+			if (space[pos] == ' ') {
 				// no operation until next non-' ', takes no time
 				do move();
-				while ((*space)[x, y] == ' ');
+				while (space[pos] == ' ');
 			}
 
-			if ((*space).unsafeGet(x, y) == ';') {
+			if (space.unsafeGet(pos) == ';') {
 				// no operation until next ';', takes no time
 				do move();
-				while ((*space)[x, y] != ';');
+				while (space[pos] != ';');
 				move();
 			} else break;
 		}
@@ -154,18 +111,15 @@ struct IP {
 			: cast(Container!(cell))new Stack!(cell)
 		);
 	}
+	}
 
-	typeof(.space)* space = null;
+	FungeSpace!(dim) space = null;
 
-	cellidx
-		x       = 0,
-		y       = 0,
-		dx      = 1,
-		dy      = 0,
-		offsetX = 0, // storage offset
-		offsetY = 0,
-		breakX, // breakpoint; for debugging, used only when tracing
-		breakY;
+	Coords
+		pos    = InitCoords!(0),
+		delta  = InitCoords!(1),
+		offset = InitCoords!(0),
+		breakPt;
 
 	// parentID for IIPC
 	cell id = void, parentID = void;
@@ -206,13 +160,7 @@ struct IP {
 	// for HRTI
 	auto timeMark = Time.min;
 
-	// the rest for TRDS
-
-	typeof( x) tardisX,  tardisReturnX;
-	typeof( y) tardisY,  tardisReturnY;
-	typeof(dx) tardisDx, tardisReturnDx;
-	typeof(dy) tardisDy, tardisReturnDy;
-
-	// int because the TRDS specs don't take into account more than 32 bits
-	int tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
+	// for TRDS
+	Coords tardis, tardisReturn, tardisDelta, tardisReturnDelta;
+	cell tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
 }

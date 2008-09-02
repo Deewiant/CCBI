@@ -1,6 +1,19 @@
 CCBI changelog
 --------------
 
+TODO for 2.0:
+	fix fingerprint destructors: MODE(NULL(MODE) -> don't call destructor!
+	since we're implementing FNGR anyway, I guess we can keep a count for each
+	instruction of a fingerprint, or something (so we know when unloading what
+	fingerprint an instruction belongs to)
+
+Before final release:
+	check all imports, remove unneeded
+	make sure all files have proper header comment
+	remove any debug prints
+	make sure Stdout/Stderr aren't used ~anywhere, only Sout/Serr
+	grep XXX FIXME TODO
+
 2008-??-??, 1.0.13
 	New fingerprint, from RC/Funge-98: DATE.
 

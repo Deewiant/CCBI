@@ -7,7 +7,7 @@
 module ccbi.fingerprint;
 
 import ccbi.cell;
-import ccbi.stdlib;
+import ccbi.templateutils;
 
 void function()[][cell] fingerprints;
 void function()  [cell] fingerprintConstructors;
@@ -19,17 +19,11 @@ uint             [cell] fingerprintLoaded;
 
 template Code(char[4] s, char[4] id = s) {
 	const Code =
-		"const cell " ~ id ~ " = " ~ ToUtf8!(HexCode!(s)) ~ ";" ~
+		"const cell " ~ id ~ " = " ~ ToString!(HexCode!(s)) ~ ";" ~
 		// this really shouldn't be here, but oh well
-		"fingerprints[" ~ ToUtf8!(HexCode!(s)) ~ "] = " ~
-		"new typeof(fingerprints[" ~ ToUtf8!(HexCode!(s)) ~ "])('Z'+1);";
+		"fingerprints[" ~ ToString!(HexCode!(s)) ~ "] = " ~
+		"new typeof(fingerprints[" ~ ToString!(HexCode!(s)) ~ "])('Z'+1);";
 }
-
-template HexCode(char[4] s) {
-	const uint HexCode = s[3] | (s[2] << 8) | (s[1] << 16) | (s[0] << 24);
-}
-
-static assert (HexCode!("ASDF") == 0x_41_53_44_46);
 
 enum : bool {
 	BUILTIN,
