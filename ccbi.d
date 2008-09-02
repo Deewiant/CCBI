@@ -10,28 +10,21 @@
 // The core functionality, main loop, etc.
 module ccbi.ccbi;
 
+import tango.core.BitArray;
 import tango.core.Exception : ArgEx = IllegalArgumentException;
-import tango.io.Buffer;
 import tango.io.Stdout;
 import tango.io.device.FileConduit;
 import regex = tango.text.Regex;
 
-import ccbi.instructions;
-import ccbi.fingerprint;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.trace;
+import ccbi.globals : VERSION_STRING;
+import ccbi.fungemachine;
+import ccbi.templateutils;
 import ccbi.utils;
 
-import ccbi.mini.vars : miniMode, Mini;
+//import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
 
-import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
-
-// remember to change ccbi.instructions.VERSION_NUMBER too!
 const char[]
-	VERSION_STRING =
-		"CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.12",
-	HELP           = VERSION_STRING ~ `
+	HELP = VERSION_STRING ~ `
 
  Copyright (c) 2006-2008 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
  See the file license.txt for copyright details.
@@ -59,7 +52,7 @@ ARGS may be one or more of:
  -P, --disable-fprints   Run as if no fingerprints were implemented.
  -d, --draw-to           Use the following argument as the file name written to
                          in the I instruction of the TURT fingerprint. The
-                         default is ` ~ TURT_FILE_INIT ~ `.
+                         default is ` ~ /*TURT_FILE_INIT*/`` ~ `.
  -i, --implementation    Show some implementation details and exit.
  -p, --print-fprints     List all supported (and knowingly unsupported)
                          fingerprints and their implementation notes, and exit.
@@ -294,17 +287,19 @@ Other notes:
 
     "SCKE"  0x53434b45`;
 
+mixin (booleans);
+
 int main(char[][] args) {
 	if (args.length < 2) {
 		Stderr.formatln(HELP, args[0]);
 		return 1;
 	}
 
-	bool countTicks, script;
+	initBools();
 	auto filePos = size_t.max;
-
 	args = args[1..$];
 
+	// {{{ parse arguments
 	scope helpRegex = regex.Regex("^(?--?|/)(?[?]|h(?e?lp)?)$", "i");
 	argLoop: for (size_t i = 0; i < args.length; ++i) {
 
@@ -314,34 +309,44 @@ int main(char[][] args) {
 
 		char[] nextArg() {
 			if (++i >= args.length)
-				throw new ArgEx(Stderr.layout.convert("Further argument required following {}.", arg));
+				throw new ArgEx(
+					Stderr.layout.convert(
+						"Further argument required following {}.", arg));
 			return args[i];
 		}
 
+		int msgOnly(char[] s) {
+			Stderr(s).newline;
+			return 0;
+		}
+
 		switch (arg) {
-			case "-t", "--trace":           trace               = true;  break;
-			case "-c", "--count-ticks":     countTicks          = true;  break;
+			case "-t", "--trace":           tracing             = true;  break;
+//			case "-c", "--count-ticks":     countTicks          = true;  break;
 			case "-w", "--warnings":        warnings            = true;  break;
 			case "-s", "--script":          script              = true;  break;
 			case "-P", "--disable-fprints": fingerprintsEnabled = false; break;
 
-			case "-m", "--mini-funge":
+/+			case "-m", "--mini-funge":
 				auto s = nextArg();
 				if (s == "0")
 					miniMode = Mini.NONE;
 				else if (s == "1")
 					miniMode = Mini.ALL;
 				else
-					throw new ArgEx(Stderr.layout.convert("Expected 0 or 1 following {}, not {}.", args[i-1], arg));
+					throw new ArgEx(Stderr.layout.convert(
+						"Expected 0 or 1 following {}, not {}.", args[i-1], arg));
 				break;
++/
 
-			case "-d", "--draw-to":
+/+			case "-d", "--draw-to":
 				turtFile = nextArg();
 				break;
++/
 
-			case "-i", "--implementation": Stderr(IMPLEMENTATION  ).newline; return 1;
-			case "-p", "--print-fprints":  Stderr(FINGERPRINT_INFO).newline; return 1;
-			case "-v", "--version":        Stderr(VERSION_STRING  ).newline; return 1;
+			case "-i", "--implementation": return msgOnly(IMPLEMENTATION);
+			case "-p", "--print-fprints":  return msgOnly(FINGERPRINT_INFO);
+			case "-v", "--version":        return msgOnly(VERSION_STRING);
 			case "-f", "--file":
 				nextArg();
 				filePos = i;
@@ -357,15 +362,16 @@ int main(char[][] args) {
 		}
 	}
 
-	if (!fingerprintsEnabled && miniMode == Mini.ALL)
-		Stderr("Warning: --disable-fprints overrides --mini-funge 1").newline;
+//	if (!fingerprintsEnabled && miniMode == Mini.ALL)
+//		Stderr("Warning: --disable-fprints overrides --mini-funge 1").newline;
 
 	if (filePos == size_t.max) {
 		Stderr.formatln(HELP, args[0]);
 		return 1;
 	}
 
-	fungeArgs = args[filePos..$];
+	auto fungeArgs = args[filePos..$];
+	// }}}
 
 	FileConduit file;
 	try file = new typeof(file)(fungeArgs[0]);
@@ -374,258 +380,6 @@ int main(char[][] args) {
 		return -1;
 	}
 
-	Stdout.stream(new Buffer(new RawCoutFilter!(false), 32 * 1024));
-	Stderr.stream(new Buffer(new RawCoutFilter!(true ), 32 * 1024));
-
-	Out = new typeof(Out)(Stdout.stream);
-
-	//
-	// START BEFUNGE
-	//
-
-	// needs to be reloaded for TRDS
-	typeof(space) initialSpace;
-
-	loadIntoFungeSpace!(true)(&initialSpace, file, &initialSpace.endX, &initialSpace.endY);
-
-	initialSpace.lastGet = initialSpace[0,0];
-
-	void boot() {
-		if (fingerprintsEnabled)
-			space = initialSpace.copy;
-		else
-			space = initialSpace;
-
-		ips[0] = IP();
-		if (script && space[0,0] == '#' && space[1,0] == '!')
-			ips[0].y = 1;
-	}
-
-	ips.length = 1;
-	boot();
-	ccbi.trace.tip = &ips[0];
-
-	// for TRDS, jumping backwards in time
-	typeof(ip.jumpedTo) latestJumpTarget;
-
-	try execution: for (;;) {
-		// TRDS: have to do all kinds of crap if time is stopped
-		static bool normalTime = void;
-
-		if (fingerprintsEnabled) {
-			normalTime = (IP.timeStopper == IP.TIMESTOPPER_INIT);
-
-			if (normalTime) {
-				++ticks;
-
-				// just jump into the future if nobody's doing anything in the meanwhile
-				if (ip && ip.jumpedTo > ticks && ips.length == 1)
-					ticks = ip.jumpedTo;
-
-				for (size_t i = 0; i < travelers.length; ++i) {
-
-					// self-explanatory: if the traveler is coming here, put it here
-					if (ticks == travelers[i].jumpedTo)
-						ips ~= travelers[i];
-
-					/+
-
-					More complicated, best explained with an example, and I'm still not sure I
-					understand it fully.
-
-					TRDS is a wonderful source of confusion. It helps that RC/Funge-98, in which it
-					originated, doesn't implement it properly.
-
-					See ccbi.fingerprints.rcfunge98.trds.jump for a longer comment which explains
-					other stuff.
-
-					- IP 1 travels from time 300 to 200.
-					- We rerun from time 0 to 200, then place the IP. It does some stuff,
-					  then teleports and jumps back to 300.
-					- IP 2 travels from time 400 to 100
-					- We rerun from time 0 to 100, then place the IP. It does some stuff,
-					  then teleports and jumps back to 400.
-					- At time 300, IP 1 travels again to 200.
-					- We rerun from time 0 to 200. But at time 100, we need to place IP 2
-					  again. So we do. (Hence the whole travelers array.)
-					- It does its stuff, and teleports and freezes itself until 400.
-					- Come time 200, we would place IP 1 again if we hadn't done the
-					  following, and removed it back when we placed IP 2 for the second
-					  time.
-					+/
-
-					else if (latestJumpTarget < travelers[i].jumpedTo)
-						travelers = travelers[0..i] ~ travelers[i+1..$];
-				}
-			}
-		} else
-			++ticks;
-
-		static bool executable(IP i) {
-			// IIPC: don't execute if dormant
-			// TRDS: if time is stopped, execute only for the time stopper
-			//       and if the IP is jumping to the future, don't execute
-			return (
-				!fingerprintsEnabled || (
-					!(i.mode & IP.DORMANT) &&
-					(normalTime || IP.timeStopper == i.id) &&
-					ticks >= i.jumpedTo
-				)
-			);
-		}
-
-		// eat spaces and semicolons for all IPs before tracing and execution
-		// the easiest way to handle concurrent tracing and zero tick instructions
-		if (fingerprintsEnabled) {
-			foreach (inout i; ips)
-			if (executable(i))
-				i.gotoNextInstruction();
-		} else
-			foreach (inout i; ips)
-				i.gotoNextInstruction();
-
-		// note that if an IP modifies the space where another IP is with an instruction like p,
-		// and does it in the same tick but before this other IP executes,
-		// that one might run into a space or a semicolon which isn't caught by the above
-		// hence we still need the functions for ' ' and ';' in instructions
-		// and tracing can't catch this since you can't trace an IP at a time, only a tick at a time
-
-		bool tracing = trace;
-
-		// parent IP is executed last
-		for (auto j = ips.length; j--;)
-		if (executable(ips[j])) {
-			.ip = &ips[j];
-
-			auto i = space[ip.x, ip.y];
-
-			if (tracing) {
-				// trace only once per tick
-				tracing = false;
-				if (!doTrace()) {
-					assert (stateChange);
-					goto changeState;
-				}
-			}
-
-			execute(i);
-
-			changeState: switch (stateChange) {
-				default: assert (false);
-
-				case State.UNCHANGING: break;
-
-				case State.STOPPING:
-					if (ips.length == 1)
-						goto case State.QUITTING;
-
-					if (tip is ip)
-						tip = null;
-
-					if (fingerprintsEnabled) {
-						// TRDS: resume time if the time stopper dies
-						if (!normalTime)
-							IP.timeStopper = IP.TIMESTOPPER_INIT;
-
-						// TRDS: store data of stopped IPs which have jumped
-						// see ccbi.fingerprints.rcfunge98.trds.jump() for the reason
-						if (ip.jumpedAt) {
-							bool found = false;
-
-							foreach (dat; stoppedIPdata)
-							if (dat.id == ip.id && dat.jumpedAt == ip.jumpedAt) {
-								found = true;
-								break;
-							}
-
-							if (!found)
-								stoppedIPdata ~= StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
-						}
-					}
-
-					tipSafe({ips = ips[0..j] ~ ips[j+1..$];});
-
-					stateChange = State.UNCHANGING;
-					continue;
-
-				case State.QUITTING:
-					break execution;
-
-				case State.TIMEJUMP:
-
-					stateChange = State.UNCHANGING;
-
-					// nothing special if jumping to the future, just don't trace it
-					if (ticks != 0) {
-						if (ip.jumpedTo >= ip.jumpedAt)
-							ip.mode &= ~IP.FROM_FUTURE;
-
-						if (ip is tip)
-							tip = null;
-						break;
-					}
-
-					// add ip to the list of travelers unless it's already there
-					bool found = false;
-
-					foreach (traveler; travelers)
-					if (traveler.id == ip.id && traveler.jumpedAt == ip.jumpedAt) {
-						found = true;
-						break;
-					}
-
-					if (!found) {
-						ip.mode |= IP.FROM_FUTURE;
-						travelers ~= ip.copy;
-					}
-
-					latestJumpTarget = ip.jumpedTo;
-					boot();
-
-					continue execution;
-			}
-
-			if (needMove) {
-				// see comment in ccbi.trace.findTip() for why ips[j] instead of ip
-				ips[j].move();
-			} else
-				needMove = true;
-		}
-
-	} catch (Exception e) {
-		Stdout.flush;
-		Stderr("Exited due to an error: ")(e.msg)(" at ")(e.file)(':')(e.line).newline;
-	}
-	
-	if (countTicks) {
-		Stdout.flush;
-		Stderr(executionCount)(" instructions executed in ")(ticks)(" ticks elapsed.").newline;
-	}
-
-	return returnVal;
-}
-
-ulong executionCount = 0;
-
-void execute(cell i) {
-	++executionCount;
-
-	if (ip.mode & IP.STRING) {
-		if (i == '"')
-			ip.mode ^= IP.STRING;
-		else
-			ip.stack.push(i);
-	} else {
-		if (fingerprintsEnabled) {
-			// IMAP fingerprint
-			if (i >= 0 && i < ip.mapping.length) {
-				i = ip.mapping[i];
-
-				if (isSemantics(i))
-					return executeSemantics(i in ip.semantics);
-			}
-		}
-
-		executeInstruction(i);
-	}
+	// TODO: other dims
+	return (new FungeMachine!(2)(file, bools)).run;
 }

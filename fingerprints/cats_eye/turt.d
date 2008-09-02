@@ -604,6 +604,6 @@ void printDrawing() {
 	file.output.write(NewlineString);
 }
 
-// http://d.puremagic.com/issues/show_bug.cgi?id=1629
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1629
 private alias DocPrinter!(char) bugzilla_1629_workaround;
 // }}}

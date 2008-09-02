@@ -27,22 +27,20 @@ abstract class Container(T) {
 		size_t head = 0;
 	}
 
-	// only needed in Deque, but it's easier to pass it from stack to stack (since it's meant to be per-IP)
-	// if it's declared here
+	// only needed in Deque, but it's easier to pass it from stack to stack
+	// (since it's meant to be per-IP) if it's declared here
 	byte mode;
 
 	int opApply    (int delegate(inout T t) dg);
 
-/+	Only needed for stack stack
 	int topToBottom(int delegate(inout T t) dg);
 	int bottomToTop(int delegate(inout T t) dg);
-+/
 
 	T[] elementsBottomToTop();
 }
 
-/+ The stack is, by default, a Stack instead of a Deque
- + even though the MODE fingerprint needs a Deque.
+/+ The stack is, by default, a Stack instead of a Deque even though the MODE
+ + fingerprint needs a Deque.
  + This is because of the following performance measurement:
  +
  +   Operation    Iterations    Time (ms) (Stack)    Time (ms) (Deque)    Ratio
@@ -52,12 +50,14 @@ abstract class Container(T) {
  +    push(int)   50 000 000        343265
  +     pop(1)     50 000 000           235
  +
- + (Time is +- 5 ms, averaged over two runs for the 10 000 000 case, ratio is to one decimal point)
+ + (Time is +- 5 ms, averaged over two runs for the 10 000 000 case, ratio is
+ + to one decimal point)
  +
- + Thus, until we really need the Deque functionality, it's smarter to use the Stack.
+ + Thus, until we really need the Deque functionality, it's smarter to use the
+ + Stack.
  +/
 
-class Stack(T) : Container!(T) {
+final class Stack(T) : Container!(T) {
 	this(typeof(super) s) {
 		assert (cast(typeof(this))s || cast(Deque)s);
 
@@ -116,7 +116,8 @@ class Stack(T) : Container!(T) {
 		void push(T[] ts...) {
 			auto neededRoom = head + ts.length;
 			if (neededRoom >= array.length)
-				array.length = 2 * array.length + (neededRoom >= 2 * array.length ? neededRoom : 0);
+				array.length = 2 * array.length +
+					(neededRoom >= 2 * array.length ? neededRoom : 0);
 
 			foreach (t; ts)
 				array[head++] = t;
@@ -160,7 +161,7 @@ enum : byte {
 }
 
 // only used if the MODE fingerprint is loaded
-class Deque : Container!(cell) {
+final class Deque : Container!(cell) {
 	this(typeof(super) s) {
 		assert (cast(Stack!(cell))s || cast(typeof(this))s);
 
@@ -254,9 +255,6 @@ class Deque : Container!(cell) {
 			return r;
 		}
 
-		/+
-		Only needed for stack stack
-
 		int topToBottom(int delegate(inout cell t) dg) {
 			return opApply(dg);
 		}
@@ -267,7 +265,7 @@ class Deque : Container!(cell) {
 				if (r = dg(array[i]), r)
 					break;
 			return r;
-		}+/
+		}
 
 		cell[] elementsBottomToTop() {
 			auto elems = new cell[size];
@@ -313,7 +311,8 @@ class Deque : Container!(cell) {
 			int newSize = super.DEFAULT_SIZE;
 
 			if (length >= newSize) {
-				static assert (newSize.sizeof == 4, "Change size calculation in ccbi.container.Deque.allocateArray");
+				static assert (newSize.sizeof == 4,
+					"Change size calculation in ccbi.container.Deque.allocateArray");
 
 				newSize = length;
 				newSize |= (newSize >>>  1);
