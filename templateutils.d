@@ -150,6 +150,19 @@ template Lookup(char[] tmplName, char[] needle, char[] last, haystack...) {
 		const char[] Lookup = last;
 }
 
+// Like Lookup but generates a complete template of one parameter.
+template TemplateLookup(
+	char[] tmplName,
+	char[] needleType, char[] needle,
+	char[] last,
+	haystack...
+) {
+	const char[] TemplateLookup =
+		`template ` ~ tmplName ~ `(` ~ needleType ~ ` ` ~ needle ~ `) {` ~
+			Lookup!(tmplName, needle, last, haystack)
+		~ `}`;
+}
+
 // helper for Lookup: makes one haystack pair out of a char and char[]
 template P(char i, char[] f) {
 	static if (i == '\'' || i == '\\')
