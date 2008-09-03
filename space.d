@@ -14,7 +14,7 @@ public import ccbi.cell;
        import ccbi.stdlib;
        import ccbi.utils;
 
-struct Coords(int dim) {
+struct Coords(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 
 	                       cell x;
@@ -90,7 +90,7 @@ struct Coords(int dim) {
 	} // }}}
 }
 
-template Dimension(int dim) {
+template Dimension(cell dim) {
 	template Coords(cell x, cell y, cell z) {
 	     	  static if (dim == 1) const Coords = .Coords!(dim)(x);
 		else static if (dim == 2) const Coords = .Coords!(dim)(x,y);
@@ -104,7 +104,7 @@ template Dimension(int dim) {
 	}
 }
 
-final class FungeSpace(int dim) {
+final class FungeSpace(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 
 	alias .Coords   !(dim) Coords;

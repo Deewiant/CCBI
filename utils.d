@@ -62,7 +62,7 @@ size_t findIndex(T)(T[] a, T v) {
 }
 
 // these all need cip
-template Utils(int dim) {
+template Utils(cell dim) {
 
 alias .Coords!(dim) Coords;
 
