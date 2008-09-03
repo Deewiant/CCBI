@@ -57,7 +57,7 @@ mixin (Booleans!(
 	"warnings"
 ));`;
 
-final class FungeMachine(int dim) {
+final class FungeMachine(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 private:
 	alias .IP        !(dim)        IP;

@@ -13,7 +13,7 @@ public import ccbi.cell;
        import ccbi.space;
        import ccbi.utils;
 
-final class IP(int dim) {
+final class IP(cell dim) {
 	alias   .Coords!(dim) Coords;
 	alias Dimension!(dim).Coords InitCoords;
 
