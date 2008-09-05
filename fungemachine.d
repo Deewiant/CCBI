@@ -4,7 +4,6 @@
 
 module ccbi.fungemachine;
 
-import tango.core.BitArray;
 import tango.io.Buffer;
 import tango.io.Print;
 import tango.io.Stdout;
@@ -13,6 +12,7 @@ import tango.io.stream.TypedStream;
 
 import ccbi.container;
 import ccbi.fingerprint;
+import ccbi.flags;
 import ccbi.ip;
 import ccbi.request;
 import ccbi.space;
@@ -44,18 +44,6 @@ static ~this() {
 	Sout.flush;
 	Serr.flush;
 }
-
-// The booleans must be in the same order wherever this is used: make it
-// a mixin so that they're always the same
-const booleans = `
-mixin (Booleans!(
-	"bools",
-	"useStats",
-	"script",
-	"tracing",
-	"fingerprintsEnabled",
-	"warnings"
-));`;
 
 final class FungeMachine(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
@@ -95,10 +83,10 @@ private:
 
 	int returnVal;
 
-	mixin (booleans);
+	Flags flags;
 
-	public this(FileConduit source, BitArray ba) {
-		bools = ba; // XXX: with MVRS, you might want to .dup here
+	public this(FileConduit source, Flags f) {
+		flags = f;
 
 		initialSpace = new FungeSpace(source);
 		ips.length = 1;
@@ -108,15 +96,15 @@ private:
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
 	final {
 	void reboot() {
-		if (fingerprintsEnabled)
+		if (flags.fingerprintsEnabled)
 			space = new typeof(space)(initialSpace);
 		else
 			space = initialSpace;
 
 		tip = ips[0] = new IP(space);
 		if (
-			dim >= 2 &&
-			script   &&
+			dim >= 2     &&
+			flags.script &&
 			space[InitCoords!(0,0)] == '#' &&
 			space[InitCoords!(0,1)] == '!'
 		)
@@ -134,7 +122,7 @@ private:
 			returnVal = 1;
 		}
 
-		if (useStats) {
+		if (flags.useStats) {
 			Sout.flush;
 //			printStats(Serr);
 		}
@@ -144,7 +132,7 @@ private:
 	bool executeTick() {
 		bool normalTime = void; // TRDS
 
-		if (fingerprintsEnabled) {
+		if (flags.fingerprintsEnabled) {
 			normalTime = timeStopper is null;
 
 			if (normalTime) {
@@ -160,7 +148,7 @@ private:
 		} else
 			++tick;
 
-		if (tracing && !Tracer.doTrace())
+		if (flags.tracing && !Tracer.doTrace())
 			return false;
 
 		for (auto j = ips.length; j-- > 0;)
@@ -208,7 +196,7 @@ private:
 		else if (cip.mode & IP.STRING)
 			cip.stack.push(c);
 		else {
-			if (fingerprintsEnabled) {
+			if (flags.fingerprintsEnabled) {
 				// IMAP
 				if (c >= 0 && c < cip.mapping.length) {
 					c = cip.mapping[c];
@@ -274,7 +262,7 @@ final:
 	}
 
 	Request unimplemented() {
-		if (warnings) {
+		if (flags.warnings) {
 			Sout.flush;
 			// XXX: this looks like a hack
 //			if (inMini)
@@ -298,7 +286,7 @@ final:
 
 		Tracer.ipStopped(ip);
 
-		if (fingerprintsEnabled) {
+		if (flags.fingerprintsEnabled) {
 			// TODO: define TRDS.ipStopped
 			// TRDS: resume time if the time stopper dies
 			if (ip is timeStopper)
@@ -392,7 +380,7 @@ final:
 
 	bool executable(bool normalTime, IP ip) {
 		return
-			!fingerprintsEnabled || /+TODO verify this works ips.length == 1 ||+/ (
+			!flags.fingerprintsEnabled || /+TODO verify this works ips.length == 1 ||+/ (
 				(normalTime || timeStopper is ip) &&
 				tick >= ip.jumpedTo &&
 				!(ip.mode & ip.DORMANT)

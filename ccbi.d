@@ -10,12 +10,12 @@
 // The core functionality, main loop, etc.
 module ccbi.ccbi;
 
-import tango.core.BitArray;
 import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Stdout;
 import tango.io.device.FileConduit;
 import regex = tango.text.Regex;
 
+import ccbi.flags;
 import ccbi.globals : VERSION_STRING;
 import ccbi.fungemachine;
 import ccbi.templateutils;
@@ -287,17 +287,16 @@ Other notes:
 
     "SCKE"  0x53434b45`;
 
-mixin (booleans);
-
 int main(char[][] args) {
 	if (args.length < 2) {
 		Stderr.formatln(HELP, args[0]);
 		return 1;
 	}
 
-	initBools();
 	auto filePos = size_t.max;
 	args = args[1..$];
+
+	Flags flags;
 
 	// {{{ parse arguments
 	scope helpRegex = regex.Regex("^(?--?|/)(?[?]|h(?e?lp)?)$", "i");
@@ -320,7 +319,7 @@ int main(char[][] args) {
 			return 0;
 		}
 
-		switch (arg) {
+		switch (arg) with (flags) {
 			case "-t", "--trace":           tracing             = true;  break;
 //			case "-c", "--count-ticks":     countTicks          = true;  break;
 			case "-w", "--warnings":        warnings            = true;  break;
@@ -381,5 +380,5 @@ int main(char[][] args) {
 	}
 
 	// TODO: other dims
-	return (new FungeMachine!(2)(file, bools)).run;
+	return (new FungeMachine!(2)(file, flags)).run;
 }

@@ -957,7 +957,7 @@ void loadSemantics() {
 	if (n <= 0)
 		return reverse();
 
-	if (!fingerprintsEnabled) {
+	if (!flags.fingerprintsEnabled) {
 		cip.stack.pop(n);
 		return reverse();
 	}
@@ -1008,7 +1008,7 @@ void unloadSemantics() {
 	if (n <= 0)
 		return reverse();
 
-	if (!fingerprintsEnabled) {
+	if (!flags.fingerprintsEnabled) {
 		cip.stack.pop(n);
 		return reverse();
 	}
