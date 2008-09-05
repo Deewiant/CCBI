@@ -5,87 +5,109 @@
 // The standard Befunge-98 instructions.
 module ccbi.instructions.std;
 
+import tango.core.Tuple;
+
 import ccbi.cell;
 import ccbi.templateutils;
 
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
+// both of the below
 import ccbi.random;
+import ccbi.fingerprints.all;
 
-// WORKAROUND: good old http://d.puremagic.com/issues/show_bug.cgi?id=810
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
+// should be where 'see template PushNumber above' is, below
 template PushNumber(uint n) {
 	const PushNumber = "cip.stack.push(" ~ ToString!(n) ~ ")";
+}
+
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
+// should be below StdInsFunc
+// Tuple!('x', "blaa") -> Tuple!("'a'", `"blaa"`)
+template WrapForCasing(ins...) {
+	static if (ins.length) {
+		static assert (ins.length > 1, "WrapForCasing :: odd list");
+
+		alias Tuple!(
+			"'" ~ EscapeForChar!(ins[0]) ~ "'",
+			Wrap               !(ins[1]),
+			WrapForCasing      !(ins[2..$])
+		) WrapForCasing;
+	} else
+		alias ins WrapForCasing;
 }
 
 mixin (TemplateLookup!(
 	"StdInsFunc", "cell", "c",
 	`static assert (false, "No such standard instruction " ~ToString!(c));`,
 
-	P!( '>', "goEast"),
-	P!( '<', "goWest"),
-	P!( '^', "goNorth"),
-	P!( 'v', "goSouth"),
-	P!( 'h', "goHigh"),
-	P!( 'l', "goLow"),
-	P!( '?', "goAway"),
-	P!( ']', "turnRight"),
-	P!( '[', "turnLeft"),
-	P!( 'r', "reverse"),
-	P!( 'x', "absoluteVector"),
-	P!( '#', "trampoline"),
-	P!( '@', "stop"),
-	P!( 'z', "noOperation"),
-	P!( 'j', "jumpForward"),
-	P!( 'q', "quit"),
-	P!( 'k', "iterate"),
-	P!( '!', "logicalNot"),
-	P!( '`', "greaterThan"),
-	P!( '_', "eastWestIf"),
-	P!( '|', "northSouthIf"),
-	P!( 'w', "compare"),
-	P!( '0', PushNumber!(0)),
-	P!( '1', PushNumber!(1)),
-	P!( '2', PushNumber!(2)),
-	P!( '3', PushNumber!(3)),
-	P!( '4', PushNumber!(4)),
-	P!( '5', PushNumber!(5)),
-	P!( '6', PushNumber!(6)),
-	P!( '7', PushNumber!(7)),
-	P!( '8', PushNumber!(8)),
-	P!( '9', PushNumber!(9)),
-	P!( 'a', PushNumber!(10)),
-	P!( 'b', PushNumber!(11)),
-	P!( 'c', PushNumber!(12)),
-	P!( 'd', PushNumber!(13)),
-	P!( 'e', PushNumber!(14)),
-	P!( 'f', PushNumber!(15)),
-	P!( '+', "add"),
-	P!( '*', "multiply"),
-	P!( '-', "subtract"),
-	P!( '/', "divide"),
-	P!( '%', "remainder"),
-	P!( '"', "toggleStringMode"),
-	P!('\'', "fetchCharacter"),
-	P!( 's', "storeCharacter"),
-	P!( '$', "pop"),
-	P!( ':', "duplicate"),
-	P!('\\', "swap"),
-	P!( 'n', "clearStack"),
-	P!( '{', "beginBlock"),
-	P!( '}', "endBlock"),
-	P!( 'u', "stackUnderStack"),
-	P!( 'g', "get"),
-	P!( 'p', "put"),
-	P!( '.', "outputDecimal"),
-	P!( ',', "outputCharacter"),
-	P!( '&', "inputDecimal"),
-	P!( '~', "inputCharacter"),
-	P!( 'i', "inputFile"),
-	P!( 'o', "outputFile"),
-	P!( '=', "execute"),
-	P!( 'y', "getSysInfo"),
-	P!( '(', "loadSemantics"),
-	P!( ')', "unloadSemantics"),
-	P!( 't', "splitIP")
+	WrapForCasing!(
+		 '>', "goEast",
+		 '<', "goWest",
+		 '^', "goNorth",
+		 'v', "goSouth",
+		 'h', "goHigh",
+		 'l', "goLow",
+		 '?', "goAway",
+		 ']', "turnRight",
+		 '[', "turnLeft",
+		 'r', "reverse",
+		 'x', "absoluteVector",
+		 '#', "trampoline",
+		 '@', "stop",
+		 'z', "noOperation",
+		 'j', "jumpForward",
+		 'q', "quit",
+		 'k', "iterate",
+		 '!', "logicalNot",
+		 '`', "greaterThan",
+		 '_', "eastWestIf",
+		 '|', "northSouthIf",
+		 'w', "compare",
+		 '0', PushNumber!(0),
+		 '1', PushNumber!(1),
+		 '2', PushNumber!(2),
+		 '3', PushNumber!(3),
+		 '4', PushNumber!(4),
+		 '5', PushNumber!(5),
+		 '6', PushNumber!(6),
+		 '7', PushNumber!(7),
+		 '8', PushNumber!(8),
+		 '9', PushNumber!(9),
+		 'a', PushNumber!(10),
+		 'b', PushNumber!(11),
+		 'c', PushNumber!(12),
+		 'd', PushNumber!(13),
+		 'e', PushNumber!(14),
+		 'f', PushNumber!(15),
+		 '+', "add",
+		 '*', "multiply",
+		 '-', "subtract",
+		 '/', "divide",
+		 '%', "remainder",
+		 '"', "toggleStringMode",
+		'\'', "fetchCharacter",
+		 's', "storeCharacter",
+		 '$', "pop",
+		 ':', "duplicate",
+		'\\', "swap",
+		 'n', "clearStack",
+		 '{', "beginBlock",
+		 '}', "endBlock",
+		 'u', "stackUnderStack",
+		 'g', "get",
+		 'p', "put",
+		 '.', "outputDecimal",
+		 ',', "outputCharacter",
+		 '&', "inputDecimal",
+		 '~', "inputCharacter",
+		 'i', "inputFile",
+		 'o', "outputFile",
+		 '=', "execute",
+		 'y', "getSysInfo",
+		 '(', "loadSemantics",
+		 ')', "unloadSemantics",
+		 't', "splitIP")
 ));
 
 template StdInstructions() {
@@ -103,6 +125,7 @@ import ccbi.globals;
 import ccbi.ip;
 import ccbi.random;
 import ccbi.space;
+import ccbi.fingerprints.all;
 
 alias .Coords!(dim) Coords;
 alias .IP    !(dim) IP;
@@ -273,13 +296,8 @@ Request iterate() {
 		default: break;
 	}
 
-	if (isSemantics(i)) {
-		auto sem = i in cip.semantics;
-		while (n--)
-			r = executeSemantics(sem);
-	} else
-		while (n--)
-			r = executeStandard(i);
+	if (isSemantics(i)) while (n--) r = executeSemantics(i);
+	else                while (n--) r = executeStandard (i);
 
 	return r;
 }
@@ -947,53 +965,42 @@ void getSysInfo() {
 // ------------
 // Funge-98
 
+private bool popFingerprint(out cell fingerprint) {
+	auto n = cip.stack.pop;
+
+	if (n <= 0)
+		return false;
+
+	if (!flags.fingerprintsEnabled) {
+		cip.stack.pop(n);
+		return false;
+	}
+
+	fingerprint = 0;
+	while (n--) {
+		fingerprint <<= 8;
+		fingerprint += cip.stack.pop;
+	}
+	return true;
+}
+
 // Load Semantics
 void loadSemantics() {
 	if (cip.mode & cip.SWITCH)
 		space[cip.pos] = ')';
 
-	auto n = cip.stack.pop;
-
-	if (n <= 0)
+	cell fingerprint;
+	if (!popFingerprint(fingerprint))
 		return reverse();
 
-	if (!flags.fingerprintsEnabled) {
-		cip.stack.pop(n);
+	auto ins = instructionsOf(fingerprint);
+	if (!ins)
 		return reverse();
+
+	foreach (i; ins) {
+		assert (isSemantics(cast(cell)i));
+		cip.semantics[i - 'A'].push(Semantics(fingerprint, i));
 	}
-
-	cell fingerprint = 0;
-
-	while (n--) {
-		fingerprint <<= 8;
-		fingerprint += cip.stack.pop;
-	}
-
-	if (auto init = fingerprint in fingerprintConstructors) {
-		(*init)();
-
-		if (fingerprint in fingerprintDestructors)
-			++fingerprintLoaded[fingerprint];
-	}
-
-//	if (miniMode == Mini.ALL && loadMiniFunge(fingerprint))
-//		goto mini;
-//
-/*	else*/ if (auto fing = fingerprint in fingerprints) {
-		for (char c = 'A'; c <= 'Z'; ++c)
-		if (auto func = (*fing)[c])
-			cip.semantics[c].push(Semantics(BUILTIN, func));
-
-//	} else if (miniMode == Mini.UNIMPLEMENTED && loadMiniFunge(fingerprint)) {
-//		mini:
-//
-//		auto mini = fingerprint in minis;
-//
-//		for (char c = 'A'; c <= 'Z'; ++c)
-//		if (auto mini = (*mini)[c])
-//			cip.semantics[c].push(Semantics(MINI, &mini.instruction));
-	} else
-		return reverse();
 
 	cip.stack.push(fingerprint, 1);
 }
@@ -1003,49 +1010,17 @@ void unloadSemantics() {
 	if (cip.mode & cip.SWITCH)
 		space[cip.pos] = '(';
 
-	auto n = cip.stack.pop;
-
-	if (n <= 0)
+	cell fingerprint;
+	if (!popFingerprint(fingerprint))
 		return reverse();
 
-	if (!flags.fingerprintsEnabled) {
-		cip.stack.pop(n);
+	auto ins = instructionsOf(fingerprint);
+	if (!ins)
 		return reverse();
-	}
 
-	cell fingerprint = 0;
-
-	while (n--) {
-		fingerprint <<= 8;
-		fingerprint += cip.stack.pop;
-	}
-
-	// FIXME: why a goto, why not just mess with the if condition
-//	if (miniMode == Mini.ALL)
-//		goto mini;
-
-	auto implemented = fingerprint in fingerprints;
-
-	if (implemented) {
-		if (auto destroy = fingerprint in fingerprintDestructors)
-			if (auto cnt = fingerprint in fingerprintLoaded)
-				if (*cnt && !--*cnt)
-					(*destroy)();
-
-		for (char c = 'A'; c <= 'Z'; ++c)
-		if ((*implemented)[c])
-			cip.semantics[c].pop(1);
-	} else {
-//		mini:
-//
-//		auto mini = fingerprint in minis;
-//
-//		if (mini) {
-//			for (char c = 'A'; c <= 'Z'; ++c)
-//			if ((*mini)[c])
-//				cip.semantics[c].pop(1);
-//		} else
-			reverse();
+	foreach (i; ins) {
+		assert (isSemantics(cast(cell)i));
+		cip.semantics[i - 'A'].pop(1);
 	}
 }
 

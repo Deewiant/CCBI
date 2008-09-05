@@ -6,16 +6,10 @@
 // be defined outside ccbi.minifunge to avoid circular dependencies.
 module ccbi.fingerprint;
 
-import ccbi.cell;
-import ccbi.templateutils;
+import tango.core.Tuple;
 
-void function()[][cell] fingerprints;
-void function()  [cell] fingerprintConstructors;
-void function()  [cell] fingerprintDestructors;
-
-// the number of times a fingerprint is loaded
-// so that the destructor is called only when the loaded count is zero
-uint             [cell] fingerprintLoaded;
+public import ccbi.cell;
+       import ccbi.templateutils;
 
 template Code(char[4] s, char[4] id = s) {
 	const Code =
@@ -25,32 +19,63 @@ template Code(char[4] s, char[4] id = s) {
 		"new typeof(fingerprints[" ~ ToString!(HexCode!(s)) ~ "])('Z'+1);";
 }
 
-enum : bool {
-	BUILTIN,
-	MINI
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
+// should be below WrapForCasing
+//
+// "ABC" -> ["'A'","'B'","'C'"]
+private template WrapForCasingHelper(char[] s) {
+	static if (s.length)
+		const char[][] WrapForCasingHelper =
+			// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1640
+			// outer brackets are a Rebuild workaround
+			(["'" ~EscapeForChar!(s[0],1)~ "'"]) ~ WrapForCasingHelper!(s[1..$]);
+	else
+		const char[][] WrapForCasingHelper = [];
+}
+
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
+// should be below Fingerprint
+//
+// Tuple!("ABC", "blaa") -> Tuple!(["'A'","'B'","'C'"], `"blaa"`)
+private template WrapForCasing(ins...) {
+	static if (ins.length) {
+		static assert (ins.length > 1, "WrapForCasing :: odd list");
+
+		alias Tuple!(
+			WrapForCasingHelper!(ins[0]),
+			Wrap               !(ins[1]),
+			WrapForCasing      !(ins[2..$])
+		) WrapForCasing;
+	} else
+		alias ins WrapForCasing;
+}
+
+// Generates two templates given "fing":
+//
+// template fingInsFunc(cell c) {
+// 	static if (c == ...) const fingInsFunc = ...;
+// 	...
+// 	else const fingInsFunc = "reverse";
+// }
+//
+// template fingInstructions() { const fingInstructions = "ABC..."; }
+template Fingerprint(char[] name, ins...) {
+	const Fingerprint =
+		TemplateRangedLookup!(
+			name ~ "InsFunc",
+			"cell", "c",
+			"const "~name~" = `reverse`;",
+			WrapForCasing!(ins)
+		) ~
+		"template "~name~"Instructions() {"
+			"const "~name~"Instructions = " ~ Wrap!(Firsts!(ins)) ~ ";"
+		"}";
 }
 
 struct Semantics {
-	bool type;
-	union {
-		void function() instruction;
-		void delegate() miniFunge;
-	}
-
-	static typeof(*this) opCall(bool t, typeof(instruction) i) {
-		typeof(*this) s;
-		with (s) {
-			type = t;
-			instruction = i;
-		}
-		return s;
-	}
-	static typeof(*this) opCall(bool t, typeof(miniFunge) m) {
-		typeof(*this) s;
-		with (s) {
-			type = t;
-			miniFunge = m;
-		}
-		return s;
-	}
+	cell fingerprint;
+	
+	// Needed for FING/FNGR, since you can't just tell from the instruction
+	// being executed: 'A' in QWFP might be mapped to 'B' in ARST
+	char instruction;
 }

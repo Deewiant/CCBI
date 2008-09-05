@@ -20,6 +20,7 @@ import ccbi.stdlib;
 import ccbi.templateutils;
 import ccbi.tracer;
 import ccbi.utils;
+import ccbi.fingerprints.all;
 import ccbi.instructions.std;
 import ccbi.instructions.templates;
 
@@ -207,7 +208,7 @@ private:
 					static assert (cip.mapping.length > 'Z');
 
 					if (isSemantics(c))
-						return executeSemantics(c in cip.semantics);
+						return executeSemantics(c);
 				}
 			}
 			
@@ -223,6 +224,8 @@ private:
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
 final:
 
+// TODO: move dim information to instructions themselves, since fingerprints
+// need it as well
 	Request executeStandard(cell c) {
 		switch (c) mixin (Switch!(
 			mixin (Ins!("Std",
@@ -242,23 +245,32 @@ final:
 		return Request.MOVE;
 	}
 
-	Request executeSemantics(Stack!(Semantics)* sem) {
-// TODO NEXT: compile in fingerprints similar to above
-// so after template expansion we'd have here:
-// if (type == BUILTIN) {
-//    switch (sem.code) {
-//        case 0xNULL: reverse;
-//        case 0xSTRN: switch (c) { case 'S': printString; ... }
-//		}
-//	}
-// etc.
-// so Semantics just becomes bool+uint
-// we need it for FNGR anyway
+	mixin (ConcatMapTuple!(TemplateMixin, ALL_FINGERPRINTS));
 
+	Request executeSemantics(cell c)
+	in {
+		assert (isSemantics(c));
+	} body {
+		auto stack = cip.semantics[c - 'A'];
+		if (stack.empty)
+			return unimplemented;
 
-// TODO:		if (sem && sem.size) with (sem.top)
-// TODO:			return type == BUILTIN ? instruction() : miniFunge();
-		return unimplemented;
+		auto sem = stack.top;
+
+		switch (sem.fingerprint) mixin (Switch!(
+			// foreach fing, generates the following:
+			// case HexCode!(fing):
+			// 	switch (sem.instruction) mixin (Switch!(
+			// 		mixin (Ins!(fing, Range!('A', 'Z'))),
+			// 		"default: assert (false);"
+			//    ));
+			FingerprintExecutionCases!(
+				"sem.instruction",
+				"assert (false);",
+				ALL_FINGERPRINTS),
+			"default: unimplemented; break;"
+		));
+		return Request.MOVE;
 	}
 
 	Request unimplemented() {
