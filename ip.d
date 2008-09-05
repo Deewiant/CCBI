@@ -27,8 +27,8 @@ final class IP(cell dim) {
 		foreach (j, inout i; mapping)
 			i = cast(cell)j;
 
-		for (cell i = 'A'; i <= 'Z'; ++i)
-			semantics[i] = new typeof(semantics[i])('Z' - 'A' + 1u);
+		foreach (inout sem; semantics)
+			sem = new typeof(sem);
 
 		space = s;
 	}
@@ -51,13 +51,6 @@ final class IP(cell dim) {
 			);
 		}
 		stack = stackStack.top;
-
-	 	// deep copy semantics
-		semantics = null;
-		foreach (key, st; o.semantics) {
-			semantics[key] = new Stack!(Semantics);
-			semantics[key].push(st.elementsBottomToTop);
-		}
 	}
 
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
@@ -134,9 +127,9 @@ final class IP(cell dim) {
 		CURRENTID_INIT   = 0,
 		TIMESTOPPER_INIT = cell.max;
 
-	Container!(cell) stack;
+	Container!(cell)      stack;
 	Stack!(typeof(stack)) stackStack;
-	Stack!(Semantics)[char] semantics;
+	Stack!(Semantics)[26] semantics;
 
 	cell[256] mapping = void; // for IMAP
 

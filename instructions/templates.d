@@ -5,10 +5,13 @@
 module ccbi.instructions.templates;
 
 import ccbi.templateutils;
+import ccbi.fingerprints.all; // for *InsFuncs
 import ccbi.instructions.std : StdInsFunc;
 
 import tango.core.Traits : isCallableType, ReturnTypeOf;
 
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
+// should be below Ins
 template SingleIns(char[] s) {
 	mixin (
 		// WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=1059
@@ -27,9 +30,9 @@ template SingleIns(char[] s) {
 //				mixin (\"
 //					!isCallableType!(typeof(`~s~`."~` ~s~ `InsFunc!(i)~")) ||
 //					is(       ReturnTypeOf!(`~s~`."~` ~s~ `InsFunc!(i)~") == void)
-//						? \\\"case '" ~Escape!(i,3)~ "': `~s~`." ~`~
+//						? \\\"case '" ~EscapeForChar!(i,3)~ "': `~s~`." ~`~
 //							s~`InsFunc!(i) ~"; break;\\\"
-//						: \\\"case '" ~Escape!(i,3)~ "': `
+//						: \\\"case '" ~EscapeForChar!(i,3)~ "': `
 //							`return `~s~`." ~`~s~`InsFunc!(i) ~ ";\\\"` ~
 
 				// we need the trailing ~ here or we get "mixin(bar) mixin(foo)"
@@ -39,7 +42,8 @@ template SingleIns(char[] s) {
 		}`);
 }
 
-template Ins(char[] type, char[] i) {
+template Ins(char[] namespace, char[] i) {
 	const char[] Ins =
-		mixin ("ConcatMap!(SingleIns!(type).Single" ~type~ "Ins, i)") ~ `""`;
+		mixin ("ConcatMap!(SingleIns!(namespace).Single" ~namespace~ "Ins, i)")
+		~ `""`;
 }
