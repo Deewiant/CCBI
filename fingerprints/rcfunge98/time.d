@@ -50,7 +50,7 @@ template DateFunc(char[] internal_f, char[] f, char[] offset = "0") {
 }
 
 mixin (DateFunc!("day",       "getDayOfMonth"));
-mixin (DateFunc!("dayOfYear", "getDayOfYear"));
+mixin (DateFunc!("dayOfYear", "getDayOfYear", "-1"));
 mixin (TimeFunc!("hour",      "hours"));
 mixin (TimeFunc!("minute",    "minutes"));
 mixin (DateFunc!("month",     "getMonth"));
