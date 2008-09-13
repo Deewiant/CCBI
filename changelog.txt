@@ -1,6 +1,10 @@
 CCBI changelog
 --------------
 
+2008-09-13, 1.0.15
+	Bugfix in TIME.dayOfYear():
+		Was off by one: push 0, not 1, for January 1st.
+
 2008-08-28, 1.0.14
 	Various changes to SOCK:
 		Bugfix: in accept(), do not overwrite the original socket. The fix in
