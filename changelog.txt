@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2008-09-??, 1.0.17
+	Fixed regression in TRDS.jump():
+		IP needs to be moved off the J for internal reasons which are unknown to
+		me, or problems occur.
+
 2008-09-16, 1.0.16
 	Bugfix in TRDS.jump():
 		Don't do ip.move() without setting needMove = false: would skip next
