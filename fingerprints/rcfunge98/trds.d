@@ -31,12 +31,8 @@ static this() {
 }
 
 void jump() {
-	auto x = ip.x,
-	     y = ip.y;
-	ip.move();
-
-	ip.tardisReturnX = ip.x;
-	ip.tardisReturnY = ip.y;
+	ip.tardisReturnX = ip.x + ip.dx;
+	ip.tardisReturnY = ip.y + ip.dy;
 
 	ip.tardisReturnDx   = ip.dx;
 	ip.tardisReturnDy   = ip.dy;
@@ -44,11 +40,11 @@ void jump() {
 
 	if (ip.mode & IP.SPACE_SET) {
 		if (ip.mode & IP.ABS_SPACE) {
-			ip.x = ip.tardisX;
-			ip.y = ip.tardisY;
+			ip.x  = ip.tardisX;
+			ip.y  = ip.tardisY;
 		} else {
-			ip.x = x + ip.tardisX;
-			ip.y = y + ip.tardisY;
+			ip.x += ip.tardisX;
+			ip.y += ip.tardisY;
 		}
 		needMove = false;
 	}
@@ -142,8 +138,7 @@ void jump() {
 
 			This is very smelly code, and I doubt it's a robust solution. However, I can't
 			think of a test case which would break it, and I'm out of patience testing this
-			stupid fingerprint which nobody uses and only this interpreter implements in
-			even a remotely working manner.
+			stupid fingerprint which nobody uses.
 			+/
 
 			outer: foreach (inout dat; stoppedIPdata)
