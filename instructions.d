@@ -28,7 +28,7 @@ import ccbi.mini.vars         : miniMode, Mini, warnings, inMini;
 
 const cell
 	HANDPRINT      = HexCode!("CCBI"),
-	VERSION_NUMBER = 1015; // remember to change ccbi.ccbi.VERSION_STRING too!
+	VERSION_NUMBER = 1016; // remember to change ccbi.ccbi.VERSION_STRING too!
 
 int returnVal;
 char[][] fungeArgs;
