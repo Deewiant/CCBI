@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2008-09-16, 1.0.16
+	Bugfix in TRDS.jump():
+		Don't do ip.move() without setting needMove = false: would skip next
+		instruction if doing time jump without space jump.
+
 2008-09-13, 1.0.15
 	Bugfix in TIME.dayOfYear():
 		Was off by one: push 0, not 1, for January 1st.
