@@ -46,8 +46,13 @@ void jump() {
 			ip.x += ip.tardisX;
 			ip.y += ip.tardisY;
 		}
-		needMove = false;
+	} else {
+		// We do want to move the IP off the J now in any case.
+		// I'm not at all aware why but not doing so causes problems.
+		ip.x = ip.tardisReturnX;
+		ip.y = ip.tardisReturnY;
 	}
+	needMove = false;
 
 	if (ip.mode & IP.DELTA_SET) {
 		ip.dx = ip.tardisDx;
