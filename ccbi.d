@@ -414,7 +414,8 @@ int main(char[][] args) {
 			if (normalTime) {
 				++ticks;
 
-				// just jump into the future if nobody's doing anything in the meanwhile
+				// just jump into the future if nobody's doing anything in the
+				// meanwhile
 				if (ip && ip.jumpedTo > ticks && ips.length == 1)
 					ticks = ip.jumpedTo;
 
@@ -426,28 +427,26 @@ int main(char[][] args) {
 
 					/+
 
-					More complicated, best explained with an example, and I'm still not sure I
-					understand it fully.
+					More complicated, best explained with an example, and I'm still
+					not sure I understand it fully. TRDS is a wonderful source of
+					confusion.
 
-					TRDS is a wonderful source of confusion. It helps that RC/Funge-98, in which it
-					originated, doesn't implement it properly.
-
-					See ccbi.fingerprints.rcfunge98.trds.jump for a longer comment which explains
-					other stuff.
+					See ccbi.fingerprints.rcfunge98.trds.jump for a longer comment
+					which explains other stuff.
 
 					- IP 1 travels from time 300 to 200.
-					- We rerun from time 0 to 200, then place the IP. It does some stuff,
-					  then teleports and jumps back to 300.
+					- We rerun from time 0 to 200, then place the IP. It does some
+					  stuff, then teleports and jumps back to 300.
 					- IP 2 travels from time 400 to 100
-					- We rerun from time 0 to 100, then place the IP. It does some stuff,
-					  then teleports and jumps back to 400.
+					- We rerun from time 0 to 100, then place the IP. It does some
+					  stuff, then teleports and jumps back to 400.
 					- At time 300, IP 1 travels again to 200.
-					- We rerun from time 0 to 200. But at time 100, we need to place IP 2
-					  again. So we do. (Hence the whole travelers array.)
+					- We rerun from time 0 to 200. But at time 100, we need to place
+					  IP 2 again. So we do. (Hence the whole travelers array.)
 					- It does its stuff, and teleports and freezes itself until 400.
 					- Come time 200, we would place IP 1 again if we hadn't done the
-					  following, and removed it back when we placed IP 2 for the second
-					  time.
+					  following, and removed it back when we placed IP 2 for the
+					  second time.
 					+/
 
 					else if (latestJumpTarget < travelers[i].jumpedTo)
@@ -480,11 +479,14 @@ int main(char[][] args) {
 			foreach (inout i; ips)
 				i.gotoNextInstruction();
 
-		// note that if an IP modifies the space where another IP is with an instruction like p,
+		// note that if an IP modifies the space where another IP is with an
+		// instruction like p,
 		// and does it in the same tick but before this other IP executes,
-		// that one might run into a space or a semicolon which isn't caught by the above
+		// that one might run into a space or a semicolon which isn't caught by
+		// the above
 		// hence we still need to do gotoNextInstruction before executing
-		// tracing can't catch this since you can't trace an IP at a time, only a tick at a time
+		// tracing can't catch this since you can't trace an IP at a time, only a
+		// tick at a time
 
 		bool tracing = trace;
 
@@ -536,7 +538,8 @@ int main(char[][] args) {
 							}
 
 							if (!found)
-								stoppedIPdata ~= StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
+								stoppedIPdata ~=
+									StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
 						}
 					}
 
@@ -598,7 +601,12 @@ int main(char[][] args) {
 	
 	if (countTicks) {
 		Stdout.flush;
-		Stderr(executionCount)(" instructions executed in ")(ticks)(" ticks elapsed.").newline;
+		Stderr
+			(executionCount)
+			(" instructions executed in ")
+			(ticks)
+			(" ticks elapsed.")
+			.newline;
 	}
 
 	return returnVal;
