@@ -170,7 +170,7 @@ void stop  () { IP.timeStopper = ip.id; }
 void resume() { IP.timeStopper = IP.TIMESTOPPER_INIT; }
 
 void now() { ip.stack.push(cast(cell)ticks); }
-void max() { ip.stack.push(              1); } // doesn't push 0, like RC/Funge-98, since the first tick is actually 1, even with RC/Funge-98
+void max() { ip.stack.push(              0); }
 
 void reset() {
 	ip.mode &= ~(IP.ABS_SPACE | IP.SPACE_SET | IP.ABS_TIME | IP.TIME_SET | IP.DELTA_SET);
