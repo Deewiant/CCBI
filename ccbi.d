@@ -407,54 +407,8 @@ int main(char[][] args) {
 	try execution: for (;;) {
 		// TRDS: have to do all kinds of crap if time is stopped
 		static bool normalTime = void;
-
-		if (fingerprintsEnabled) {
-			normalTime = (IP.timeStopper == IP.TIMESTOPPER_INIT);
-
-			if (normalTime) {
-				++ticks;
-
-				// just jump into the future if nobody's doing anything in the
-				// meanwhile
-				if (ip && ip.jumpedTo > ticks && ips.length == 1)
-					ticks = ip.jumpedTo;
-
-				for (size_t i = 0; i < travelers.length; ++i) {
-
-					// self-explanatory: if the traveler is coming here, put it here
-					if (ticks == travelers[i].jumpedTo)
-						ips ~= travelers[i];
-
-					/+
-
-					More complicated, best explained with an example, and I'm still
-					not sure I understand it fully. TRDS is a wonderful source of
-					confusion.
-
-					See ccbi.fingerprints.rcfunge98.trds.jump for a longer comment
-					which explains other stuff.
-
-					- IP 1 travels from time 300 to 200.
-					- We rerun from time 0 to 200, then place the IP. It does some
-					  stuff, then teleports and jumps back to 300.
-					- IP 2 travels from time 400 to 100
-					- We rerun from time 0 to 100, then place the IP. It does some
-					  stuff, then teleports and jumps back to 400.
-					- At time 300, IP 1 travels again to 200.
-					- We rerun from time 0 to 200. But at time 100, we need to place
-					  IP 2 again. So we do. (Hence the whole travelers array.)
-					- It does its stuff, and teleports and freezes itself until 400.
-					- Come time 200, we would place IP 1 again if we hadn't done the
-					  following, and removed it back when we placed IP 2 for the
-					  second time.
-					+/
-
-					else if (latestJumpTarget < travelers[i].jumpedTo)
-						travelers = travelers[0..i] ~ travelers[i+1..$];
-				}
-			}
-		} else
-			++ticks;
+		
+		normalTime = fingerprintsEnabled && IP.timeStopper == IP.TIMESTOPPER_INIT;
 
 		static bool executable(IP i) {
 			// IIPC: don't execute if dormant
@@ -591,6 +545,52 @@ int main(char[][] args) {
 			} else
 				needMove = true;
 		}
+
+		if (fingerprintsEnabled) {
+			if (normalTime) {
+				++ticks;
+
+				// just jump into the future if nobody's doing anything in the
+				// meanwhile
+				if (ip && ip.jumpedTo > ticks && ips.length == 1)
+					ticks = ip.jumpedTo;
+
+				for (size_t i = 0; i < travelers.length; ++i) {
+
+					// self-explanatory: if the traveler is coming here, put it here
+					if (ticks == travelers[i].jumpedTo)
+						ips ~= travelers[i];
+
+					/+
+
+					More complicated, best explained with an example, and I'm still
+					not sure I understand it fully. TRDS is a wonderful source of
+					confusion.
+
+					See ccbi.fingerprints.rcfunge98.trds.jump for a longer comment
+					which explains other stuff.
+
+					- IP 1 travels from time 300 to 200.
+					- We rerun from time 0 to 200, then place the IP. It does some
+					  stuff, then teleports and jumps back to 300.
+					- IP 2 travels from time 400 to 100
+					- We rerun from time 0 to 100, then place the IP. It does some
+					  stuff, then teleports and jumps back to 400.
+					- At time 300, IP 1 travels again to 200.
+					- We rerun from time 0 to 200. But at time 100, we need to place
+					  IP 2 again. So we do. (Hence the whole travelers array.)
+					- It does its stuff, and teleports and freezes itself until 400.
+					- Come time 200, we would place IP 1 again if we hadn't done the
+					  following, and removed it back when we placed IP 2 for the
+					  second time.
+					+/
+
+					else if (latestJumpTarget < travelers[i].jumpedTo)
+						travelers = travelers[0..i] ~ travelers[i+1..$];
+				}
+			}
+		} else
+			++ticks;
 	} catch (Exception e) {
 		Stdout.flush;
 		Stderr
@@ -604,7 +604,7 @@ int main(char[][] args) {
 		Stderr
 			(executionCount)
 			(" instructions executed in ")
-			(ticks)
+			(ticks+1)
 			(" ticks elapsed.")
 			.newline;
 	}

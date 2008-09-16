@@ -5,6 +5,10 @@ CCBI changelog
 	Bugfix in TRDS.jump():
 		Don't do ip.move() without setting needMove = false: would skip next
 		instruction if doing time jump without space jump.
+	
+	The tick count is now updated after executing an instruction, not before.
+
+	Thus TRDS.max() now also pushes 0.
 
 2008-09-13, 1.0.15
 	Bugfix in TIME.dayOfYear():

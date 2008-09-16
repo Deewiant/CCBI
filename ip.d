@@ -32,7 +32,7 @@ IP* findIP(cell id) {
 }
 
 bool needMove = true;
-ulong ticks;
+ulong ticks = 0;
 
 // for TRDS
 struct StoppedIPData {
