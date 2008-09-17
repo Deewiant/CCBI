@@ -405,11 +405,6 @@ int main(char[][] args) {
 	typeof(ip.jumpedTo) latestJumpTarget;
 
 	try execution: for (;;) {
-		// TRDS: have to do all kinds of crap if time is stopped
-		static bool normalTime = void;
-		
-		normalTime = fingerprintsEnabled && IP.timeStopper == IP.TIMESTOPPER_INIT;
-
 		static bool executable(IP i) {
 			// IIPC: don't execute if dormant
 			// TRDS: if time is stopped, execute only for the time stopper
@@ -477,8 +472,10 @@ int main(char[][] args) {
 
 					if (fingerprintsEnabled) {
 						// TRDS: resume time if the time stopper dies
-						if (!normalTime)
+						if (!normalTime) {
 							IP.timeStopper = IP.TIMESTOPPER_INIT;
+							normalTime = true;
+						}
 
 						// TRDS: store data of stopped IPs which have jumped
 						// see ccbi.fingerprints.rcfunge98.trds.jump() for the reason
@@ -549,6 +546,8 @@ int main(char[][] args) {
 		if (fingerprintsEnabled) {
 			if (normalTime) {
 				++ticks;
+
+				// TRDS: have to do all kinds of crap
 
 				// just jump into the future if nobody's doing anything in the
 				// meanwhile
