@@ -6,6 +6,12 @@ CCBI changelog
 		IP needs to be moved off the J for internal reasons which are unknown to
 		me, or problems occur.
 
+	Fixed TRDS-related regression:
+		Don't increment the tick count even once if time is stopped. (Time stop
+		was not detected until the next iteration, by which time the tick count
+		had already been incremented due to the 1.0.16 change of doing it after
+		execution.)
+
 2008-09-16, 1.0.16
 	Bugfix in TRDS.jump():
 		Don't do ip.move() without setting needMove = false: would skip next

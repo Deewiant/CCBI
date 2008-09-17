@@ -5,7 +5,7 @@
 module ccbi.fingerprints.rcfunge98.trds; private:
 
 import ccbi.fingerprint;
-import ccbi.instructions : printAfter;
+import ccbi.instructions : printAfter, normalTime;
 import ccbi.ip;
 import ccbi.utils;
 
@@ -171,8 +171,8 @@ void jump() {
 	}
 }
 
-void stop  () { IP.timeStopper = ip.id; }
-void resume() { IP.timeStopper = IP.TIMESTOPPER_INIT; }
+void stop  () { IP.timeStopper = ip.id; normalTime = false; }
+void resume() { IP.timeStopper = IP.TIMESTOPPER_INIT; normalTime = true; }
 
 void now() { ip.stack.push(cast(cell)ticks); }
 void max() { ip.stack.push(              0); }

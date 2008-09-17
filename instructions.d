@@ -32,7 +32,9 @@ const cell
 
 int returnVal;
 char[][] fungeArgs;
-bool fingerprintsEnabled = true;
+bool
+	fingerprintsEnabled = true,
+	normalTime          = true;
 
 version (Win32)
 	const cell PATH_SEPARATOR = '\\';
