@@ -593,8 +593,9 @@ int main(char[][] args) {
 	} catch (Exception e) {
 		Stdout.flush;
 		Stderr
-			("Exited due to an error: ")(e.msg)
+			("Exited due to an error: ")(e.toString)
 			(" at ")(e.file)(':')(e.line)
+			(" (")(e.classinfo.name)(')')
 			.newline;
 	}
 	
