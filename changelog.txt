@@ -5,6 +5,9 @@ CCBI changelog
 	The error message for OutOfMemoryExceptions is now printed properly, and
 	the exception type is printed as well.
 
+	HRTI now uses the StopWatch structure for timing where possible, resulting
+	in increased accuracy (on Windows, at least).
+
 2008-09-21, 1.0.17
 	Fixed regression in TRDS.jump():
 		IP needs to be moved off the J for internal reasons which are unknown to

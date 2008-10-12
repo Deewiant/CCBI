@@ -5,6 +5,7 @@
 module ccbi.fingerprints.cats_eye.hrti; private:
 
 import tango.time.Clock;
+import tango.time.StopWatch;
 import tango.io.Stdout;
 
 import ccbi.fingerprint;
@@ -29,39 +30,39 @@ static this() {
 
 void ctor()
 out {
-	assert (resolution > TimeSpan.zero, "Calculated timer granularity as negative!");
+	assert (resolution > 0, "Calculated timer granularity as negative!");
 } body {
-	if (resolution == TimeSpan.zero) {
+	if (resolution == 0) {
 		// educated guess regarding granularity
-		auto time = Clock.now();
 
-		do resolution = Clock.now() - time;
-		while (resolution == TimeSpan.zero);
+		ip.timer.start;
+		do resolution = ip.timer.microsec;
+		while (resolution == 0);
 
-		oneSecond  = TimeSpan.fromSeconds(1).ticks,
-		oneMicro   = TimeSpan.fromMicros (1).ticks;
+		oneSecond = TimeSpan.fromSeconds(1).ticks,
+		oneMicro  = TimeSpan.fromMicros (1).ticks;
 	}
 }
 
-TimeSpan	resolution = TimeSpan.zero;
+typeof(StopWatch.microsec()) resolution = 0;
 typeof(TimeSpan.ticks()) oneSecond, oneMicro;
 
 // Granularity
-void granularity() { ip.stack.push(cast(cell)(resolution.micros)); }
+void granularity() { ip.stack.push(cast(cell)resolution); }
 
 // Mark
-void mark() { ip.timeMark = Clock.now(); }
+void mark() { ip.timer.start; ip.timerMarked = true; }
 
 // Timer
 void timer() {
-	if (ip.timeMark == Time.min)
-		reverse();
+	if (ip.timerMarked)
+		ip.stack.push(cast(cell)ip.timer.microsec);
 	else
-		ip.stack.push(cast(cell)((Clock.now() - ip.timeMark).micros));
+		reverse();
 }
 
 // Erase mark
-void eraseMark() { ip.timeMark = typeof(ip.timeMark).min; }
+void eraseMark() { ip.timerMarked = false; }
 
 // Second
 void second() { ip.stack.push(cast(cell)(Clock.now().ticks % oneSecond / oneMicro)); }

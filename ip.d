@@ -6,7 +6,7 @@
 module ccbi.ip;
 
 import tango.stdc.string : memcpy;
-import tango.time.Time;
+import tango.time.StopWatch;
 
 public import ccbi.cell;
        import ccbi.container;
@@ -211,7 +211,8 @@ struct IP {
 	ushort mode = 0;
 
 	// for HRTI
-	auto timeMark = Time.min;
+	StopWatch timer;
+	bool timerMarked = false;
 
 	// the rest for TRDS
 
