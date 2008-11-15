@@ -1,7 +1,7 @@
 CCBI changelog
 --------------
 
-2008-??-??, ??????
+2008-11-15, 1.0.18
 	The error message for OutOfMemoryExceptions is now printed properly, and
 	the exception type is printed as well.
 
