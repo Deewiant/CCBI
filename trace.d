@@ -5,6 +5,7 @@
 // The tracing facilities.
 module ccbi.trace;
 
+import tango.io.Console : Cin;
 import tango.io.Stdout;
 import tango.text.convert.Integer : toInt, toLong;
 import tango.text.Util            : trim, split;

@@ -5,10 +5,11 @@
 // The standard Befunge-98 instructions.
 module ccbi.instructions;
 
-import tango.io.Buffer;
 import tango.io.Console : Cin;
-import tango.io.device.FileConduit;
-import tango.io.stream.TypedStream;
+import tango.io.Stdout : Stdout, Stderr;
+import tango.io.device.File;
+import tango.io.stream.Buffer;
+import tango.io.stream.Typed;
 import tango.text.Util  : join, splitLines;
 import tango.time.Clock;
 
@@ -577,7 +578,8 @@ void outputDecimal() {
 	auto n = ip.stack.pop;
 	if (ticks >= printAfter) {
 		Stdout(n);
-		Out.write(' ');
+		auto c = cast(ubyte)' ';
+		Out.write(c);
 	}
 }
 
@@ -691,7 +693,7 @@ void inputFile() {
 
 	popVector(vaX, vaY);
 
-	FileConduit file;
+	File file;
 	try file = new typeof(file)(filename);
 	catch {
 		return reverse();
@@ -728,12 +730,12 @@ void outputFile() {
 	popVector        (vaX, vaY);
 	popVector!(false)(vbX, vbY);
 
-	FileConduit f;
+	File f;
 	try f = new typeof(f)(filename, WriteCreate);
 	catch {
 		return reverse();
 	}
-	auto file = new Buffer(f);
+	auto file = new BufferOutput(f);
 	scope (exit)
 		file.close();
 

@@ -5,8 +5,8 @@
 // Helpful utility functions and constants.
 module ccbi.utils;
 
-import tango.io.Buffer;
-import tango.io.device.FileConduit;
+import tango.io.device.File;
+import tango.io.stream.Buffer;
 import tango.sys.Environment;
 import tango.stdc.stdlib;
 
@@ -26,7 +26,7 @@ void loadIntoFungeSpace
 (bool needBegX)
 (
 	Befunge98Space* space,
-	FileConduit fc,
+	File fc,
 	cellidx* endX, cellidx* endY,
 	cellidx offsetX = 0, cellidx offsetY = 0,
 	bool binary = false
@@ -40,7 +40,7 @@ void loadIntoFungeSpace
 
 	void put(ubyte t) { (*space)[x++, y] = cast(cell)t; }
 
-	auto file = new Buffer(fc);
+	auto file = new BufferInput(fc);
 	auto input = new ubyte[0x400];
 	bool lineBreak = false;
 

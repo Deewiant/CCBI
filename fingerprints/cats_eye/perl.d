@@ -5,6 +5,7 @@
 module ccbi.fingerprints.cats_eye.perl; private:
 
 import tango.core.Exception       : ProcessException;
+import tango.io.Stdout            : Stdout;
 import tango.sys.Process;
 import tango.text.convert.Integer : parse;
 

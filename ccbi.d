@@ -11,9 +11,9 @@
 module ccbi.ccbi;
 
 import tango.core.Exception : ArgEx = IllegalArgumentException;
-import tango.io.Buffer;
 import tango.io.Stdout;
-import tango.io.device.FileConduit;
+import tango.io.device.File;
+import tango.io.stream.Buffer;
 import regex = tango.text.Regex;
 
 import ccbi.instructions;
@@ -23,7 +23,7 @@ import ccbi.space;
 import ccbi.trace;
 import ccbi.utils;
 
-import ccbi.mini.vars : miniMode, Mini;
+import ccbi.mini.vars : miniMode, Mini, warnings;
 
 import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
 
@@ -363,15 +363,17 @@ int main(char[][] args) {
 
 	fungeArgs = args[filePos..$];
 
-	FileConduit file;
+	File file;
 	try file = new typeof(file)(fungeArgs[0]);
 	catch {
 		Stderr("Couldn't open file '")(fungeArgs[0])("' for reading.").newline;
 		return -1;
 	}
 
-	Stdout.stream(new Buffer(new RawCoutFilter!(false), 32 * 1024));
-	Stderr.stream(new Buffer(new RawCoutFilter!(true ), 32 * 1024));
+	Stdout.stream(new BufferOutput(new RawCoutFilter!(false), 32 * 1024));
+	Stderr.stream(new BufferOutput(new RawCoutFilter!(true ), 32 * 1024));
+	Stdout.flush = true;
+	Stderr.flush = true;
 
 	Out = new typeof(Out)(Stdout.stream);
 

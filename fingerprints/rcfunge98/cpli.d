@@ -85,8 +85,10 @@ void cplxOut() {
 		cell i = pop,
 		     r = pop;
 		Stdout(r);
-		if (i > 0)
-			Out.write('+');
+		if (i > 0) {
+			ubyte b = '+';
+			Out.write(b);
+		}
 		Stdout(i)("i ");
 	}
 }
