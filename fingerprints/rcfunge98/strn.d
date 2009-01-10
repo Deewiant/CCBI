@@ -89,7 +89,7 @@ void get() {
 }
 
 void input() {
-	Stdout.flush;
+	Stdout.stream.flush;
 
 	size_t i = 0;
 	try {

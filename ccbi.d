@@ -593,7 +593,7 @@ int main(char[][] args) {
 		} else
 			++ticks;
 	} catch (Exception e) {
-		Stdout.flush;
+		Stdout.stream.flush;
 		Stderr
 			("Exited due to an error: ")(e.toString)
 			(" at ")(e.file)(':')(e.line)
@@ -602,7 +602,7 @@ int main(char[][] args) {
 	}
 	
 	if (countTicks) {
-		Stdout.flush;
+		Stdout.stream.flush;
 		Stderr
 			(executionCount)
 			(" instructions executed in ")

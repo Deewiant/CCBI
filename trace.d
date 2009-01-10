@@ -118,7 +118,7 @@ The last is related to the TRDS fingerprint.`
 
 	running = false;
 
-	Stdout.flush();
+	Stdout.stream.flush();
 
 	static size_t index;
 	size_t ipCount = ips.length;
@@ -152,7 +152,7 @@ The last is related to the TRDS fingerprint.`
 
 	bool done;
 	do {
-		Stderr("(debug prompt) ").flush;
+		Stderr("(debug prompt) ").stream.flush;
 
 		static char[] last;
 
@@ -418,7 +418,7 @@ void printCell(char[] pre = "", char[] post = "", char[] mid = " ", bool bracket
 
 bool read(cell*[] cs...) { return read(cast(cellidx*[])cs); }
 bool read(cellidx*[] cs...) {
-	Stderr.flush;
+	Stderr.stream.flush;
 
 	char[] line;
 	Cin.readln(line);
@@ -451,7 +451,7 @@ bool read(cellidx*[] cs...) {
 	return true;
 }
 bool read(long* ul) {
-	Stderr.flush;
+	Stderr.stream.flush;
 
 	char[] line;
 	Cin.readln(line);

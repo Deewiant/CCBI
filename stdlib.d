@@ -235,6 +235,6 @@ private:
 static ~this() {
 	// Tango only flushes Cout and Cerr
 	// we capture output before it gets that far
-	Stdout.flush;
-	Stderr.flush;
+	Stdout.stream.flush;
+	Stderr.stream.flush;
 }
