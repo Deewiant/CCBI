@@ -132,7 +132,7 @@ bool isSemantics(cell i) {
 
 void unimplemented() {
 	if (warnings) {
-		Stdout.flush;
+		Stdout.stream.flush;
 		if (inMini)
 			miniUnimplemented();
 		else {
@@ -596,7 +596,7 @@ void outputCharacter() {
 
 // Input Decimal
 void inputDecimal() {
-	Stdout.flush();
+	Stdout.stream.flush();
 
 	ubyte c;
 
@@ -657,7 +657,7 @@ void inputDecimal() {
 
 // Input Character
 void inputCharacter() {
-	Stdout.flush();
+	Stdout.stream.flush();
 
 	ubyte c;
 

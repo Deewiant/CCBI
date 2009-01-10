@@ -69,7 +69,7 @@ void inputBase() {
 	if (base <= 0 || base > 36)
 		return reverse();
 
-	Stdout.flush();
+	Stdout.stream.flush();
 
 	auto digits = "0123456789abcdefghijklmnopqrstuvwxyz"[0..base];
 	char c;
