@@ -10,7 +10,7 @@ import tango.text.Util            : locatePattern;
 import tango.text.convert.Integer : format, parse;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
+import ccbi.instructions : reverse, outputCharacter;
 import ccbi.ip;
 import ccbi.space;
 import ccbi.utils;
@@ -53,7 +53,8 @@ void compare() {
 	ip.stack.push(cast(cell)compare(s, popString()));
 }
 
-void display() { Stdout(popString()); }
+// Done like so so that \n flushes
+void display() { while (ip.stack.top) outputCharacter; ip.stack.pop(); }
 
 void search() {
 	auto s = popString().dup;
