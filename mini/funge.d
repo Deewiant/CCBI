@@ -5,8 +5,8 @@
 module ccbi.mini.funge;
 
 import tango.io.Stdout;
-import tango.io.device.FileConduit;
-import tango.io.stream.TypedStream;
+import tango.io.device.File;
+import tango.io.stream.Typed;
 
 import ccbi.ip;
 
@@ -79,7 +79,7 @@ in {
 	fingStr[2] = cast(char)(fing >> 8);
 	fingStr[3] = cast(char)(fing);
 
-	FileConduit fc;
+	File fc;
 	try fc = new typeof(fc)(fingStr);
 	catch {
 		return false;

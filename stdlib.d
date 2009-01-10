@@ -10,12 +10,12 @@ import tango.core.Traits            : isUnsignedIntegerType;
 import tango.io.Console             : Cin;
 import tango.io.Stdout              : Stdout, Stderr;
 import tango.io.device.Conduit      : OutputFilter;
-import tango.io.device.FileConduit;
+import tango.io.device.File;
 import tango.io.model.IFile         : FileConst;
 import tango.math.Math              : min;
 import tango.sys.Common;
 
-const FileConduit.Style WriteCreate = { FileConduit.Access.Write, FileConduit.Open.Create, FileConduit.Share.init, FileConduit.Cache.Stream, };
+const File.Style WriteCreate = { File.Access.Write, File.Open.Create, File.Share.init, File.Cache.Stream, };
 
 version (Posix)
          import tango.stdc.posix.unistd : isatty;
@@ -223,7 +223,7 @@ private:
 			super(superArgs());
 		}
 
-		public override uint write(void[] src) {
+		public override size_t write(void[] src) {
 			ptrdiff_t written = posix.write(handle, src.ptr, src.length);
 			if (written < 0)
 				error();
