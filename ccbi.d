@@ -30,10 +30,10 @@ import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
 // remember to change ccbi.instructions.VERSION_NUMBER too!
 const char[]
 	VERSION_STRING =
-		"CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.18",
+		"CCBI - Conforming Concurrent Befunge-98 Interpreter version 1.0.19",
 	HELP           = VERSION_STRING ~ `
 
- Copyright (c) 2006-2008 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
+ Copyright (c) 2006-2009 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
  See the file license.txt for copyright details.
 
 Usage: {} ARGS SOURCE_FILE [BEFUNGE_ARGS...]

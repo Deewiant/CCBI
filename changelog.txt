@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2009-01-10, 1.0.19
+	STRN's D now flushes on a newline.
+
+	Updated for DMD 1.0.39 and Tango SVN revision 4240. 
+
 2008-11-15, 1.0.18
 	The error message for OutOfMemoryExceptions is now printed properly, and
 	the exception type is printed as well.
