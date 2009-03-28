@@ -6,7 +6,7 @@
 module ccbi.utils;
 
 import tango.io.device.File;
-import tango.io.stream.Buffer;
+import tango.io.stream.Buffered;
 import tango.sys.Environment;
 import tango.stdc.stdlib;
 
@@ -40,7 +40,7 @@ void loadIntoFungeSpace
 
 	void put(ubyte t) { (*space)[x++, y] = cast(cell)t; }
 
-	auto file = new BufferInput(fc);
+	auto file = new BufferedInput(fc);
 	auto input = new ubyte[0x400];
 	bool lineBreak = false;
 
