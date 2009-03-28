@@ -8,7 +8,7 @@ module ccbi.instructions;
 import tango.io.Console : Cin;
 import tango.io.Stdout : Stdout, Stderr;
 import tango.io.device.File;
-import tango.io.stream.Buffer;
+import tango.io.stream.Buffered;
 import tango.io.stream.Typed;
 import tango.text.Util  : join, splitLines;
 import tango.time.Clock;
@@ -735,7 +735,7 @@ void outputFile() {
 	catch {
 		return reverse();
 	}
-	auto file = new BufferOutput(f);
+	auto file = new BufferedOutput(f);
 	scope (exit)
 		file.close();
 

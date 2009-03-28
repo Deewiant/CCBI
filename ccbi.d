@@ -13,7 +13,7 @@ module ccbi.ccbi;
 import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Stdout;
 import tango.io.device.File;
-import tango.io.stream.Buffer;
+import tango.io.stream.Buffered;
 import regex = tango.text.Regex;
 
 import ccbi.instructions;
@@ -370,8 +370,8 @@ int main(char[][] args) {
 		return -1;
 	}
 
-	Stdout.stream(new BufferOutput(new RawCoutFilter!(false), 32 * 1024));
-	Stderr.stream(new BufferOutput(new RawCoutFilter!(true ), 32 * 1024));
+	Stdout.stream(new BufferedOutput(new RawCoutFilter!(false), 32 * 1024));
+	Stderr.stream(new BufferedOutput(new RawCoutFilter!(true ), 32 * 1024));
 	Stdout.flush = true;
 	Stderr.flush = true;
 

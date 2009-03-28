@@ -5,6 +5,7 @@
 module ccbi.fingerprints.glfunge98.scke; private:
 
 import tango.net.Socket;
+import tango.time.Time;
 
 import ccbi.fingerprint;
 import ccbi.instructions : reverse;
@@ -46,13 +47,10 @@ void peek() {
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
 
-	timeval t;
-	t.tv_sec = t.tv_usec = 0;
-
 	ss.reset();
 	ss.add(sockets[s]);
 
-	auto n = Socket.select(ss, null, null, &t);
+	auto n = Socket.select(ss, null, null, TimeSpan.zero);
 
 	if (n == -1)
 		reverse();
