@@ -600,7 +600,7 @@ int main(char[][] args) {
 			(" (")(e.classinfo.name)(')')
 			.newline;
 	}
-	
+
 	if (countTicks) {
 		Stdout.stream.flush;
 		Stderr
