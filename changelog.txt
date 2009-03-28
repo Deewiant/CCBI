@@ -1,10 +1,15 @@
 CCBI changelog
 --------------
 
+2009-03-28, 1.0.20
+	FILE's R now reflects on EOF.
+
+	Updated for Tango 0.99.8.
+
 2009-01-10, 1.0.19
 	STRN's D now flushes on a newline.
 
-	Updated for DMD 1.0.39 and Tango SVN revision 4240. 
+	Updated for DMD 1.0.39 and Tango SVN revision 4240.
 
 2008-11-15, 1.0.18
 	The error message for OutOfMemoryExceptions is now printed properly, and
@@ -28,7 +33,7 @@ CCBI changelog
 	Bugfix in TRDS.jump():
 		Don't do ip.move() without setting needMove = false: would skip next
 		instruction if doing time jump without space jump.
-	
+
 	The tick count is now updated after executing an instruction, not before.
 
 	Thus TRDS.max() now also pushes 0.
@@ -54,7 +59,7 @@ CCBI changelog
 	Updated fingerprints to current spec:
 		FRTH - P and L (PICK and ROLL) are now affected by MODE
 		SUBR - added A and O, general storage offset usage correction
-	
+
 	Had accidentally left some debugging output in 3DSP, removed it.
 
 2008-08-19, 1.0.13
