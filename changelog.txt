@@ -6,6 +6,9 @@ CCBI changelog
 		Initialize vb to va instead of 0 so that it gets set properly even if
 		the whole file is placed in negative Funge-Space.
 
+	Do memory-mapped input for i and the initial load, faster in theory if not
+	noticeably.
+
 2009-03-28, 1.0.20
 	FILE's R now reflects on EOF.
 
