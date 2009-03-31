@@ -5,8 +5,7 @@
 // Helpful utility functions and constants.
 module ccbi.utils;
 
-import tango.io.device.File;
-import tango.io.stream.Buffered;
+import tango.io.device.FileMap;
 import tango.sys.Environment;
 import tango.stdc.stdlib;
 
@@ -26,7 +25,7 @@ void loadIntoFungeSpace
 (bool needBegX)
 (
 	Befunge98Space* space,
-	File fc,
+	MappedFile file,
 	cellidx* endX, cellidx* endY,
 	cellidx offsetX = 0, cellidx offsetY = 0,
 	bool binary = false
@@ -40,64 +39,47 @@ void loadIntoFungeSpace
 
 	void put(ubyte t) { (*space)[x++, y] = cast(cell)t; }
 
-	auto file = new BufferedInput(fc);
-	auto input = new ubyte[0x400];
-	bool lineBreak = false;
+	ubyte[] input = file.map;
 
-	reading: for (;;) {
-		uint j = file.read(input);
-		if (j == file.Eof)
-			break;
-		
-		for (uint i = 0; i < j; ++i) {
-			ubyte c = input[i];
-			switch (c) {
-				case '\r':
-					if (binary)
-						put(c);
-					if (i < j-1) {
-						if (input[i+1] == '\n')
-							c = input[++i];
-					} else {
-						// got \r but no room in buffer
-						// keep lineBreak as true and read more
-						lineBreak = true;
-						continue reading;
-					}
-				case '\n': lineBreak = true;
-				default: break;
+	for (size_t i = 0; i < input.length; ++i) {
+		bool lineBreak = false;
+		ubyte c = input[i];
+		switch (c) {
+			case '\r':
+				if (binary)
+					put(c);
+				if (input[i+1] == '\n')
+					c = input[++i];
+			case '\n': lineBreak = true;
+			default: break;
+		}
+
+		// in binary mode, just put the EOL characters in Funge-Space as well
+		if (lineBreak && !binary) {
+			++y;
+			x = offsetX;
+		} else { // !lineBreak || binary
+			if (y > *endY && c != ' ')
+				*endY = y;
+
+			static if (needBegX) {
+				assert (!binary && !lineBreak);
+
+				// yes, both have (c != ' ') but making it be checked
+				// last speeds things up, it's almost always true
+				if (x > *endX && c != ' ')
+					*endX = x;
+				else if (x < space.begX && c != ' ')
+					space.begX = x;
+			} else {
+				// there's already something in Funge-Space; don't overwrite it with spaces
+				if (c == ' ') {
+					++x;
+					continue;
+				} else if (x > *endX && !lineBreak)
+					*endX = x;
 			}
-
-			// in binary mode, just put the EOL characters in Funge-Space as well
-			if (lineBreak && !binary) {
-				++y;
-				x = offsetX;
-				lineBreak = false;
-			} else { // !lineBreak || binary
-				if (y > *endY && c != ' ')
-					*endY = y;
-
-				static if (needBegX) {
-					assert (!binary && !lineBreak);
-
-					// yes, both have (c != ' ') but making it be checked
-					// last speeds things up, it's almost always true
-					if (x > *endX && c != ' ')
-						*endX = x;
-					else if (x < space.begX && c != ' ')
-						space.begX = x;
-				} else {
-					// there's already something in Funge-Space; don't overwrite it with spaces
-					if (c == ' ') {
-						++x;
-						continue;
-					} else if (x > *endX && !lineBreak)
-						*endX = x;
-
-					lineBreak = false;
-				}
-				put(c);
-			}
+			put(c);
 		}
 	}
 	file.close;

@@ -8,6 +8,7 @@ module ccbi.instructions;
 import tango.io.Console : Cin;
 import tango.io.Stdout : Stdout, Stderr;
 import tango.io.device.File;
+import tango.io.device.FileMap;
 import tango.io.stream.Buffered;
 import tango.io.stream.Typed;
 import tango.text.Util  : join, splitLines;
@@ -693,8 +694,8 @@ void inputFile() {
 
 	popVector(vaX, vaY);
 
-	File file;
-	try file = new typeof(file)(filename);
+	MappedFile file;
+	try file = new typeof(file)(filename, File.ReadExisting);
 	catch {
 		return reverse();
 	}
