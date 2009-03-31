@@ -262,16 +262,16 @@ void iterate() {
 
 	ip.move();
 
-	// negative argument is undefined by spec, just ignore it
-	if (n <= 0)
-		return;
-
 	auto i = space[ip.x, ip.y];
 
 	if (i == ' ' || i == ';') {
 		ip.gotoNextInstruction();
 		i = space.unsafeGet(ip.x, ip.y);
 	}
+
+	// negative argument is undefined by spec, just ignore it
+	if (n <= 0)
+		return;
 
 	// k executes its operand from where k is
 	// and doesn't move past it
