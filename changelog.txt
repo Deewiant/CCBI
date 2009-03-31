@@ -1,6 +1,11 @@
 CCBI changelog
 --------------
 
+2009-??-??, 1.0.21
+	Bugfix for i:
+		Initialize vb to va instead of 0 so that it gets set properly even if
+		the whole file is placed in negative Funge-Space.
+
 2009-03-28, 1.0.20
 	FILE's R now reflects on EOF.
 
