@@ -163,10 +163,10 @@ void goWest () { if (ip.mode & IP.HOVER) --ip.dx; else reallyGoWest;  }
 void goNorth() { if (ip.mode & IP.HOVER) --ip.dy; else reallyGoNorth; }
 void goSouth() { if (ip.mode & IP.HOVER) ++ip.dy; else reallyGoSouth; }
 
-void reallyGoEast () { ip.dx =  1; ip.dy =  0; } 
-void reallyGoWest () { ip.dx = -1; ip.dy =  0; } 
-void reallyGoNorth() { ip.dx =  0; ip.dy = -1; } 
-void reallyGoSouth() { ip.dx =  0; ip.dy =  1; } 
+void reallyGoEast () { ip.dx =  1; ip.dy =  0; }
+void reallyGoWest () { ip.dx = -1; ip.dy =  0; }
+void reallyGoNorth() { ip.dx =  0; ip.dy = -1; }
+void reallyGoSouth() { ip.dx =  0; ip.dy =  1; }
 
 // Go Away
 void goAway() {
@@ -703,6 +703,9 @@ void inputFile() {
 		space.begX = vaX;
 	if (vaY < space.begY)
 		space.begY = vaY;
+
+	vbX = vaX;
+	vbY = vaY;
 
 	loadIntoFungeSpace!(false)(&space, file, &vbX, &vbY, vaX, vaY, binary);
 
