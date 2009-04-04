@@ -11,6 +11,9 @@ CCBI changelog
 	Do memory-mapped input for i and the initial load, faster in theory if not
 	noticeably.
 
+	Funge-Space doesn't cache space cells any longer: lower memory usage and
+	probably a bit faster, too.
+
 2009-03-28, 1.0.20
 	FILE's R now reflects on EOF.
 
