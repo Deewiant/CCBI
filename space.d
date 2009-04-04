@@ -34,9 +34,6 @@ private struct CoordPair {
 }
 
 struct Befunge98Space {
-	bool cellInRange(cellidx x, cellidx y) {
-		return (CoordPair(x, y) in space) !is null;
-	}
 	bool inBounds(cellidx x, cellidx y) {
 		return (
 			x >= begX && x <= endX &&
@@ -46,12 +43,8 @@ struct Befunge98Space {
 
 	// most of the time we want range checking, unsafeGet is separate
 	cell opIndex(cellidx x, cellidx y) {
-		if (!cellInRange(x, y)) {
-			(*this)[x, y] = ' ';
-			return ' ';
-		}
-
-		return unsafeGet(x, y);
+		cell* p = CoordPair(x, y) in space;
+		return p ? *p : ' ';
 	}
 	void opIndexAssign(cell c, cellidx x, cellidx y) {
 		if (x == lastX && y == lastY)
@@ -118,15 +111,13 @@ struct Befunge98Space {
 		assert (s[cellidx.max, cellidx.max] == 'w');
 
 		assert (s[1234, 4321] == ' ');
-		assert (s.unsafeGet(1234, 4321) == ' ');
 
 		assert (s[-1, -2] == ' ');
-		assert (s.unsafeGet(-1, -2) == ' ');
 
 		s[-1, -1] = 5;
 		assert (s.unsafeGet(-1, -1) == 5);
 
-		assert (s.unsafeGet(-1, -2) == ' ');
+		assert (s[-1, -2] == ' ');
 
 		assert (s.cellInRange(55, 66));
 		assert (!s.cellInRange(54, 66));
