@@ -268,11 +268,8 @@ The last is related to the TRDS fingerprint.`
 				auto line = new char[szX];
 
 				for (cellidx y = tlY; y < brY; ++y) {
-					line[] = ' ';
-
 					for (cellidx x = tlX; x < brX; ++x)
-					if (space.cellInRange(x, y))
-						line[x - tlX] = cast(char)space.unsafeGet(x, y);
+						line[x - tlX] = space[x, y];
 
 					Stderr(stripr(line)).newline;
 				}

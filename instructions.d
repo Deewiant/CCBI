@@ -752,12 +752,8 @@ void outputFile() {
 		auto toBeWritten = new char[][](vbY, vbX);
 
 		for (cellidx y = vaY; y < maxY; ++y)
-		for (cellidx x = vaX; x < maxX; ++x) {
-			if (space.cellInRange(x, y))
-				toBeWritten[y - vaY][x - vaX] = cast(char)space.unsafeGet(x, y);
-			else
-				toBeWritten[y - vaY][x - vaX] = ' ';
-		}
+		for (cellidx x = vaX; x < maxX; ++x)
+			toBeWritten[y - vaY][x - vaX] = cast(char)space[x, y];
 
 		// ...remove whitespace before EOL...
 		foreach (inout row; toBeWritten) {
@@ -794,11 +790,8 @@ void outputFile() {
 		auto row = new char[vbX];
 
 		for (cellidx y = vaY; y < maxY; ++y) {
-			row[] = ' ';
-
 			for (cellidx x = vaX; x < maxX; ++x)
-			if (space.cellInRange(x, y))
-				row[x - vaX] = cast(char)space.unsafeGet(x, y);
+				row[x - vaX] = cast(char)space[x, y];
 
 			file.append(row);
 			if (y != maxY-1)

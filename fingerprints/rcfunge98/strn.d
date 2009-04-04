@@ -83,7 +83,7 @@ void get() {
 
 		buf[i++] = space[x, y];
 
-	} while (space.unsafeGet(x++, y) != 0);
+	} while (space[x++, y] != 0);
 
 	pushStringz(buf[0..i]);
 }
