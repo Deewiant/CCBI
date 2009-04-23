@@ -9,17 +9,12 @@ import tango.core.Tuple;
 
 import ccbi.cell;
 import ccbi.templateutils;
+import ccbi.instructions.utils;
 
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 // both of the below
 import ccbi.random;
 import ccbi.fingerprints.all;
-
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be where 'see template PushNumber above' is, below
-template PushNumber(uint n) {
-	const PushNumber = "cip.stack.push(" ~ ToString!(n) ~ ")";
-}
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below StdInsFunc
@@ -39,7 +34,7 @@ template WrapForCasing(ins...) {
 
 mixin (TemplateLookup!(
 	"StdInsFunc", "cell", "c",
-	`static assert (false, "No such standard instruction " ~ToString!(c));`,
+	`static assert (false, "No such standard instruction " ~cast(char)c);`,
 
 	WrapForCasing!(
 		 '>', "goEast",
@@ -113,7 +108,7 @@ mixin (TemplateLookup!(
 template StdInstructions() {
 
 import tango.io.Buffer;
-import tango.io.device.FileConduit;
+import tango.io.device.File : FileConduit = File;
 import tango.text.Util  : join, splitLines;
 import tango.time.Clock;
 
@@ -133,6 +128,7 @@ alias .IP    !(dim) IP;
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
 final:
 
+// WORKAROUND for D1: in D2, use __traits("compiles") in MakeSingleIns
 // Bit of a hack to get PushNumber!() instructions to compile
 // (Since it results in the otherwise invalid "Std.cip")
 IP cip() { return this.cip; }
@@ -343,7 +339,7 @@ void compare() {
 // Befunge-93
 
 // Push Zero - Push Niner
-// see template PushNumber above
+// see template PushNumber
 
 // Add
 void add()      { with (cip.stack) push(pop + pop); }
@@ -560,7 +556,8 @@ void outputDecimal() {
 	auto n = cip.stack.pop;
 	if (tick >= printAfter) {
 		Sout(n);
-		Cout.write(' ');
+		ubyte c = ' ';
+		Cout.write(c);
 	}
 }
 

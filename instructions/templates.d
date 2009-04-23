@@ -8,42 +8,64 @@ import ccbi.templateutils;
 import ccbi.fingerprints.all; // for *InsFuncs
 import ccbi.instructions.std : StdInsFunc;
 
-import tango.core.Traits : isCallableType, ReturnTypeOf;
-
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below Ins
-template SingleIns(char[] s) {
+
+// We special-case "reverse" because otherwise all fingerprint templates would
+// need to add "alias Std.reverse reverse".
+template MakeSingleIns(char[] s) {
+	// WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=1059
+	// Should be using EscapeForChar instead of ugly ?: mess
+	// The thing was getting so unreadable that I made the C field to keep it in
+	// one place, and hence ConcatMapIns
+
+	// WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=2339
+	// Mixins the whole contents of the static ifs instead of just the typeofs
 	mixin (
-		// WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=1059
-		`template Single` ~s~ `Ins(char i) {
-			const char[] Single` ~s~ `Ins = "
-				mixin (\"
-					!isCallableType!(typeof(`~s~`."~` ~s~ `InsFunc!(i)~")) ||
-					is(       ReturnTypeOf!(`~s~`."~` ~s~ `InsFunc!(i)~") == void)
-						? \\\"case '" ~(i=='\''?r"\\\\\\\'":i=='\\'?r"\\\\\\\\":i=='"'?"\\\\\\\"":""~i)~ "': `~s~`." ~`~
-							s~`InsFunc!(i) ~"; break;\\\"
-						: \\\"case '" ~(i=='\''?r"\\\\\\\'":i=='\\'?r"\\\\\\\\":i=='"'?"\\\\\\\"":""~i)~ "': `
-							`return `~s~`." ~`~s~`InsFunc!(i) ~ ";\\\"` ~
+		`template SingleIns(char i) {
+			const C = "'" ~ (i=='\''?r"\'":i=='\\'?r"\\":i=='"'?"\"":""~i) ~ "'";
 
-//		`template Single` ~s~ `Ins(char i) {
-//			const char[] Single` ~s~ `Ins = "
-//				mixin (\"
-//					!isCallableType!(typeof(`~s~`."~` ~s~ `InsFunc!(i)~")) ||
-//					is(       ReturnTypeOf!(`~s~`."~` ~s~ `InsFunc!(i)~") == void)
-//						? \\\"case '" ~EscapeForChar!(i,3)~ "': `~s~`." ~`~
-//							s~`InsFunc!(i) ~"; break;\\\"
-//						: \\\"case '" ~EscapeForChar!(i,3)~ "': `
-//							`return `~s~`." ~`~s~`InsFunc!(i) ~ ";\\\"` ~
+			const Ins = "
+			case "~C~":
+				static if (`~s~`InsFunc!("~C~") == \"reverse\") {
+					return Std.reverse;
 
-				// we need the trailing ~ here or we get "mixin(bar) mixin(foo)"
-				// Ins appends "" so that we're not left with "mixin(bar) ~
-				// mixin(foo) ~"
-				`\") ~";
-		}`);
+				} else static if (mixin (\"!is(typeof(`~s~`))\"))
+					static assert (false,
+						\"SingleIns :: Need template `~s~` for instruction \"~
+						`~s~`InsFunc!("~C~"));
+				else static if (mixin(\"
+					!isCallableType!(typeof(`~s~`.\"~`~s~`InsFunc!("~C~")~\")) ||
+					is(       ReturnTypeOf!(`~s~`.\"~`~s~`InsFunc!("~C~")~\") == void)
+				\")) {
+					mixin (\"`~s~`.\" ~ `~s~`InsFunc!("~C~") ~ \"; break;\");
+				} else {
+					mixin (\"return `~s~`.\" ~ `~s~`InsFunc!("~C~") ~ \";\");
+				}
+			";
+		}`
+	);
+}
+
+// HACK FOR WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=1059
+// See above
+template ConcatMapIns(alias F, char[] xs) {
+	static if (xs.length)
+		const ConcatMapIns = F!(xs[0]).Ins ~ ConcatMapIns!(F, xs[1..$]);
+	else
+		const ConcatMapIns = "";
+}
+
+// MakeSingleIns needs these but since the compiling is elsewhere these also
+// have to be imported there...
+//
+// This is a template and not a constant just so that it doesn't take up space
+// in the executable
+template InsImports() {
+	const InsImports =
+		"import tango.core.Traits : isCallableType, ReturnTypeOf;";
 }
 
 template Ins(char[] namespace, char[] i) {
-	const char[] Ins =
-		mixin ("ConcatMap!(SingleIns!(namespace).Single" ~namespace~ "Ins, i)")
-		~ `""`;
+	const char[] Ins = ConcatMapIns!(MakeSingleIns!(namespace).SingleIns, i);
 }

@@ -14,5 +14,3 @@ import ccbi.templateutils;
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
 // mixin (Fingerprint!("NULL", Range!('A','Z'), "reverse"));
 mixin (Fingerprint!("NULL", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "reverse"));
-
-template NULL() { alias Std.reverse reverse; }

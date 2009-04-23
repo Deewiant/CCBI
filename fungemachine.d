@@ -5,9 +5,9 @@
 module ccbi.fungemachine;
 
 import tango.io.Buffer;
-import tango.io.Print;
 import tango.io.Stdout;
-import tango.io.device.FileConduit;
+import tango.io.device.File : FileConduit = File;
+import tango.io.stream.Format;
 import tango.io.stream.TypedStream;
 
 import ccbi.container;
@@ -24,13 +24,15 @@ import ccbi.fingerprints.all;
 import ccbi.instructions.std;
 import ccbi.instructions.templates;
 
+mixin (InsImports!());
+
 // Essentially the only difference in Mini-Funge is the loading, since one has
 // to deal with the =FOO commands
-// 
+//
 // Other than that, have an executeMiniFunge to handle the differences
 
-private TypedOutput!(ubyte) Cout;
-private Print      !(char)  Sout, Serr;
+private  TypedOutput!(ubyte) Cout;
+private FormatOutput!(char)  Sout, Serr;
 static this() {
 	Sout = new typeof(Sout)(
 		Stdout.layout, new Buffer(new RawCoutFilter!(false), 32*1024));
@@ -211,7 +213,7 @@ private:
 						return executeSemantics(c);
 				}
 			}
-			
+
 			return executeStandard(c);
 		}
 		return Request.MOVE;
@@ -228,7 +230,7 @@ final:
 // need it as well
 	Request executeStandard(cell c) {
 		switch (c) mixin (Switch!(
-			mixin (Ins!("Std",
+			Ins!("Std",
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
 				"!\"#$%&'()*+,-./0123456789:<=>?@\\_`abcdefgijknopqrstuxyz{" ~
 
@@ -238,7 +240,7 @@ final:
 
 				(dim >= 2 ? "[]^vw|" : "") ~
 				(dim >= 3 ? "hlm"    : "")
-			)),
+			),
 
 			"default: unimplemented; break;"
 		));
@@ -263,13 +265,15 @@ final:
 			// 	switch (sem.instruction) mixin (Switch!(
 			// 		mixin (Ins!(fing, Range!('A', 'Z'))),
 			// 		"default: assert (false);"
-			//    ));
+			// 	));
+
 			FingerprintExecutionCases!(
 				"sem.instruction",
 				"assert (false);",
 				ALL_FINGERPRINTS),
 			"default: unimplemented; break;"
 		));
+
 		return Request.MOVE;
 	}
 

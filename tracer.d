@@ -5,7 +5,16 @@
 // The tracing facilities.
 module ccbi.tracer;
 
+// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
+import tango.text.Ascii;
+
+// TODO: put "Tracer ::" prompt in a func of its own
+// so that it can print "Tracer 1 ::" when in MVRS!
+
+template Tracer() {
+
 import tango.core.Traits          : isSignedIntegerType, isUnsignedIntegerType;
+import tango.io.Console           : Cin;
 import tango.math.Math            : min;
 import tango.text.convert.Integer : parse, convert;
 import tango.text.Ascii           : toLower;
@@ -16,12 +25,8 @@ import ccbi.ip;
 import ccbi.space;
 import ccbi.stdlib;
 
-// TODO: put "Tracer ::" prompt in a func of its own
-// so that it can print "Tracer 1 ::" when in MVRS!
-
-template Tracer() {
-
 alias .Coords!(dim) Coords;
+alias .IP    !(dim) IP;
 
 bool stopNext = true;
 

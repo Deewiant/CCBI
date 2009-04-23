@@ -12,7 +12,7 @@ module ccbi.ccbi;
 
 import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Stdout;
-import tango.io.device.FileConduit;
+import tango.io.device.File : FileConduit = File;
 import regex = tango.text.Regex;
 
 import ccbi.flags;

@@ -10,7 +10,7 @@ import tango.core.Traits            : isUnsignedIntegerType;
 import tango.io.Console             : Cin;
 import tango.io.Stdout              : Stdout, Stderr;
 import tango.io.device.Conduit      : OutputFilter;
-import tango.io.device.FileConduit;
+import tango.io.device.File : FileConduit = File;
 import tango.io.model.IFile         : FileConst;
 import tango.math.Math              : min;
 import tango.sys.Common;
@@ -101,7 +101,7 @@ version (Win32) {
 		if (!envChanged)
 			return .env;
 
-		auto arr = new typeof(environment_t)(envSize);
+		auto arr = new environment_t(envSize);
 
 		size_t i = 0;
 		for (auto p = environ; *p; ++p) {
@@ -192,7 +192,7 @@ private:
 			redirected = !GetConsoleMode(handle, &dummy);
 		}
 
-		public override uint write(void[] src) {
+		public override size_t write(void[] src) {
 			if (redirected) {
 				DWORD written;
 
@@ -223,7 +223,7 @@ private:
 			super(superArgs());
 		}
 
-		public override uint write(void[] src) {
+		public override size_t write(void[] src) {
 			ptrdiff_t written = posix.write(handle, src.ptr, src.length);
 			if (written < 0)
 				error();
