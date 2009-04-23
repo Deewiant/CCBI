@@ -107,8 +107,8 @@ mixin (TemplateLookup!(
 
 template StdInstructions() {
 
-import tango.io.Buffer;
-import tango.io.device.File : FileConduit = File;
+import tango.io.device.File : File;
+import tango.io.stream.Buffered : BufferedOutput;
 import tango.text.Util  : join, splitLines;
 import tango.time.Clock;
 
@@ -671,7 +671,7 @@ void inputFile() {
 		// the size of the rectangle where the file is eventually put
 		vb;
 
-	FileConduit file;
+	File file;
 	try file = new typeof(file)(filename);
 	catch {
 		return reverse();
@@ -706,12 +706,12 @@ void outputFile() {
 		vaE = va.extend(0),
 		vbE = vb.extend(1);
 
-	FileConduit f;
+	File f;
 	try f = new typeof(f)(filename, WriteCreate);
 	catch {
 		return reverse();
 	}
-	auto file = new Buffer(f);
+	auto file = new BufferedOutput(f);
 	scope (exit) {
 		file.flush.close;
 		f.flush.close;

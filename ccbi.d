@@ -12,7 +12,7 @@ module ccbi.ccbi;
 
 import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Stdout;
-import tango.io.device.File : FileConduit = File;
+import tango.io.device.File : File;
 import regex = tango.text.Regex;
 
 import ccbi.flags;
@@ -372,7 +372,7 @@ int main(char[][] args) {
 	auto fungeArgs = args[filePos..$];
 	// }}}
 
-	FileConduit file;
+	File file;
 	try file = new typeof(file)(fungeArgs[0]);
 	catch {
 		Stderr("Couldn't open file '")(fungeArgs[0])("' for reading.").newline;

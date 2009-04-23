@@ -6,7 +6,7 @@
 module ccbi.space;
 
 import tango.io.model.IConduit;
-import tango.io.stream.TypedStream;
+import tango.io.stream.Typed;
 import tango.text.convert.Integer;
 
 public import ccbi.cell;
