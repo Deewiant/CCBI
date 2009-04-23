@@ -10,12 +10,12 @@ import tango.core.Traits            : isUnsignedIntegerType;
 import tango.io.Console             : Cin;
 import tango.io.Stdout              : Stdout, Stderr;
 import tango.io.device.Conduit      : OutputFilter;
-import tango.io.device.File : FileConduit = File;
+import tango.io.device.File         : File;
 import tango.io.model.IFile         : FileConst;
 import tango.math.Math              : min;
 import tango.sys.Common;
 
-const FileConduit.Style WriteCreate = { FileConduit.Access.Write, FileConduit.Open.Create, FileConduit.Share.init, FileConduit.Cache.Stream, };
+const File.Style WriteCreate = { File.Access.Write, File.Open.Create, File.Share.init, File.Cache.Stream, };
 
 public alias FileConst.NewlineString NewlineString;
 

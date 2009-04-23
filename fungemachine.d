@@ -4,11 +4,11 @@
 
 module ccbi.fungemachine;
 
-import tango.io.Buffer;
 import tango.io.Stdout;
-import tango.io.device.File : FileConduit = File;
+import tango.io.device.File     : File;
+import tango.io.stream.Buffered : BufferedOutput;
 import tango.io.stream.Format;
-import tango.io.stream.TypedStream;
+import tango.io.stream.Typed;
 
 import ccbi.container;
 import ccbi.fingerprint;
@@ -35,9 +35,9 @@ private  TypedOutput!(ubyte) Cout;
 private FormatOutput!(char)  Sout, Serr;
 static this() {
 	Sout = new typeof(Sout)(
-		Stdout.layout, new Buffer(new RawCoutFilter!(false), 32*1024));
+		Stdout.layout, new BufferedOutput(new RawCoutFilter!(false), 32*1024));
 	Serr = new typeof(Serr)(
-		Stderr.layout, new Buffer(new RawCoutFilter!(true ), 32*1024));
+		Stderr.layout, new BufferedOutput(new RawCoutFilter!(true ), 32*1024));
 
 	Cout = new typeof(Cout)(Sout.stream);
 }
@@ -88,7 +88,7 @@ private:
 
 	Flags flags;
 
-	public this(FileConduit source, Flags f) {
+	public this(File source, Flags f) {
 		flags = f;
 
 		initialSpace = new FungeSpace(source);
