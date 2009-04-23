@@ -48,7 +48,7 @@ version (Win32) {
 
 	// straight from http://msdn2.microsoft.com/en-us/library/ms682022.aspx
 	void clearScreen() {
-		Stdout.flush;
+		Stdout.stream.flush;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -71,7 +71,7 @@ version (Win32) {
 		goHome();
 	}
 	void clearToEOL() {
-		Stdout.flush;
+		Stdout.stream.flush;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -90,7 +90,7 @@ version (Win32) {
 			return reverse();
 	}
 	void clearToEOS() {
-		Stdout.flush;
+		Stdout.stream.flush;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -134,7 +134,7 @@ version (Win32) {
 	}
 
 	private void xy(DWORD x, DWORD y) {
-		Stdout.flush;
+		Stdout.stream.flush;
 
 		if (!SetConsoleCursorPosition(stdout, COORD(x, y)))
 			reverse();

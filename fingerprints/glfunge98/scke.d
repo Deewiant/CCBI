@@ -5,6 +5,7 @@
 module ccbi.fingerprints.glfunge98.scke; private:
 
 import tango.net.Socket;
+import tango.time.Time;
 
 import ccbi.fingerprint;
 import ccbi.instructions : reverse;
@@ -21,6 +22,9 @@ static this() {
 
 	fingerprints[SCKE]['H'] =& getHostByName;
 	fingerprints[SCKE]['P'] =& peek;
+
+	if (!ss)
+		ss = new SocketSet(1);
 }
 
 void getHostByName() {
@@ -35,20 +39,18 @@ void getHostByName() {
 	ip.stack.push(cast(cell)h.addrList[0]);
 }
 
+SocketSet ss;
+
 void peek() {
 	auto s = cast(size_t)ip.stack.pop;
 
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
 
-	timeval t;
-	t.tv_sec = t.tv_usec = 0;
-
-	auto ss = new SocketSet(1);
-
+	ss.reset();
 	ss.add(sockets[s]);
 
-	auto n = Socket.select(ss, null, null, &t);
+	auto n = Socket.select(ss, null, null, TimeSpan.zero);
 
 	if (n == -1)
 		reverse();

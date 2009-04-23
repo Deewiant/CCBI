@@ -4,7 +4,7 @@
 
 module ccbi.fingerprints.cats_eye.turt; private:
 
-import tango.io.device.FileConduit;
+import tango.io.device.File;
 import tango.math.Math            : PI, cos, sin, round = rndint, abs;
 import tango.text.convert.Integer : format;
 import tango.text.xml.Document;
@@ -396,7 +396,7 @@ void queryBounds() {
 void printDrawing() {
 	tryAddPoint();
 
-	FileConduit file;
+	File file;
 	try file = new typeof(file)(filename, WriteCreate);
 	catch {
 		return reverse();
@@ -427,7 +427,7 @@ void printDrawing() {
 	// no doctype as it's not recommended for 1.1
 	// see for instance http://jwatt.org/svg/authoring/#doctype-declaration
 
-	auto root = svg.root
+	auto root = svg.tree
 		.element  (null, "svg")
 		.attribute(null, "version",     "1.1")
 		.attribute(null, "baseProfile", "full")

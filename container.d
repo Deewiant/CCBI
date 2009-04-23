@@ -79,8 +79,8 @@ final class Stack(T) : Container!(T) {
 
 	this(size_t n = super.DEFAULT_SIZE) { array.length = n; }
 
-	final override {
-		T pop() {
+	final {
+		override T pop() {
 			// not an error to pop an empty stack
 			if (empty) {
 				static if (is (T : cell))
@@ -91,18 +91,18 @@ final class Stack(T) : Container!(T) {
 				return array[--head];
 		}
 
-		T popHead() { return pop(); }
+		override T popHead() { return pop(); }
 
-		void pop(size_t i)  {
+		override void pop(size_t i)  {
 			if (i >= head)
 				head = 0;
 			else
 				head -= i;
 		}
 
-		void clear() { head = 0; }
+		override void clear() { head = 0; }
 
-		T top() {
+		override T top() {
 			if (empty) {
 				static if (is (T : cell))
 					return 0;
@@ -113,7 +113,7 @@ final class Stack(T) : Container!(T) {
 			return array[head-1];
 		}
 
-		void push(T[] ts...) {
+		override void push(T[] ts...) {
 			auto neededRoom = head + ts.length;
 			if (neededRoom >= array.length)
 				array.length = 2 * array.length +
@@ -122,14 +122,14 @@ final class Stack(T) : Container!(T) {
 			foreach (t; ts)
 				array[head++] = t;
 		}
-		void pushHead(T[] ts...) { push(ts); }
+		override void pushHead(T[] ts...) { push(ts); }
 
-		size_t size() { return head; }
-		bool empty()  { return head == 0; }
+		override size_t size() { return head; }
+		override bool empty()  { return head == 0; }
 
 
 
-		int opApply(int delegate(inout T t) dg) {
+		override int opApply(int delegate(inout T t) dg) {
 			int r = 0;
 			foreach (inout a; array[0..head])
 				if (r = dg(a), r)
@@ -151,7 +151,7 @@ final class Stack(T) : Container!(T) {
 
 
 
-		T[] elementsBottomToTop() { return array[0..head]; }
+		override T[] elementsBottomToTop() { return array[0..head]; }
 	}
 }
 
@@ -188,15 +188,15 @@ final class Deque : Container!(cell) {
 
 	private typeof(head) tail = 0;
 
-	final override {
-		cell pop() {
+	final {
+		override cell pop() {
 			if (mode & QUEUE_MODE)
 				return popTail();
 			else
 				return popHead();
 		}
 
-		void pop(size_t i)  {
+		override void pop(size_t i)  {
 			if (!empty) {
 				if (mode & QUEUE_MODE) while (i--) {
 					tail = (tail - 1) & (array.length - 1);
@@ -209,7 +209,7 @@ final class Deque : Container!(cell) {
 				}
 			}
 		}
-		cell popHead() {
+		override cell popHead() {
 			if (empty)
 				return 0;
 
@@ -218,22 +218,22 @@ final class Deque : Container!(cell) {
 			return h;
 		}
 
-		void clear() { head = tail = 0; }
+		override void clear() { head = tail = 0; }
 
-		cell top() {
+		override cell top() {
 			if (mode & QUEUE_MODE)
 				return peekTail();
 			else
 				return peekHead();
 		}
 
-		void push(cell[] ts...) {
+		override void push(cell[] ts...) {
 			if (mode & INVERT_MODE)
 				pushTail(ts);
 			else
 				pushHead(ts);
 		}
-		void pushHead(cell[] cs...) {
+		override void pushHead(cell[] cs...) {
 			foreach (c; cs) {
 				head = (head - 1) & (array.length - 1);
 				array[head] = c;
@@ -242,12 +242,12 @@ final class Deque : Container!(cell) {
 			}
 		}
 
-		size_t size() { return (tail - head) & (array.length - 1); }
-		bool empty()  { return tail == head; }
+		override size_t size() { return (tail - head) & (array.length - 1); }
+		override bool empty()  { return tail == head; }
 
 
 
-		int opApply(int delegate(inout cell t) dg) {
+		override int opApply(int delegate(inout cell t) dg) {
 			int r = 0;
 			for (size_t i = head; i != tail; i = (i + 1) & (array.length - 1))
 				if (r = dg(array[i]), r)
@@ -267,7 +267,7 @@ final class Deque : Container!(cell) {
 			return r;
 		}
 
-		cell[] elementsBottomToTop() {
+		override cell[] elementsBottomToTop() {
 			auto elems = new cell[size];
 
 			if (head < tail)

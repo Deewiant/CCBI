@@ -5,6 +5,7 @@
 // The Instruction Pointer.
 module ccbi.ip;
 
+import tango.time.StopWatch;
 import tango.time.Time;
 
 public import ccbi.cell;
@@ -134,24 +135,26 @@ final class IP(cell dim) {
 	cell[256] mapping = void; // for IMAP
 
 	enum : typeof(mode) {
-		STRING    = 1 << 0,
-		BREAK_SET = 1 << 1,
-		HOVER     = 1 << 2, // these two for MODE
-		SWITCH    = 1 << 3,
-		DORMANT   = 1 << 4, // for IIPC
-		ABS_SPACE = 1 << 5, // the rest for TRDS
-		SPACE_SET = 1 << 6,
-		ABS_TIME  = 1 << 7,
-		TIME_SET  = 1 << 8,
-		DELTA_SET = 1 << 9,
+		STRING        = 1 << 0,
+		BREAK_SET     = 1 << 1,
+		HOVER         = 1 << 2, // these two for MODE
+		SWITCH        = 1 << 3,
+		DORMANT       = 1 << 4, // for IIPC
+		ABS_SPACE     = 1 << 5, // the rest for TRDS
+		SPACE_SET     = 1 << 6,
+		ABS_TIME      = 1 << 7,
+		TIME_SET      = 1 << 8,
+		DELTA_SET     = 1 << 9,
+		SUBR_RELATIVE = 1 << 10, // for SUBR
 
-		FROM_FUTURE = 1 << 10 // for tracing TRDS
+		FROM_FUTURE = 1 << 11 // for tracing TRDS
 	}
 
 	ushort mode = 0;
 
 	// for HRTI
-	auto timeMark = Time.min;
+	StopWatch timer;
+	bool timerMarked = false;
 
 	// for TRDS
 	Coords tardis, tardisReturn, tardisDelta, tardisReturnDelta;

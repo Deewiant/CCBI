@@ -91,9 +91,13 @@ void kill() {
 
 	sockets[s].shutdown(SocketShutdown.BOTH);
 	sockets[s].detach();
+	sockets[s] = null;
 
-	if (s == sockets.length - 1)
-		sockets.length = s;
+	if (s == sockets.length - 1) {
+		do --s;
+		while (s < sockets.length && sockets[s] is null);
+		sockets.length = s+1;
+	}
 }
 
 void connect() {
@@ -137,7 +141,7 @@ void accept() {
 		return reverse();
 
 	try {
-		auto as = sockets[s].accept(sockets[s]);
+		auto as = sockets[s].accept();
 
 		auto i = sockets.length;
 		foreach (j, sock; sockets)
@@ -179,10 +183,10 @@ void receive() {
 
 		auto got = sockets[s].receive(buffer);
 
-		push(cast(cell)got);
-
 		if (got == Socket.ERROR)
 			return reverse();
+
+		push(cast(cell)got);
 
 		for (cellidx i = 0; i < cast(cellidx)got; ++i)
 			space[x + i, y] = cast(cell)buffer[i];

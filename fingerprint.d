@@ -11,7 +11,7 @@ import tango.core.Tuple;
 public import ccbi.cell;
        import ccbi.templateutils;
 
-template Code(char[4] s, char[4] id = s) {
+template Code(char[4] s, char[] id = s) {
 	const Code =
 		"const cell " ~ id ~ " = " ~ ToString!(HexCode!(s)) ~ ";" ~
 		// this really shouldn't be here, but oh well

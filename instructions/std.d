@@ -251,16 +251,16 @@ Request iterate() {
 
 	auto r = Request.MOVE;
 
-	// negative argument is undefined by spec, just ignore it
-	if (n <= 0)
-		return r;
-
 	auto i = space[cip.pos];
 
 	if (i == ' ' || i == ';') {
 		cip.gotoNextInstruction();
 		i = space.unsafeGet(cip.pos);
 	}
+
+	// negative argument is undefined by spec, just ignore it
+	if (n <= 0)
+		return r;
 
 	// k executes its operand from where k is
 	// and doesn't move past it
@@ -765,6 +765,8 @@ void outputFile() {
 				// since this may be a 1000x1-type "row" with many line breaks
 				// within, we have to treat each "sub-row" as well
 
+				// TODO: don't use splitLines here, may split on UTF-8 line breaks
+				// in a future Tango version, which we don't want, only \n \r \r\n
 				auto lines = splitLines(row);
 				foreach (inout line; lines)
 					line = stripr(line);

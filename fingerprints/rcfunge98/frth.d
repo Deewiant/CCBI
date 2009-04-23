@@ -39,9 +39,6 @@ void forthRot() {
 	}
 }
 
-// pushHead since PICK and ROLL are both defined as placing on "top of the stack"
-// invert mode doesn't change the top of the stack, but it does change pushing
-
 // copy u-th from top to top
 void forthPick() {
 	with (ip.stack) {
@@ -49,9 +46,9 @@ void forthPick() {
 		     s = size;
 
 		if (u >= s)
-			pushHead(0);
+			push(0);
 		else
-			pushHead(elementsBottomToTop[s - (u+1)]);
+			push(elementsBottomToTop[s - (u+1)]);
 	}
 }
 
@@ -62,15 +59,15 @@ void forthRoll() {
 		     s = size;
 
 		if (u >= s)
-			pushHead(0);
+			push(0);
 		else {
 			auto elems = elementsBottomToTop;
 			auto xu = elems[s - (u+1)];
 
 			pop(u+1);
 
-			pushHead(elems[s-u..$]);
-			pushHead(xu);
+			push(elems[s-u..$]);
+			push(xu);
 		}
 	}
 }
