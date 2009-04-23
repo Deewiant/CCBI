@@ -16,8 +16,10 @@ import ccbi.utils;
 static this() {
 	mixin (Code!("SUBR"));
 
+	fingerprints[SUBR]['A'] =& absolute;
 	fingerprints[SUBR]['C'] =& call;
 	fingerprints[SUBR]['J'] =& jump;
+	fingerprints[SUBR]['O'] =& relative;
 	fingerprints[SUBR]['R'] =& ret;
 
 	fingerprintConstructors[SUBR] =& cons;
@@ -42,15 +44,25 @@ private cell pop() {
 	return callStack[--cs];
 }
 
+void absolute() { ip.mode &= ~IP.SUBR_RELATIVE; }
+void relative() { ip.mode |=  IP.SUBR_RELATIVE; }
+
+private void subrPopVector(out cellidx x, out cellidx y) {
+	if (ip.mode & IP.SUBR_RELATIVE)
+		popVector        (x, y);
+	else
+		popVector!(false)(x, y);
+}
+
 void call() {
 	auto n = cast(size_t)ip.stack.pop;
 	cellidx x, y;
-	popVector(x, y);
+	subrPopVector(x, y);
 
 	for (size_t i = 0; i < n; ++i)
 		push(ip.stack.pop());
 
-	pushVector        (ip. x, ip. y);
+	pushVector!(false)(ip. x, ip. y);
 	pushVector!(false)(ip.dx, ip.dy);
 
 	while (n--)
@@ -63,7 +75,7 @@ void call() {
 }
 
 void jump() {
-	popVector(ip.x, ip.y);
+	subrPopVector(ip.x, ip.y);
 	goEast();
 	needMove = false;
 }
@@ -75,7 +87,7 @@ void ret() {
 		push(ip.stack.pop());
 
 	popVector!(false)(ip.dx, ip.dy);
-	popVector        (ip. x, ip. y);
+	popVector!(false)(ip. x, ip. y);
 
 	while (n--)
 		ip.stack.push(pop());

@@ -213,10 +213,11 @@ void fread() {
 	auto hnd = handles[h].handle;
 
 	if (c.fread(buf.ptr, ubyte.sizeof, buf.length, hnd) != buf.length) {
-		if (c.ferror(hnd)) {
-			c.clearerr(hnd);
-			return reverse();
-		} else
+		reverse();
+
+		if (c.ferror(hnd))
+			return c.clearerr(hnd);
+		else
 			assert (c.feof(hnd));
 	}
 

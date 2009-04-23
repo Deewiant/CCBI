@@ -26,7 +26,7 @@ import ccbi.utils;
 const char[]
 	HELP = VERSION_STRING ~ `
 
- Copyright (c) 2006-2008 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
+ Copyright (c) 2006-2009 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
  See the file license.txt for copyright details.
 
 Usage: {} ARGS SOURCE_FILE [BEFUNGE_ARGS...]
@@ -36,28 +36,40 @@ BEFUNGE_ARGS to it as command line arguments.
 
 ARGS may be one or more of:
  -t, --trace             Trace source during interpretation.
+
  -c, --count-ticks       Output to stderr the number of Funge-98 ticks used in
                          execution, and the number of instructions executed.
                          Both are 64-bit unsigned integers and may overflow.
+
  -w, --warnings          Warn when encountering unimplemented instructions.
+
  -s, --script            Begin execution on the second line if the first line
                          begins with a shebang ("#!").
+
                          An infinite loop will occur if no second line exists,
                          or it is empty.
+
  -m, --mini-funge        If the following argument is 0, don't try to load a
                          Mini-Funge library if an unimplemented fingerprint is
                          requested by '('.
+
                          If it is 1, '(' will prefer Mini-Funge libraries over
                          the built-in semantics.
+
  -P, --disable-fprints   Run as if no fingerprints were implemented.
+
  -d, --draw-to           Use the following argument as the file name written to
                          in the I instruction of the TURT fingerprint. The
                          default is ` ~ /*TURT_FILE_INIT*/`` ~ `.
+
  -i, --implementation    Show some implementation details and exit.
+
  -p, --print-fprints     List all supported (and knowingly unsupported)
                          fingerprints and their implementation notes, and exit.
+
  -h, --help              Show this help text and exit.
  -v, --version           Show the version string and exit.
+
  -f, --file              Use the following argument as SOURCE_FILE, and any
                          later ones as BEFUNGE_ARGS.
                          Useful if you have a file named "--help", for
@@ -66,7 +78,7 @@ ARGS may be one or more of:
 `There is no Befunge-93 compatibility mode: update your programs to account for
 the few corner cases where it actually matters.
 
-The Mini-Funge library format accepted is that used by RC/Funge-98.
+The Mini-Funge library format accepted is that used by RC/Funge-98 version 1.16.
 
 Ambiguities or lack of information in the Funge-98 specification (henceforth
 "spec") have been dealt with as follows.
@@ -223,22 +235,12 @@ Other notes:
       'L' and 'P' both push a zero if the argument they pop is greater than or
                   equal to the size of the stack after the pop.
 
-      All commands push on top of the stack regardless of whether invert mode
-      (from the MODE fingeprint) is on, since the FORTH ANSI standard speaks
-      not of pushing, but only of the top of the stack, which is unaffected by
-      invert mode.
-
     "IIPC"  0x49495043  Inter IP [sic] communicaiton [sic] extension
 
       'A' reverses if the IP is the initial IP and thus has no ancestor.
 
     "IMAP"  0x494d4150  Instruction remap extension
     "INDV"  0x494e4456  Pointer functions
-
-      Like RC/Funge-98, 'V' and 'W' push and pop the vector in different orders,
-      so that a vector put with 'W' and subsequently got with 'V' will have its
-      components reversed.
-
     "SOCK"  0x534f434b  tcp/ip [sic] socket extension
 
       'A' will push zeroes for both the port and address if the address is not
@@ -262,21 +264,15 @@ Other notes:
 
       'G' pushes a 32-bit truncation of the 64-bit counter.
 
-    The "FNGR" fingerprint is unimplemented because it is incompatible with the
-    way fingerprint loading and unloading is described in the Funge-98
-    specification.
+    Intentionally unsupported fingerprints:
+      Because they are not portable:
+         "MSGQ"  0x4d534751
+         "SGNL"  0x53474e4c
+         "SMEM"  0x534d454d
+         "SMPH"  0x534d5048
 
-    In particular, the Funge-98 spec speaks of having a stack of semantics for
-    each instruction in the range ['A', 'Z'], while the "FNGR" fingerprint
-    describes having just one fingerprint stack.
-
-    (Incidentally, this is one reason why RC/Funge-98 fails some of the Mycology
-    tests related to the fingerprint mechanism.)
-
-    "SGNL" is unsupported because it is platform-specific.
-
-    "WIND" is unsupported because I think the console is enough for anyone,
-    especially anyone programming in Befunge.
+      "WIND" because I think the console is enough for anyone, especially
+      anyone programming in Befunge.
 
   Jesse van Herk's extensions to RC/Funge-98:
 

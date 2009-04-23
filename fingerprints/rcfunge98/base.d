@@ -30,9 +30,9 @@ static this() {
 	fingerprints[BASE]['O'] =& outputOctal;
 }
 
-void outputBinary() { Stdout(toString(ip.stack.pop, "b")); Out.write(' '); }
-void outputHex   () { Stdout(toString(ip.stack.pop, "x")); Out.write(' '); }
-void outputOctal () { Stdout(toString(ip.stack.pop, "o")); Out.write(' '); }
+void outputBinary() { Stdout(toString(ip.stack.pop, "b")); ubyte b = ' '; Out.write(b); }
+void outputHex   () { Stdout(toString(ip.stack.pop, "x")); ubyte b = ' '; Out.write(b); }
+void outputOctal () { Stdout(toString(ip.stack.pop, "o")); ubyte b = ' '; Out.write(b); }
 
 void outputBase() {
 	auto base = ip.stack.pop,
@@ -59,7 +59,8 @@ void outputBase() {
 	}
 
 	Stdout(result[0..i].reverse);
-	Out.write(' ');
+	ubyte b = ' ';
+	Out.write(b);
 }
 
 void inputBase() {
@@ -68,7 +69,7 @@ void inputBase() {
 	if (base <= 0 || base > 36)
 		return reverse();
 
-	Stdout.flush();
+	Stdout.stream.flush();
 
 	auto digits = "0123456789abcdefghijklmnopqrstuvwxyz"[0..base];
 	char c;

@@ -143,10 +143,8 @@ final class FungeSpace(cell dim) {
 
 	// most of the time we want range checking, unsafeGet is separate
 	cell opIndex(Coords c) {
-		if (exists(c))
-			return unsafeGet(c);
-		else
-			return this[c] = ' ';
+		cell* p = c in space;
+		return p ? *p : ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
 		if (c == lastCoords) {

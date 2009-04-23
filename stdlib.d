@@ -146,12 +146,16 @@ T[] stripr(T)(T[] s) {
 	return s[0..i];
 }
 
-// a capturing filter on Stdout and Stderr to disable Unicode translation on console output
-// Win32 code ripped off of Tango's (0.98 RC2) Console.Conduit, changed to to use WriteConsoleA
+// a capturing filter on Stdout and Stderr to disable Unicode translation on
+// console output
+//
+// Win32 code ripped off of Tango's (0.98 RC2) Console.Conduit, changed to use
+// WriteConsoleA
+//
 // Posix code from DeviceConduit
 class RawCoutFilter(bool stderr) : OutputFilter {
 private:
-	void error() {throw new IOException("RawCoutFilter :: " ~ SysError.lastMsg);}
+	void error() {throw new IOException("RawCoutFilter :: "~ SysError.lastMsg);}
 
 	typeof(Stdout.stream()) superArgs() {
 		return stderr

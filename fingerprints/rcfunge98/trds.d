@@ -5,7 +5,7 @@
 module ccbi.fingerprints.rcfunge98.trds; private:
 
 import ccbi.fingerprint;
-import ccbi.instructions : printAfter;
+import ccbi.instructions : printAfter, normalTime;
 import ccbi.ip;
 import ccbi.utils;
 
@@ -31,12 +31,8 @@ static this() {
 }
 
 void jump() {
-	auto x = ip.x,
-	     y = ip.y;
-	ip.move();
-
-	ip.tardisReturnX = ip.x;
-	ip.tardisReturnY = ip.y;
+	ip.tardisReturnX = ip.x + ip.dx;
+	ip.tardisReturnY = ip.y + ip.dy;
 
 	ip.tardisReturnDx   = ip.dx;
 	ip.tardisReturnDy   = ip.dy;
@@ -44,14 +40,19 @@ void jump() {
 
 	if (ip.mode & IP.SPACE_SET) {
 		if (ip.mode & IP.ABS_SPACE) {
-			ip.x = ip.tardisX;
-			ip.y = ip.tardisY;
+			ip.x  = ip.tardisX;
+			ip.y  = ip.tardisY;
 		} else {
-			ip.x = x + ip.tardisX;
-			ip.y = y + ip.tardisY;
+			ip.x += ip.tardisX;
+			ip.y += ip.tardisY;
 		}
-		needMove = false;
+	} else {
+		// We do want to move the IP off the J now in any case.
+		// I'm not at all aware why but not doing so causes problems.
+		ip.x = ip.tardisReturnX;
+		ip.y = ip.tardisReturnY;
 	}
+	needMove = false;
 
 	if (ip.mode & IP.DELTA_SET) {
 		ip.dx = ip.tardisDx;
@@ -142,8 +143,7 @@ void jump() {
 
 			This is very smelly code, and I doubt it's a robust solution. However, I can't
 			think of a test case which would break it, and I'm out of patience testing this
-			stupid fingerprint which nobody uses and only this interpreter implements in
-			even a remotely working manner.
+			stupid fingerprint which nobody uses.
 			+/
 
 			outer: foreach (inout dat; stoppedIPdata)
@@ -171,11 +171,11 @@ void jump() {
 	}
 }
 
-void stop  () { IP.timeStopper = ip.id; }
-void resume() { IP.timeStopper = IP.TIMESTOPPER_INIT; }
+void stop  () { IP.timeStopper = ip.id; normalTime = false; }
+void resume() { IP.timeStopper = IP.TIMESTOPPER_INIT; normalTime = true; }
 
 void now() { ip.stack.push(cast(cell)ticks); }
-void max() { ip.stack.push(              1); } // doesn't push 0, like RC/Funge-98, since the first tick is actually 1, even with RC/Funge-98
+void max() { ip.stack.push(              0); }
 
 void reset() {
 	ip.mode &= ~(IP.ABS_SPACE | IP.SPACE_SET | IP.ABS_TIME | IP.TIME_SET | IP.DELTA_SET);

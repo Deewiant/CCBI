@@ -158,7 +158,7 @@ void fishhook() {
 			space[ip.x, y+n] = space[ip.x, y];
 
 		for (cellidx y = space.begY + n; y < space.begY; ++y) {
-			if (space.unsafeGet(ip.x, y) != ' ') {
+			if (space[ip.x, y] != ' ') {
 				space.begY = y;
 				break;
 			}
@@ -168,7 +168,7 @@ void fishhook() {
 			space[ip.x, y+n] = space[ip.x, y];
 
 		for (cellidx y = space.endY + n; y > space.endY; --y) {
-			if (space.unsafeGet(ip.x, y) != ' ') {
+			if (space[ip.x, y] != ' ') {
 				space.endY = y;
 				break;
 			}

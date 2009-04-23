@@ -14,17 +14,99 @@ Before final release:
 	make sure Stdout/Stderr aren't used ~anywhere, only Sout/Serr
 	grep XXX FIXME TODO
 
-2008-??-??, 1.0.13
-	New fingerprint, from RC/Funge-98: DATE.
+2009-??-??, 1.0.21
+	Bugfix for i:
+		Initialize vb to va instead of 0 so that it gets set properly even if
+		the whole file is placed in negative Funge-Space.
+	Bugfix for k:
+		0k x executed the x.
 
+	Do memory-mapped input for i and the initial load, faster in theory if not
+	noticeably.
+
+	Funge-Space doesn't cache space cells any longer: lower memory usage and
+	probably a bit faster, too.
+
+2009-03-28, 1.0.20
+	FILE's R now reflects on EOF.
+
+	Updated for Tango 0.99.8.
+
+2009-01-10, 1.0.19
+	STRN's D now flushes on a newline.
+
+	Updated for DMD 1.0.39 and Tango SVN revision 4240.
+
+2008-11-15, 1.0.18
+	The error message for OutOfMemoryExceptions is now printed properly, and
+	the exception type is printed as well.
+
+	HRTI now uses the StopWatch structure for timing where possible, resulting
+	in increased accuracy (on Windows, at least).
+
+2008-09-21, 1.0.17
+	Fixed regression in TRDS.jump():
+		IP needs to be moved off the J for internal reasons which are unknown to
+		me, or problems occur.
+
+	Fixed TRDS-related regression:
+		Don't increment the tick count even once if time is stopped. (Time stop
+		was not detected until the next iteration, by which time the tick count
+		had already been incremented due to the 1.0.16 change of doing it after
+		execution.)
+
+2008-09-16, 1.0.16
+	Bugfix in TRDS.jump():
+		Don't do ip.move() without setting needMove = false: would skip next
+		instruction if doing time jump without space jump.
+
+	The tick count is now updated after executing an instruction, not before.
+
+	Thus TRDS.max() now also pushes 0.
+
+2008-09-13, 1.0.15
+	Bugfix in TIME.dayOfYear():
+		Was off by one: push 0, not 1, for January 1st.
+
+2008-08-28, 1.0.14
+	Various changes to SOCK:
+		Bugfix: in accept(), do not overwrite the original socket. The fix in
+		        1.0.11 was bogus.
+
+		Bugfix: set a dead socket to null, many instructions depended on this
+		        but after 1.0.12 it was no longer happening.
+
+		The socket array size is fully minimized when a socket is killed.
+
+		R no longer pushes the received data size if it errored instead.
+
+	'o' no longer puts a newline after the last line in binary mode.
+
+	Updated fingerprints to current spec:
+		FRTH - P and L (PICK and ROLL) are now affected by MODE
+		SUBR - added A and O, general storage offset usage correction
+
+	Had accidentally left some debugging output in 3DSP, removed it.
+
+2008-08-19, 1.0.13
+	New fingerprints, from RC/Funge-98:
+		3DSP
+		DATE
+
+	Updated fingerprints to current spec:
+		IMAP - can now map 0-255
+		INDV - V no longer uses old incorrect RC/Funge-98 vector ordering
+
+	Fixed a bug in main():
+		If an IP changed the next instruction of an IP to be executed later the
+		same tick to a space or semicolon, it would take one instead of zero
+		ticks to process.
 	Fixed a bug in getSysInfo():
 		y as a pick instruction didn't work correctly.
 
-	Add the new D instruction to FILE.
+	Added the new D instruction to FILE.
 
 	Removed PNTR (the alias of INDV), it wasn't meant to exist at all.
-
-	IMAP updated to the current spec, can now map 0-255.
 
 	Verified all popVector and pushVector calls so that the storage offset is
 	correctly applied.
@@ -33,6 +115,8 @@ Before final release:
 	dependence on the OS's precision.
 
 	Updated for Tango 0.99.8.
+
+	Fix the typeof(type) issues for Posix as well.
 
 2008-08-07, 1.0.12
 	Fixed a bug in SOCK.kill():
