@@ -2,39 +2,28 @@
 
 // File created: 2007-01-20 21:08:15
 
-module ccbi.fingerprints.cats_eye.roma; private:
+module ccbi.fingerprints.cats_eye.roma;
 
 import ccbi.fingerprint;
-import ccbi.ip;
-import ccbi.utils : ToUtf8;
+import ccbi.instructions.utils;
 
 // 0x524f4d41: ROMA
 // Funge-98 Roman Numerals
 // -----------------------
 
-static this() {
-	mixin (Code!("ROMA"));
+mixin (Fingerprint!(
+	"ROMA",
+	"I", PushNumber!(1),
+	"V", PushNumber!(5),
+	"X", PushNumber!(10),
+	"L", PushNumber!(50),
+	"C", PushNumber!(100),
+	"D", PushNumber!(500),
+	"M", PushNumber!(1000)
+));
 
-	fingerprints[ROMA]['I'] =& mixin (PushNumber!(1));
-	fingerprints[ROMA]['V'] =& mixin (PushNumber!(5));
-	fingerprints[ROMA]['X'] =& mixin (PushNumber!(10));
-	fingerprints[ROMA]['L'] =& mixin (PushNumber!(50));
-	fingerprints[ROMA]['C'] =& mixin (PushNumber!(100));
-	fingerprints[ROMA]['D'] =& mixin (PushNumber!(500));
-	fingerprints[ROMA]['M'] =& mixin (PushNumber!(1000));
+template ROMA() {
+// WORKAROUND for D1: in D2, use __traits("compiles") in MakeSingleIns
+// Bit of a hack to get PushNumber!() instructions to compile
+IP cip() { return this.cip; }
 }
-
-template PushNumber(uint n) {
-	const PushNumber = "push" ~ ToUtf8!(n);
-}
-template PushNumberFunc(uint n) {
-	const PushNumberFunc = "void " ~ PushNumber!(n) ~ "() { ip.stack.push(" ~ ToUtf8!(n) ~ "); }";
-}
-
-mixin (PushNumberFunc!(1));
-mixin (PushNumberFunc!(5));
-mixin (PushNumberFunc!(10));
-mixin (PushNumberFunc!(50));
-mixin (PushNumberFunc!(100));
-mixin (PushNumberFunc!(500));
-mixin (PushNumberFunc!(1000));

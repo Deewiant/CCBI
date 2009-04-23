@@ -199,8 +199,11 @@ template Range(char a, char b) { const Range = Range!(char, a, b); }
 // Higher-level stuff
 
 // mixin .s!() s: not useful in itself but handy with ConcatMap, for instance.
+// Checks whether the template exists and doesn't mix it in if not.
 template TemplateMixin(char[] s) {
-	const TemplateMixin = `mixin .`~s~`!() `~s~`;`;
+	const TemplateMixin =
+		`static if (is(typeof(.`~s~`))) mixin .`~s~`!() `~s~`;`
+		`else template `~s~`() {}`;
 }
 
 template ConcatMap(alias F, char[] xs) {

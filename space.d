@@ -328,6 +328,7 @@ final class FungeSpace(cell dim) {
 		scope (exit) tfile.flush;
 
 		Coords c;
+		ubyte b = void;
 		for (cell z = beg.z; z < end.z; ++z) {
 
 			static if (dim >= 3) c.z = z;
@@ -338,15 +339,19 @@ final class FungeSpace(cell dim) {
 
 				for (cell x = beg.x; x < end.x; ++x) {
 					c.x = x;
-					tfile.write(this[c]);
+					b = this[c];
+					tfile.write(b);
 				}
-				if (y != end.y)
-					foreach (ch; NewlineString)
-						tfile.write(ch);
+				if (y != end.y) foreach (ch; NewlineString) {
+					b = ch;
+					tfile.write(b);
+				}
 			}
 
-			if (z != end.z)
-				tfile.write('\f');
+			if (z != end.z) {
+				b = '\f';
+				tfile.write(b);
+			}
 		}
 	}
 	}

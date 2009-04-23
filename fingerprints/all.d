@@ -7,16 +7,17 @@ import tango.core.Tuple;
 import ccbi.cell;
 import ccbi.templateutils;
 public import
-	ccbi.fingerprints.cats_eye.null_;
+	ccbi.fingerprints.cats_eye.null_,
+	ccbi.fingerprints.cats_eye.roma;
 
-alias Tuple!("NULL") ALL_FINGERPRINTS;
+alias Tuple!("NULL", "ROMA") ALL_FINGERPRINTS;
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below instructionsOf
 //
 // foreach fingerprint:
 // 	case HexCode!("<fingerprint>"):
-// 		return <fingerprint>_instructions!();
+// 		return <fingerprint>Instructions!();
 private template FingerprintInstructionsCases(fing...) {
 	static if (fing.length)
 		const FingerprintInstructionsCases =
@@ -37,19 +38,19 @@ char[] instructionsOf(cell fingerprint) {
 // foreach fingerprint:
 // 	case HexCode!("<fingerprint>"):
 // 		switch (ins) mixin (Switch!(
-// 			mixin (Ins!("<fingerprint>", Range!('A', 'Z'))),
+// 			Ins!("<fingerprint>", Range!('A', 'Z')),
 // 			def
 // 		));
 //       break;
 template FingerprintExecutionCases(char[] ins, char[] def, fing...) {
 	static if (fing.length)
 		const FingerprintExecutionCases =
-			`case `~ToString!(HexCode!(fing[0]))~`:`
-				`switch (`~ins~`) mixin (Switch!(`
-					`mixin (Ins!(`~Wrap!(fing[0])~`, Range!('A', 'Z'))),`
+			`case `~ToString!(HexCode!(fing[0]))~`: `
+				`switch (`~ins~`) mixin (Switch!(`\n\t
+					`Ins!(`~Wrap!(fing[0])~`, Range!('A', 'Z')),`\n\t
 					~ Wrap!(`default: `~ def) ~
-				`));`
-				`break;`
+				`));`\n
+				`break;`\n
 			~ FingerprintExecutionCases!(ins, def, fing[1..$]);
 	else
 		const FingerprintExecutionCases = "";
