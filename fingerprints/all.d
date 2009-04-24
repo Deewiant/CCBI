@@ -72,6 +72,7 @@ template FingerprintConstructorCases(fing...) {
 					if (" ~fing[0]~"_count == 0)
 						" ~fing[0]~ ".ctor;
 					" ~fing[0]~"_count += "~fing[0]~"Instructions!().length;
+					break;
 			}"
 			~ FingerprintConstructorCases!(fing[1..$]);
 	}
@@ -102,8 +103,9 @@ template FingerprintDestructorCases(fing...) {
 						if (" ~fing[0]~"_count == 0)
 							" ~fing[0]~ ".dtor;
 					}
+					break;
 			}"
-			~ FingerprintConstructorCases!(fing[1..$]);
+			~ FingerprintDestructorCases!(fing[1..$]);
 	}
 }
 
