@@ -2,67 +2,62 @@
 
 // File created: 2007-01-20 20:20:37
 
-module ccbi.fingerprints.cats_eye.hrti; private:
-
-import tango.time.Clock;
-import tango.time.StopWatch;
-import tango.io.Stdout;
+module ccbi.fingerprints.cats_eye.hrti;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
 
 // 0x48525449: HRTI
 // High-Resolution Timer Interface
 // -------------------------------
 
-static this() {
-	mixin (Code!("HRTI"));
+mixin (Fingerprint!(
+	"HRTI",
 
-	fingerprints[HRTI]['G'] =& granularity;
-	fingerprints[HRTI]['M'] =& mark;
-	fingerprints[HRTI]['T'] =& timer;
-	fingerprints[HRTI]['E'] =& eraseMark;
-	fingerprints[HRTI]['S'] =& second;
+	"G", "granularity",
+	"M", "mark",
+	"T", "timer",
+	"E", "eraseMark",
+	"S", "second"
+));
 
-	fingerprintConstructors[HRTI] =& ctor;
-}
+template HRTI() {
+
+import tango.time.StopWatch;
 
 void ctor()
 out {
 	assert (resolution > 0, "Calculated timer granularity as negative!");
 } body {
-	if (resolution == 0) {
-		// educated guess regarding granularity
-
-		ip.timer.start;
-		do resolution = ip.timer.microsec;
-		while (resolution == 0);
-
-		oneSecond = TimeSpan.fromSeconds(1).ticks,
-		oneMicro  = TimeSpan.fromMicros (1).ticks;
+	if (resolution < 0) {
+		cip.timer.start;
+		resolution = cip.timer.microsec;
 	}
 }
 
-typeof(StopWatch.microsec()) resolution = 0;
-typeof(TimeSpan.ticks()) oneSecond, oneMicro;
+typeof(StopWatch.microsec()) resolution = -1;
 
 // Granularity
-void granularity() { ip.stack.push(cast(cell)resolution); }
+void granularity() { cip.stack.push(cast(cell)resolution); }
 
 // Mark
-void mark() { ip.timer.start; ip.timerMarked = true; }
+void mark() { cip.timer.start; cip.timerMarked = true; }
 
 // Timer
 void timer() {
-	if (ip.timerMarked)
-		ip.stack.push(cast(cell)ip.timer.microsec);
+	if (cip.timerMarked)
+		cip.stack.push(cast(cell)cip.timer.microsec);
 	else
 		reverse();
 }
 
 // Erase mark
-void eraseMark() { ip.timerMarked = false; }
+void eraseMark() { cip.timerMarked = false; }
 
 // Second
-void second() { ip.stack.push(cast(cell)(Clock.now().ticks % oneSecond / oneMicro)); }
+void second() {
+	cip.stack.push(cast(cell)(
+		Clock.now().ticks % TimeSpan.fromSeconds(1).ticks
+		/ TimeSpan.fromMicros(1).ticks));
+}
+
+}
