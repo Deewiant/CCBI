@@ -137,7 +137,7 @@ final class FungeSpace(cell dim) {
 
 	this(InputStream source) {
 		load(source, &end, InitCoords!(0), false, false);
-		lastVal = space[lastCoords = InitCoords!(0)];
+		lastVal = this[lastCoords = InitCoords!(0)];
 	}
 
 	this(FungeSpace other) {
