@@ -6,17 +6,11 @@ module ccbi.templateutils;
 
 import tango.core.Tuple;
 
-// TODO: go over all templates here and elsewhere, make sure we're consistent
-// about:
-// - whether we use "static if (f.length)" or "static if (f.length == 0)", i.e.
-//   is the terminating case first or last
-// - const <TYPE> versus just const
-
 /////////////////////////////////
 // Hex code for finger/handprints
 
 template HexCode(char[4] s) {
-	const uint HexCode = s[3] | (s[2] << 8) | (s[1] << 16) | (s[0] << 24);
+	const HexCode = s[3] | (s[2] << 8) | (s[1] << 16) | (s[0] << 24);
 }
 static assert (HexCode!("ASDF") == 0x_41_53_44_46);
 
@@ -54,11 +48,11 @@ template ParseVersion(char[] s) {
 
 private template BooleansX(char[] name, uint i, B...) {
 	static if (B.length == 0)
-		const char[] BooleansX =
+		const BooleansX =
 			"BitArray "~name~";"
 			"void initBools() { "~name~".length = " ~ToString!(i)~ "; }";
 	else {
-		const char[] BooleansX =
+		const BooleansX =
 			"bool " ~B[0]~ "()       { return "~name~"[" ~ToString!(i)~ "];     }"
 			"void " ~B[0]~ "(bool x) {        "~name~"[" ~ToString!(i)~ "] = x; }"
 			~ BooleansX!(name, i+1, B[1..$]);
@@ -91,13 +85,14 @@ template Repeat(char[] x, uint n) {
 
 // Does s contain c?
 template Contains(char[] s, char c) {
-	static if (s.length) {
+	static if (s.length == 0)
+		const Contains = false;
+	else {
 		static if (s[0] == c)
 			const Contains = true;
 		else
 			const Contains = Contains!(s[1..$], c);
-	} else
-		const Contains = false;
+	}
 }
 
 // Escape a character for placing within a character literal nested in strings
@@ -111,9 +106,9 @@ template Contains(char[] s, char c) {
 // 	EscapeForChar!('\\', 1) returns `\\\\`, for "'\\\\'".
 template EscapeForChar(char c, uint times = 0) {
 	static if (c == '\'' || c == '\\')
-		const EscapeForChar = Repeat!("\\", Power!(uint,2, times+1)-1) ~ c;
+		const EscapeForChar = Repeat!("\\", Power!(uint, 2, times+1)-1) ~ c;
 	else static if (c == '"')
-		const EscapeForChar = Repeat!("\\", Power!(uint,2, times)  -1) ~ c;
+		const EscapeForChar = Repeat!("\\", Power!(uint, 2, times)  -1) ~ c;
 	else
 		const EscapeForChar = c;
 }
@@ -132,17 +127,17 @@ template Wrap(char[] s) {
 	static if (Contains!(s, '"')) {
 		static if (Contains!(s, '`'))
 			const Wrap = `"` ~ ConcatMap!(WrapHelper, s) ~ `"`;
-		else 
+		else
 			const Wrap = "`" ~ s ~ "`";
 	} else
 		const Wrap = `"` ~ s ~ `"`;
 }
 
 template WrapAll(xs...) {
-	static if (xs.length)
-		alias Tuple!(Wrap!(xs[0]), WrapAll!(xs[1..$])) WrapAll;
-	else
+	static if (xs.length == 0)
 		alias xs WrapAll;
+	else
+		alias Tuple!(Wrap!(xs[0]), WrapAll!(xs[1..$])) WrapAll;
 }
 
 template ToString(ulong n, char[] suffix = n > uint.max ? "UL" : "U") {
@@ -153,36 +148,37 @@ template ToString(ulong n, char[] suffix = n > uint.max ? "UL" : "U") {
 }
 
 template Concat(x...) {
-	static if (x.length)
-		const Concat = x[0] ~ Concat!(x[1..$]);
-	else
+	static if (x.length == 0)
 		const Concat = "";
+	else
+		const Concat = x[0] ~ Concat!(x[1..$]);
 }
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2288
 template Switch(Case...) {
-	const char[] Switch = "{" ~ Concat!(Case) ~ "}";
+	const Switch = "{" ~ Concat!(Case) ~ "}";
 }
 
 // Tuple!(a,b,c,d...) -> Tuple!(a,c,...)
 template Firsts(T...) {
-	static if (T.length) {
+	static if (T.length == 0)
+		alias T Firsts;
+	else {
 		static assert (T.length > 1, "Firsts :: odd list");
 
 		alias Tuple!(T[0], Firsts!(T[2..$])) Firsts;
-	} else
-		alias T Firsts;
+	}
 }
 
 // All values a through b in an array. E.g. Range!(int,1,5) -> [1,2,3,4,5].
 template Range(T, T a, T b) {
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
 	static if (a == b)
-		const T[] Range = cast(T[])[] ~ a;
+		const Range = cast(T[])[] ~ a;
 	else static if (a < b)
-		const T[] Range = cast(T[])[] ~ a ~ Range!(T, a+1, b);
+		const Range = cast(T[])[] ~ a ~ Range!(T, a+1, b);
 	else
-		const T[] Range = cast(T[])[] ~ b ~ Range!(T, a, b-1);
+		const Range = cast(T[])[] ~ b ~ Range!(T, a, b-1);
 
 	/+
 	static if (a == b)
@@ -207,16 +203,16 @@ template TemplateMixin(char[] s) {
 }
 
 template ConcatMap(alias F, char[] xs) {
-	static if (xs.length)
-		const ConcatMap = F!(xs[0]) ~ ConcatMap!(F, xs[1..$]);
-	else
+	static if (xs.length == 0)
 		const ConcatMap = "";
+	else
+		const ConcatMap = F!(xs[0]) ~ ConcatMap!(F, xs[1..$]);
 }
 template ConcatMapTuple(alias F, xs...) {
-	static if (xs.length)
-		const ConcatMapTuple = F!(xs[0]) ~ ConcatMapTuple!(F, xs[1..$]);
-	else
+	static if (xs.length == 0)
 		const ConcatMapTuple = "";
+	else
+		const ConcatMapTuple = F!(xs[0]) ~ ConcatMapTuple!(F, xs[1..$]);
 }
 
 // Generate a compile-time lookup table.
@@ -225,7 +221,7 @@ template ConcatMapTuple(alias F, xs...) {
 // 	mixin (`template Foo(arg) {` ~
 // 		Lookup!("Foo", "arg", not-found-case, cases...)
 // 	~ `}`);
-// 
+//
 // Where cases are all strings. An even number must be given: if cases[0] ==
 // arg the result is cases[1], etc.
 //
@@ -238,7 +234,9 @@ template ConcatMapTuple(alias F, xs...) {
 // argument to Foo: compiler memory usage and compilation time goes through the
 // roof.
 template Lookup(char[] tmplName, char[] needle, char[] last, haystack...) {
-	static if (haystack.length) {
+	static if (haystack.length == 0)
+		const Lookup = last;
+	else {
 		static assert (
 			haystack.length > 1,
 			"Lookup :: odd haystack for " ~ tmplName);
@@ -248,8 +246,7 @@ template Lookup(char[] tmplName, char[] needle, char[] last, haystack...) {
 				"const " ~tmplName~ " = " ~haystack[1]~ ";"
 			"else " ~
 				Lookup!(tmplName, needle, last, haystack[2..$]);
-	} else
-		const Lookup = last;
+	}
 }
 
 // Like Lookup but generates a complete template of one parameter.
@@ -275,14 +272,15 @@ private template RangedLookupHelper(
 ) {
 	static assert (cases.length == 1);
 
-	static if (cases[0].length) {
+	static if (cases[0].length == 0)
+		const RangedLookupHelper = "";
+	else {
 		const RangedLookupHelper =
 			"static if (" ~needle~ " == " ~cases[0][0] ~ ")"
 				"const " ~tmplName~ " = " ~result~ ";"
 			"else " ~
 				RangedLookupHelper!(tmplName, needle, result, cases[0][1..$]);
-	} else
-		const RangedLookupHelper = "";
+	}
 }
 
 // Like Lookup but the first parts of the given pairs should be arrays, and
@@ -295,7 +293,9 @@ template RangedLookup(
 	char[] needle, char[] last,
 	haystack...
 ) {
-	static if (haystack.length) {
+	static if (haystack.length == 0)
+		const RangedLookup = last;
+	else {
 		static assert (
 			haystack.length > 1,
 			"RangedLookup :: odd haystack for " ~ tmplName);
@@ -308,8 +308,7 @@ template RangedLookup(
 		const RangedLookup =
 			RangedLookupHelper!(tmplName, needle, haystack[1], haystack[0]) ~
 			RangedLookup      !(tmplName, needle, last, haystack[2..$]);
-	} else
-		const RangedLookup = last;
+	}
 }
 
 template TemplateRangedLookup(
