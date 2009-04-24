@@ -66,8 +66,6 @@ template Utils(cell dim) {
 
 alias .Coords!(dim) Coords;
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-final {
 void popVector(out Coords c) {
 	with (cip.stack) with (c) {
 		static if (dim >= 3) z = cast(cell)pop;
@@ -106,14 +104,10 @@ void pushOffsetVector(Coords c) {
 	c -= cip.offset;
 	pushVector(c);
 }
-}
 
 // TODO: this is not thread safe
 static char[] popStringBuf;
 static this() { popStringBuf = new char[80]; }
-
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-final:
 
 char[] popStringWithZero() {
 	alias popStringBuf s;

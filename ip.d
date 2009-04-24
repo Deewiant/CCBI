@@ -54,8 +54,6 @@ final class IP(cell dim) {
 		stack = stackStack.top;
 	}
 
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-	final {
 	void move() {
 		auto next = pos; next += delta;
 
@@ -104,7 +102,6 @@ final class IP(cell dim) {
 			? cast(Container!(cell))new Deque
 			: cast(Container!(cell))new Stack!(cell)
 		);
-	}
 	}
 
 	FungeSpace!(dim) space = null;

@@ -124,8 +124,6 @@ final class FungeSpace(cell dim) {
 			this.space[k] = v;
 	}
 
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-	final {
 	bool exists(Coords c) {
 		return (c in space) !is null;
 	}
@@ -172,7 +170,6 @@ final class FungeSpace(cell dim) {
 			lastVal = space[lastCoords = c];
 		return lastVal;
 	}
-	}
 
 	// these are array indices, starting from 0
 	// thus the in-use map size is (endX - begX + 1) * (endY - begY + 1)
@@ -183,8 +180,6 @@ final class FungeSpace(cell dim) {
 		beg = Dimension!(dim).Coords!(cell.max),
 		end = void;
 
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-	final {
 	void growBegEnd(Coords c) {
 		     	  if (c.x > end.x) end.x = c.x;
 			else if (c.x < beg.x) beg.x = c.x;
@@ -199,7 +194,6 @@ final class FungeSpace(cell dim) {
 	void shrinkBegEnd(Coords c) {
 		// TODO
 	}
-	}
 
 	// cache the last get, speeds up most programs
 	private Coords lastCoords;
@@ -207,8 +201,6 @@ final class FungeSpace(cell dim) {
 
 	private cell[Coords] space;
 
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-	final {
 	// Takes ownership of the InputStream, closing it.
 	void load(
 		InputStream fc,
@@ -351,6 +343,5 @@ final class FungeSpace(cell dim) {
 				tfile.write(b);
 			}
 		}
-	}
 	}
 }
