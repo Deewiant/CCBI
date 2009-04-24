@@ -8,10 +8,11 @@ import ccbi.cell;
 import ccbi.templateutils;
 public import
 	ccbi.fingerprints.cats_eye.hrti,
+	ccbi.fingerprints.cats_eye.modu,
 	ccbi.fingerprints.cats_eye.null_,
 	ccbi.fingerprints.cats_eye.roma;
 
-alias Tuple!("NULL", "HRTI", "ROMA") ALL_FINGERPRINTS;
+alias Tuple!("HRTI", "MODU", "NULL", "ROMA") ALL_FINGERPRINTS;
 
 // TODO: can't these be made to use ConcatMap? Either here or at the caller
 
