@@ -26,9 +26,9 @@ import tango.time.StopWatch;
 
 void ctor()
 out {
-	assert (resolution > 0, "Calculated timer granularity as negative!");
+	assert (resolution >= 0, "Calculated timer granularity as negative!");
 } body {
-	if (resolution < 0) {
+	if (resolution == -1) {
 		cip.timer.start;
 		resolution = cip.timer.microsec;
 	}
