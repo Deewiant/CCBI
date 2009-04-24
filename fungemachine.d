@@ -275,7 +275,7 @@ private:
 //			if (inMini)
 //				miniUnimplemented();
 /+			else +/ {
-				auto i = space.unsafeGet(cip.pos);
+				auto i = space[cip.pos];
 				warn(
 					"Unimplemented instruction '{}' ({1:d}) (0x{1:x})"
 					" encountered at {}.",

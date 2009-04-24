@@ -112,7 +112,6 @@ final class FungeSpace(cell dim) {
 
 	this(InputStream source) {
 		load(source, &end, InitCoords!(0), false, false);
-		lastVal = this[lastCoords = InitCoords!(0)];
 	}
 
 	this(FungeSpace other) {
@@ -145,11 +144,6 @@ final class FungeSpace(cell dim) {
 		return p ? *p : ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
-		if (c == lastCoords) {
-			assert (c in space);
-			lastVal = v;
-		}
-
 		auto p = c in space;
 
 		if (v != ' ')
@@ -163,12 +157,6 @@ final class FungeSpace(cell dim) {
 			return *p = v;
 		else
 			return space[c] = v;
-	}
-
-	cell unsafeGet(Coords c) {
-		if (c != lastCoords)
-			lastVal = space[lastCoords = c];
-		return lastVal;
 	}
 
 	// these are array indices, starting from 0
@@ -194,10 +182,6 @@ final class FungeSpace(cell dim) {
 	void shrinkBegEnd(Coords c) {
 		// TODO
 	}
-
-	// cache the last get, speeds up most programs
-	private Coords lastCoords;
-	private cell   lastVal;
 
 	private cell[Coords] space;
 
