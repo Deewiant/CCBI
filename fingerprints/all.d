@@ -13,6 +13,8 @@ public import
 
 alias Tuple!("NULL", "HRTI", "ROMA") ALL_FINGERPRINTS;
 
+// TODO: can't these be made to use ConcatMap? Either here or at the caller
+
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below instructionsOf
 //
@@ -34,6 +36,74 @@ char[] instructionsOf(cell fingerprint) {
 		FingerprintInstructionsCases!(ALL_FINGERPRINTS),
 		"default: return null;"
 	));
+}
+
+// Each fingerprint may have a constructor and a destructor. We keep track of
+// how many instructions of that fingerprint are loaded. If the count is at
+// zero when the fingerprint is loaded, we call the constructor. Likewise, if
+// the number of instructions drops back to zero the destructor is called.
+//
+// The count is local to the FungeMachine: there are (at least currently) no
+// static fingerprint constructors/destructors.
+
+// <fingerprint>_count if the fingerprint has a constructor
+template FingerprintCount(char[] fing) {
+	const FingerprintCount =
+		"static if (is(typeof(" ~fing~ ".ctor))) {
+			uint " ~fing~ "_count;
+		}";
+}
+
+// foreach fingerprint:
+// 	static if (is(typeof(<fingerprint>.ctor))) {
+// 		case HexCode!("<fingerprint>"):
+// 			if (<fingerprint>_count == 0)
+// 				<fingerprint>.ctor;
+// 			<fingerprint>_count += <fingerprint>Instructions!().length;
+// 	}
+template FingerprintConstructorCases(fing...) {
+	static if (fing.length == 0)
+		const FingerprintConstructorCases = "";
+	else {
+		const FingerprintConstructorCases =
+			"static if (is(typeof(" ~fing[0]~ ".ctor))) {
+				case " ~ToString!(HexCode!(fing[0])) ~":
+					if (" ~fing[0]~"_count == 0)
+						" ~fing[0]~ ".ctor;
+					" ~fing[0]~"_count += "~fing[0]~"Instructions!().length;
+			}"
+			~ FingerprintConstructorCases!(fing[1..$]);
+	}
+}
+
+// foreach fingerprint:
+// 	static if (is(typeof(<fingerprint>.ctor))) {
+// 		case HexCode!("<fingerprint>"):
+// 			--<fingerprint>_count;
+// 			assert (<fingerprint>_count >= 0);
+//
+// 			static if (is(typeof(<fingerprint>.dtor))) {
+// 				if (<fingerprint>_count == 0)
+// 					<fingerprint>.dtor;
+// 			}
+// 	}
+template FingerprintDestructorCases(fing...) {
+	static if (fing.length == 0)
+		const FingerprintDestructorCases = "";
+	else {
+		const FingerprintDestructorCases =
+			"static if (is(typeof(" ~fing[0]~ ".ctor))) {
+				case " ~ToString!(HexCode!(fing[0])) ~":
+					--" ~fing[0]~"_count;
+					assert (" ~fing[0]~"_count >= 0);
+
+					static if (is(typeof(" ~fing[0]~ ".dtor))) {
+						if (" ~fing[0]~"_count == 0)
+							" ~fing[0]~ ".dtor;
+					}
+			}"
+			~ FingerprintConstructorCases!(fing[1..$]);
+	}
 }
 
 // foreach fingerprint:
