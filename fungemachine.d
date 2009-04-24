@@ -215,7 +215,7 @@ private:
 	}
 
 	mixin StdInstructions!() Std;
-	mixin Utils!(dim);
+	mixin Utils!();
 
 // TODO: move dim information to instructions themselves, since fingerprints
 // need it as well
