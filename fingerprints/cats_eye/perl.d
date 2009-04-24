@@ -1,8 +1,8 @@
 // This file is part of CCBI - Conforming Concurrent Befunge-98 Interpreter
 
-// File createD: 2007-01-20 21:06:53
+// File created: 2007-01-20 21:06:53
 
-module ccbi.fingerprints.cats_eye.perl; private:
+module ccbi.fingerprints.cats_eye.perl;
 
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 import tango.sys.Process;
