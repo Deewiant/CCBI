@@ -705,8 +705,8 @@ bool readCoords(inout Coords c, char[][] args) {
 	assert (args.length == dim);
 
 	                     if (!read(cast(cell_base)c.x, args[0])) return false;
-	static if (dim >= 2) if (!read(cast(cell_base)c.y, args[0])) return false;
-	static if (dim >= 3) if (!read(cast(cell_base)c.z, args[0])) return false;
+	static if (dim >= 2) if (!read(cast(cell_base)c.y, args[1])) return false;
+	static if (dim >= 3) if (!read(cast(cell_base)c.z, args[2])) return false;
 
 	return true;
 }
