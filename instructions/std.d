@@ -125,9 +125,6 @@ import ccbi.fingerprints.all;
 alias .Coords!(dim) Coords;
 alias .IP    !(dim) IP;
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-final:
-
 // WORKAROUND for D1: in D2, use __traits("compiles") in MakeSingleIns
 // Bit of a hack to get PushNumber!() instructions to compile
 // (Since it results in the otherwise invalid "Std.cip")

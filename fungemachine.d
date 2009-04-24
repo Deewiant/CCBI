@@ -96,8 +96,6 @@ private:
 		reboot();
 	}
 
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-	final {
 	void reboot() {
 		if (flags.fingerprintsEnabled)
 			space = new typeof(space)(initialSpace);
@@ -183,12 +181,9 @@ private:
 		}
 		return true;
 	}
-	}
 
 	mixin .Tracer!() Tracer;
 
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-	final {
 	Request executeInstruction() {
 //		++stats.executionCount;
 
@@ -218,13 +213,9 @@ private:
 		}
 		return Request.MOVE;
 	}
-	}
 
 	mixin StdInstructions!() Std;
 	mixin Utils!(dim);
-
-	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2326
-final:
 
 // TODO: move dim information to instructions themselves, since fingerprints
 // need it as well
