@@ -2,50 +2,40 @@
 
 // File created: 2007-01-20 21:11:55
 
-module ccbi.fingerprints.cats_eye.turt; private:
-
-import tango.io.device.File;
-import tango.math.Math            : PI, cos, sin, round = rndint, abs;
-import tango.text.convert.Integer : format;
-import tango.text.xml.Document;
-import tango.text.xml.DocPrinter;
+module ccbi.fingerprints.cats_eye.turt;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.stdlib : NewlineString, WriteCreate;
 
 // 0x54555254: TURT
 // Simple Turtle Graphics Library
 // ------------------------------
 
-static this() {
-	mixin (Code!("TURT"));
+mixin (Fingerprint!(
+	"TURT",
 
-	fingerprints[TURT]['A'] =& queryHeading;
-	fingerprints[TURT]['B'] =& back;
-	fingerprints[TURT]['C'] =& penColour;
-	fingerprints[TURT]['D'] =& showDisplay;
-	fingerprints[TURT]['E'] =& queryPen;
-	fingerprints[TURT]['F'] =& forward;
-	fingerprints[TURT]['H'] =& setHeading;
-	fingerprints[TURT]['I'] =& printDrawing;
-	fingerprints[TURT]['L'] =& turnLeft;
-	fingerprints[TURT]['N'] =& clearPaper;
-	fingerprints[TURT]['P'] =& penPosition;
-	fingerprints[TURT]['Q'] =& queryPosition;
-	fingerprints[TURT]['R'] =& turnRight;
-	fingerprints[TURT]['T'] =& teleport;
-	fingerprints[TURT]['U'] =& queryBounds;
+	"A", "queryHeading",
+	"B", "back",
+	"C", "penColour",
+	"D", "showDisplay",
+	"E", "queryPen",
+	"F", "forward",
+	"H", "setHeading",
+	"I", "printDrawing",
+	"L", "turnLeft",
+	"N", "clearPaper",
+	"P", "penPosition",
+	"Q", "queryPosition",
+	"R", "turnRight",
+	"T", "teleport",
+	"U", "queryBounds"
+));
 
-	fingerprintDestructors[TURT] =& dtor;
-}
+
+import tango.io.device.File;
+import tango.math.Math : PI, cos, sin, round = rndint, abs;
+import tango.text.convert.Integer : format;
 
 const TURT_FILE_INIT = "CCBI_TURT.svg";
-char[] filename = TURT_FILE_INIT;
-
-Turtle turt;
-Drawing pic;
 
 // {{{ turtle coordinates
 
@@ -66,12 +56,14 @@ enum : tc {
 uint getInt(tc c) { return abs(cast(int)c) / 10000; }
 uint getDec(tc c) { return abs(cast(int)c) % 10000; }
 
-static assert (getDec(cast(tc)1) == 1);
-static assert (getInt(cast(tc)1) == 0);
-static assert (getDec(cast(tc)16383_9999) ==  9999);
-static assert (getInt(cast(tc)16383_9999) == 16383);
-static assert (getDec(cast(tc)-16383_9999) ==  9999);
-static assert (getInt(cast(tc)-16383_9999) == 16383);
+unittest {
+	assert (getDec(1) == 1);
+	assert (getInt(1) == 0);
+	assert (getDec( 16383_9999) ==  9999);
+	assert (getInt( 16383_9999) == 16383);
+	assert (getDec(-16383_9999) ==  9999);
+	assert (getInt(-16383_9999) == 16383);
+}
 
 char[] toString(tc n) {
 	static assert (MIN >= -99999_9999 && MAX <= 99999_9999);
@@ -112,7 +104,7 @@ char[] toString(tc n) {
 			--i;
 		}
 
-		/+ BREAKS EVERY SVG VIEWER I TRIED (RAM/CPU usage hit the roof)
+		/+ XXX: BREAKS EVERY SVG VIEWER I TRIED (RAM/CPU usage hit the roof)
 		// switch to scientific notation if it's more compact
 		// it only is when intPart is 0 (so we can lose the leading zeroes)
 		if (intPart == 0) {
@@ -148,6 +140,7 @@ struct Point {
 }
 
 struct Turtle {
+	Drawing pic;
 	Point p = {0,0};
 
 	real heading = 0, sin = 0, cos = 1;
@@ -199,6 +192,18 @@ struct Turtle {
 		} else
 			movedWithoutDraw = true;
 	}
+
+	void newDraw() {
+		if (p.x < pic.min.x)
+			pic.min.x = p.x;
+		else if (p.x > pic.max.x)
+			pic.max.x = p.x;
+
+		if (p.y < pic.min.y)
+			pic.min.y = p.y;
+		else if (p.y > pic.max.y)
+			pic.max.y = p.y;
+	}
 }
 
 struct Drawing {
@@ -233,19 +238,18 @@ struct Drawing {
 	}
 }
 // }}}
+
+template TURT() {
+
+char[] filename = TURT_FILE_INIT;
+Turtle turt;
+
+import tango.math.Math : PI, round = rndint;
+import tango.text.convert.Integer : format;
+import tango.text.xml.Document;
+import tango.text.xml.DocPrinter;
+
 // {{{ helpers
-
-void newDraw() {
-	if (turt.p.x < pic.min.x)
-		pic.min.x = turt.p.x;
-	else if (turt.p.x > pic.max.x)
-		pic.max.x = turt.p.x;
-
-	if (turt.p.y < pic.min.y)
-		pic.min.y = turt.p.y;
-	else if (turt.p.y > pic.max.y)
-		pic.max.y = turt.p.y;
-}
 
 real toRad(cell c) { return                 (PI / 180.0) * c;  }
 cell toDeg(real r) { return cast(cell)round((180.0 / PI) * r); }
@@ -278,77 +282,77 @@ void tryAddPoint() {
 }
 
 uint dotColour(uint c) {
-	auto p = c in pic.dotColourCounts;
+	auto p = c in turt.pic.dotColourCounts;
 	if (p)
 		++*p;
 	else
-		pic.dotColourCounts[c] = 1;
+		turt.pic.dotColourCounts[c] = 1;
 	return c;
 }
 
 void addPoint() {
 	// replace an old point if possible
-	auto oldColour = turt.p in pic.dots;
+	auto oldColour = turt.p in turt.pic.dots;
 	if (oldColour) {
 		if (*oldColour != turt.colour) {
-			--pic.dotColourCounts[*oldColour];
-			pic.dots[turt.p] = dotColour(turt.colour);
+			--turt.pic.dotColourCounts[*oldColour];
+			turt.pic.dots[turt.p] = dotColour(turt.colour);
 		}
 		return;
 	}
 
-	pic.dots[turt.p] = dotColour(turt.colour);
-	newDraw();
+	turt.pic.dots[turt.p] = dotColour(turt.colour);
+	turt.newDraw();
 }
 
 void clearWithColour(uint c) {
-	pic.bgColour = c;
+	turt.pic.bgColour = c;
 
-	pic.min = pic.max = Point(0,0);
-	pic.dots = null;
-	pic.dotColourCounts = null;
-	delete pic.pathBeg;
+	turt.pic.min = turt.pic.max = Point(0,0);
+	turt.pic.dots = null;
+	turt.pic.dotColourCounts = null;
+	delete turt.pic.pathBeg;
 }
 // }}}
 // {{{ instructions and dtor
 
 void dtor() {
-	clearWithColour(pic.TRANSPARENT);
+	clearWithColour(turt.pic.TRANSPARENT);
 }
 
 // Turn Left, Turn Right, Set Heading
-void turnLeft()   { turt.heading -= toRad(ip.stack.pop); turt.normalize(); }
-void turnRight()  { turt.heading += toRad(ip.stack.pop); turt.normalize(); }
-void setHeading() { turt.heading  = toRad(ip.stack.pop); turt.normalize(); }
+void turnLeft()   { turt.heading -= toRad(cip.stack.pop); turt.normalize(); }
+void turnRight()  { turt.heading += toRad(cip.stack.pop); turt.normalize(); }
+void setHeading() { turt.heading  = toRad(cip.stack.pop); turt.normalize(); }
 
 // Forward, Back
-void forward() { turt.move( cast(tc)ip.stack.pop); }
-void back()    { turt.move(-cast(tc)ip.stack.pop); }
+void forward() { turt.move( cast(tc)cip.stack.pop); }
+void back()    { turt.move(-cast(tc)cip.stack.pop); }
 
 // Pen Position
 void penPosition() {
-	switch (ip.stack.pop) {
+	switch (cip.stack.pop) {
 		case 0:
 			tryAddPoint();
 			turt.penDown = false; break;
-		case 1: turt.penDown = true;  break;
+		case 1: turt.penDown = true; break;
 		default: reverse(); break;
 	}
 }
 
 // Pen Colour
 void penColour() {
-	turt.colour = toRGB(ip.stack.pop);
+	turt.colour = toRGB(cip.stack.pop);
 }
 
 // Clear Paper with Colour
 void clearPaper() {
-	clearWithColour(toRGB(ip.stack.pop));
+	clearWithColour(toRGB(cip.stack.pop));
 }
 
 // Show Display
 void showDisplay() {
-	switch (ip.stack.pop) {
+	switch (cip.stack.pop) {
 		case 0: break;                // TODO: turn off window
 		case 1: tryAddPoint(); break; // TODO: turn on window
 		default: reverse(); break;
@@ -359,32 +363,32 @@ void showDisplay() {
 void teleport() {
 	tryAddPoint();
 
-	turt.p.y = cast(tc)ip.stack.pop;
-	turt.p.x = cast(tc)ip.stack.pop;
+	turt.p.y = cast(tc)cip.stack.pop;
+	turt.p.x = cast(tc)cip.stack.pop;
 
 	turt.movedWithoutDraw = true;
 }
 
 // Query Pen
 void queryPen() {
-	ip.stack.push(cast(cell)turt.penDown);
+	cip.stack.push(cast(cell)turt.penDown);
 }
 
 // Query Heading
 void queryHeading() {
-	ip.stack.push(toDeg(turt.heading));
+	cip.stack.push(toDeg(turt.heading));
 }
 
 // Query Position
 void queryPosition() {
-	ip.stack.push(
+	cip.stack.push(
 		cast(cell)turt.p.x,
 		cast(cell)turt.p.y);
 }
 
 // Query Bounds
 void queryBounds() {
-	ip.stack.push(
+	cip.stack.push(
 		cast(cell)MIN,
 		cast(cell)MIN,
 		cast(cell)MAX,
@@ -405,12 +409,12 @@ void printDrawing() {
 		file.close();
 
 	auto
-		width  = pic.max.x + PADDING - (pic.min.x - PADDING),
-		height = pic.max.y + PADDING - (pic.min.y - PADDING);
+		width  = turt.pic.max.x + PADDING - (turt.pic.min.x - PADDING),
+		height = turt.pic.max.y + PADDING - (turt.pic.min.y - PADDING);
 
 	auto
-		minX    = toString(pic.min.x - PADDING).dup,
-		minY    = toString(pic.min.y - PADDING).dup,
+		minX    = toString(turt.pic.min.x - PADDING).dup,
+		minY    = toString(turt.pic.min.y - PADDING).dup,
 		widthS  = toString(width).dup,
 		heightS = toString(height).dup;
 
@@ -450,16 +454,16 @@ void printDrawing() {
 			"TURT picture generated by "
 			"the Conforming Concurrent Befunge-98 Interpreter");
 
-	if (pic.bgColour != pic.TRANSPARENT)
+	if (turt.pic.bgColour != turt.pic.TRANSPARENT)
 		root
 			.element  (null, "rect")
 			.attribute(null, "x",      minX)
 			.attribute(null, "y",      minY)
 			.attribute(null, "width",  widthS)
 			.attribute(null, "height", heightS)
-			.attribute(null, "fill",   toCSSColour(pic.bgColour).dup);
+			.attribute(null, "fill",   toCSSColour(turt.pic.bgColour).dup);
 
-	if (auto p = pic.pathBeg) {
+	if (auto p = turt.pic.pathBeg) {
 		typeof(root) newPath(uint colour) {
 			return root
 				.element  (null, "path")
@@ -482,7 +486,7 @@ void printDrawing() {
 
 		for (auto prev = p; p; prev = p, p = p.next) {
 
-			auto drawing = p != pic.path || p.penDown;
+			auto drawing = p != turt.pic.path || p.penDown;
 
 			if (drawing && i++ >= NODES_PER_LINE) {
 				// remove the trailing space from the last line
@@ -511,7 +515,7 @@ void printDrawing() {
 
 			// if the last one doesn't draw anything, skip it, it's useless
 			// (i.e. if !p.penDown && p == pic.path)
-			} else if (p != pic.path)
+			} else if (p != turt.pic.path)
 				pathdata ~= "M";
 
 			if (drawing) {
@@ -529,7 +533,7 @@ void printDrawing() {
 	ushort cCnt = 1;
 	char[12] classBuf = ".c4294967295";
 
-	foreach (dot, colour; pic.dots) {
+	foreach (dot, colour; turt.pic.dots) {
 
 		auto dotElem = root
   			.element  (null, "circle")
@@ -539,7 +543,7 @@ void printDrawing() {
 
 		auto colourS = toCSSColour(colour);
 
-		auto n = pic.dotColourCounts[colour];
+		auto n = turt.pic.dotColourCounts[colour];
 
 		// Silly compression follows...
 		//
@@ -604,6 +608,6 @@ void printDrawing() {
 	file.output.write(NewlineString);
 }
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1629
-private alias DocPrinter!(char) bugzilla_1629_workaround;
 // }}}
+
+}

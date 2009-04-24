@@ -261,7 +261,7 @@ void corner() {
 	else {
 		Coords p = cip.pos, d = cip.delta;
 
-		turnLeft();
+		Std.turnLeft();
 		cip.move();
 		cip.stack.push(space[cip.pos]);
 
@@ -277,7 +277,7 @@ void canOpener() {
 	else {
 		Coords p = cip.pos, d = cip.delta;
 
-		turnRight();
+		Std.turnRight();
 		cip.move();
 		cip.stack.push(space[cip.pos]);
 
