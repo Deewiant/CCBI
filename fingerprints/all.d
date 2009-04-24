@@ -7,10 +7,11 @@ import tango.core.Tuple;
 import ccbi.cell;
 import ccbi.templateutils;
 public import
+	ccbi.fingerprints.cats_eye.hrti,
 	ccbi.fingerprints.cats_eye.null_,
 	ccbi.fingerprints.cats_eye.roma;
 
-alias Tuple!("NULL", "ROMA") ALL_FINGERPRINTS;
+alias Tuple!("NULL", "HRTI", "ROMA") ALL_FINGERPRINTS;
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below instructionsOf
