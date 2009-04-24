@@ -2,253 +2,302 @@
 
 // File created: 2007-01-20 21:09:22
 
-module ccbi.fingerprints.cats_eye.toys; private:
+module ccbi.fingerprints.cats_eye.toys;
 
 import ccbi.fingerprint;
-import ccbi.instructions : goWest, goEast, goSouth, goNorth, eastWestIf, northSouthIf, reverse, turnLeft, turnRight;
-import ccbi.ip;
-import ccbi.random;
-import ccbi.space;
-import ccbi.utils;
 
 // 0x544f5953: TOYS
 // Funge-98 Standard Toys
 // ----------------------
 
-static this() {
-	mixin (Code!("TOYS"));
+mixin (Fingerprint!(
+	"TOYS",
 
-	fingerprints[TOYS]['A'] =& gable;
-	fingerprints[TOYS]['B'] =& pairOfShoes;
-	fingerprints[TOYS]['C'] =& bracelet;
-	fingerprints[TOYS]['D'] =& toiletSeat;
-	fingerprints[TOYS]['E'] =& pitchforkHead;
-	fingerprints[TOYS]['F'] =& calipers;
-	fingerprints[TOYS]['G'] =& counterclockwise;
-	fingerprints[TOYS]['H'] =& pairOfStilts;
-	fingerprints[TOYS]['I'] =& doricColumn;
-	fingerprints[TOYS]['J'] =& fishhook;
-	fingerprints[TOYS]['K'] =& scissors;
-	fingerprints[TOYS]['L'] =& corner;
-	fingerprints[TOYS]['M'] =& kittycat;
-	fingerprints[TOYS]['N'] =& lightningBolt;
-	fingerprints[TOYS]['O'] =& boulder;
-	fingerprints[TOYS]['P'] =& mailbox;
-	fingerprints[TOYS]['Q'] =& necklace;
-	fingerprints[TOYS]['R'] =& canOpener;
-	fingerprints[TOYS]['S'] =& chicane;
-	fingerprints[TOYS]['T'] =& barstool;
-	fingerprints[TOYS]['U'] =& tumbler;
-	fingerprints[TOYS]['V'] =& dixiecup;
-	fingerprints[TOYS]['W'] =& televisionAntenna;
-	fingerprints[TOYS]['X'] =& buriedTreasure;
-	fingerprints[TOYS]['Y'] =& slingshot;
-	fingerprints[TOYS]['Z'] =& reverse; // 3D only
+	"A", "gable",
+	"B", "pairOfShoes",
+	"C", "bracelet",
+	"D", "toiletSeat",
+	"E", "pitchforkHead",
+	"F", "calipers",
+	"G", "counterclockwise",
+	"H", "pairOfStilts",
+	"I", "doricColumn",
+	"J", "fishhook",
+	"K", "scissors",
+	"L", "corner",
+	"M", "kittycat",
+	"N", "lightningBolt",
+	"O", "boulder",
+	"P", "mailbox",
+	"Q", "necklace",
+	"R", "canOpener",
+	"S", "chicane",
+	"T", "barstool",
+	"U", "tumbler",
+	"V", "dixiecup",
+	"W", "televisionAntenna",
+	"X", "buriedTreasure",
+	"Y", "slingshot",
+	"Z", "barnDoor"
+));
+
+template TOYS() {
+
+template PopThree() {
+	const PopThree = `
+		Coords t = popOffsetVector();
+		Coords d = popVector();
+		Coords o = popOffsetVector();
+
+		if (d == 0)
+			return;
+
+		// Undefined behaviour...
+		//
+		// Could do something tricky here like mirror and flip the area copied or
+		// then just do a normal copy from o-d to o
+		//
+		// But nah, most likely it's user error
+		static if (dim >= 3) if (d.z < 0) return reverse;
+		static if (dim >= 2) if (d.y < 0) return reverse;
+	                     	if (d.x < 0) return reverse;
+
+		Coords!(3) de = d.extend(1);`;
 }
 
 void bracelet() {
-	cellidx ox, oy, dx, dy, tx, ty;
+	mixin (PopThree!());
 
-	popVector        (tx, ty);
-	popVector!(false)(dx, dy);
-	popVector        (ox, oy);
+	for (auto z = 0; z < de.z; ++z) {
+		for (auto y = 0; y < de.y; ++y) {
+			for (auto x = 0; x < de.x; ++x, ++t.x, ++o.x)
+				space[t] = space[o];
 
-	if (!dx || !dy)
-		return;
-
-	// undefined behaviour
-	// could do something tricky here like mirror and flip the area copied
-	// or just do a normal copy from (ox-dx, oy-dy) to (ox, oy)
-	// but it's more likely it's an error
-	if (dx < 0 || dy < 0) {
-		reverse();
-		return;
+			t.x -= de.x;
+			o.x -= de.x;
+			static if (dim >= 2) {
+				++t.y;
+				++o.y;
+			}
+		}
+		static if (dim >= 2) {
+			t.y -= de.y;
+			o.y -= de.y;
+		}
+		static if (dim >= 3) {
+			++t.z;
+			++o.z;
+		}
 	}
-
-	for (cellidx x = 0; x < dx; ++x)
-		for (cellidx y = 0; y < dy; ++y)
-			space[tx+x, ty+y] = space[ox+x, oy+y];
 }
 void scissors() {
-	cellidx ox, oy, dx, dy, tx, ty;
+	mixin (PopThree!());
 
-	popVector        (tx, ty);
-	popVector!(false)(dx, dy);
-	popVector        (ox, oy);
+	t += d;
+	o += d;
 
-	if (!dx || !dy)
-		return;
+	for (auto z = de.z; z--;) {
+		static if (dim >= 3) {
+			--t.z;
+			--o.z;
+		}
+		for (auto y = de.y; y--;) {
+			static if (dim >= 2) {
+				--t.y;
+				--o.y;
+			}
 
-	// see comment in bracelet()
-	if (dx < 0 || dy < 0) {
-		reverse();
-		return;
+			for (auto x = de.x; x--;) {
+				--t.x;
+				--o.x;
+				space[t] = space[o];
+			}
+
+			t.x += de.x;
+			o.x += de.x;
+		}
+		static if (dim >= 2) {
+			t.y += de.y;
+			o.y += de.y;
+		}
 	}
-
-	for (cellidx x = dx; x--;)
-		for (cellidx y = dx; y--;)
-			space[tx+x, ty+y] = space[ox+x, oy+y];
 }
 void kittycat() {
-	cellidx ox, oy, dx, dy, tx, ty;
+	mixin (PopThree!());
 
-	popVector        (tx, ty);
-	popVector!(false)(dx, dy);
-	popVector        (ox, oy);
+	for (auto z = 0; z < de.z; ++z) {
+		for (auto y = 0; y < de.y; ++y) {
+			for (auto x = 0; x < de.x; ++x, ++t.x, ++o.x) {
+				space[t] = space[o];
+				space[o] = ' ';
+			}
 
-	if (!dx || !dy)
-		return;
-
-	// see comment in bracelet()
-	if (dx < 0 || dy < 0) {
-		reverse();
-		return;
-	}
-
-	for (cellidx x = 0; x < dx; ++x) {
-		for (cellidx y = 0; y < dy; ++y) {
-			space[tx+x, ty+y] = space[ox+x, oy+y];
-			space[ox+x, oy+y] = cell.init;
+			t.x -= de.x;
+			o.x -= de.x;
+			static if (dim >= 2) {
+				++t.y;
+				++o.y;
+			}
+		}
+		static if (dim >= 2) {
+			t.y -= de.y;
+			o.y -= de.y;
+		}
+		static if (dim >= 3) {
+			++t.z;
+			++o.z;
 		}
 	}
 }
 void dixiecup() {
-	cellidx ox, oy, dx, dy, tx, ty;
+	mixin (PopThree!());
 
-	popVector        (tx, ty);
-	popVector!(false)(dx, dy);
-	popVector        (ox, oy);
+	t += d;
+	o += d;
 
-	if (!dx || !dy)
-		return;
+	for (auto z = de.z; z--;) {
+		static if (dim >= 3) {
+			--t.z;
+			--o.z;
+		}
+		for (auto y = de.y; y--;) {
+			static if (dim >= 2) {
+				--t.y;
+				--o.y;
+			}
 
-	// see comment in bracelet()
-	if (dx < 0 || dy < 0) {
-		reverse();
-		return;
-	}
+			for (auto x = de.x; x--;) {
+				--t.x;
+				--o.x;
+				space[t] = space[o];
+				space[o] = ' ';
+			}
 
-	for (cellidx x = dx; x--;) {
-		for (cellidx y = dx; y--;) {
-			space[tx+x, ty+y] = space[ox+x, oy+y];
-			space[ox+x, oy+y] = cell.init;
+			t.x += de.x;
+			o.x += de.x;
+		}
+		static if (dim >= 2) {
+			t.y += de.y;
+			o.y += de.y;
 		}
 	}
 }
 
 void chicane() {
-	cellidx x, y, dx, dy;
-	popVector        ( x,  y);
-	popVector!(false)(dx, dy);
+	Coords!(3) a = popOffsetVector().extend(1);
+	Coords!(3) b = popVector      ().extend(1);
+	b += a;
 
-	cell c = ip.stack.pop;
+	cell val = cip.stack.pop;
 
-	for (cellidx i = x; i < x + dx; ++i)
-		for (cellidx j = y; j < y + dy; ++j)
-			space[i, j] = c;
+	Coords c = void;
+	static if (dim >= 3) {
+		for (c.z = a.z; c.z < b.z; ++c.z)
+			for (c.y = a.y; c.y < b.y; ++c.y)
+				for (c.x = a.x; c.x < b.x; ++c.x)
+					space[c] = val;
+
+	} else static if (dim == 2) {
+		for (c.y = a.y; c.y < b.y; ++c.y)
+			for (c.x = a.x; c.x < b.x; ++c.x)
+				space[c] = val;
+
+	} else
+		for (c.x = a.x; c.x < b.x; ++c.x)
+			space[c] = val;
 }
 
 void fishhook() {
-	auto n = cast(cellidx)ip.stack.pop;
+	static if (dim < 2)
+		reverse;
+	else {
+		auto n = cip.stack.pop;
 
-	if (!n)
-		return;
-	else if (n < 0) {
-		for (cellidx y = space.begY; y <= space.endY; ++y)
-			space[ip.x, y+n] = space[ip.x, y];
+		Coords c  = cip.pos;
+		Coords c2 = c;
 
-		for (cellidx y = space.begY + n; y < space.begY; ++y) {
-			if (space[ip.x, y] != ' ') {
-				space.begY = y;
-				break;
-			}
-		}
-	} else if (n > 0) {
-		for (cellidx y = space.endY; y >= space.begY; --y)
-			space[ip.x, y+n] = space[ip.x, y];
+		if (n < 0) {
+			c.y = space.beg.y;
+			c2.y = c.y + n;
+			for (auto oldEnd = space.end.y; c.y <= oldEnd; ++c.y, ++c2.y)
+				space[c2] = space[c];
 
-		for (cellidx y = space.endY + n; y > space.endY; --y) {
-			if (space[ip.x, y] != ' ') {
-				space.endY = y;
-				break;
-			}
+		} else if (n > 0) {
+			c.y = space.end.y;
+			c2.y = c.y + n;
+			for (auto oldBeg = space.beg.y; c.y >= oldBeg; --c.y, --c2.y)
+				space[c2] = space[c];
 		}
 	}
 }
 
 void boulder() {
-	auto n = cast(cellidx)ip.stack.pop;
+	static if (dim < 2)
+		reverse;
+	else {
+		auto n = cip.stack.pop;
 
-	if (!n)
-		return;
-	else if (n < 0) {
-		for (cellidx x = space.begX; x <= space.endX; ++x)
-			space[x+n, ip.y] = space[x, ip.y];
+		Coords c  = cip.pos;
+		Coords c2 = c;
 
-		for (cellidx x = space.begX + n; x < space.begX; ++x) {
-			if (space.unsafeGet(x, ip.y) != ' ') {
-				space.begX = x;
-				break;
-			}
-		}
-	} else if (n > 0) {
-		for (cellidx x = space.endX; x >= space.begX; --x)
-			space[x+n, ip.y] = space[x, ip.y];
+		if (n < 0) {
+			c.x = space.beg.x;
+			c2.x = c.x + n;
+			for (auto oldEnd = space.end.x; c.x <= oldEnd; ++c.x, ++c2.x)
+				space[c2] = space[c];
 
-		for (cellidx x = space.endX + n; x > space.endX; --x) {
-			if (space.unsafeGet(x, ip.y) != ' ') {
-				space.endX = x;
-				break;
-			}
+		} else if (n > 0) {
+			c.x = space.end.x;
+			c2.x = c.x + n;
+			for (auto oldBeg = space.beg.x; c.x >= oldBeg; --c.x, --c2.x)
+				space[c2] = space[c];
 		}
 	}
 }
 
 void corner() {
-	cellidx x  = ip.x,
-	        y  = ip.y,
-	        dx = ip.dx,
-	        dy = ip.dy;
+	static if (dim < 2)
+		reverse;
+	else {
+		Coords p = cip.pos, d = cip.delta;
 
-	turnLeft();
-	ip.move();
-	ip.stack.push(space[ip.x, ip.y]);
+		turnLeft();
+		cip.move();
+		cip.stack.push(space[cip.pos]);
 
-	ip.x = x;
-	ip.y = y;
-	ip.dx = dx;
-	ip.dy = dy;
+		cip.pos   = p;
+		cip.delta = d;
+	}
 }
 
 // can opener
 void canOpener() {
-	cellidx x  = ip.x,
-	        y  = ip.y,
-	        dx = ip.dx,
-	        dy = ip.dy;
+	static if (dim < 2)
+		reverse;
+	else {
+		Coords p = cip.pos, d = cip.delta;
 
-	turnRight();
-	ip.move();
-	ip.stack.push(space[ip.x, ip.y]);
+		turnRight();
+		cip.move();
+		cip.stack.push(space[cip.pos]);
 
-	ip.x = x;
-	ip.y = y;
-	ip.dx = dx;
-	ip.dy = dy;
+		cip.pos   = p;
+		cip.delta = d;
+	}
 }
 
 // doric column
-void doricColumn() { with (ip.stack) push(pop + cast(cell)1); }
+void doricColumn() { with (cip.stack) push(pop + cast(cell)1); }
 
 // toilet seat
-void toiletSeat()  { with (ip.stack) push(pop - cast(cell)1); }
+void toiletSeat()  { with (cip.stack) push(pop - cast(cell)1); }
 
 // lightning bolt
-void lightningBolt() { with (ip.stack) push(-pop); }
+void lightningBolt() { with (cip.stack) push(-pop); }
 
 // pair of stilts
 void pairOfStilts() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell b = pop,
 		     a = pop;
 
@@ -260,13 +309,13 @@ void pairOfStilts() {
 }
 
 void gable() {
-	with (ip.stack) for (cell n = pop, c = pop; n--;)
+	with (cip.stack) for (cell n = pop, c = pop; n--;)
 		push(c);
 }
 
 // pair of shoes
 void pairOfShoes() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto y = pop, x = pop;
 		push(x+y, x-y);
 	}
@@ -275,66 +324,62 @@ void pairOfShoes() {
 // pitchfork head
 void pitchforkHead() {
 	cell sum = 0;
-	foreach (c; ip.stack)
+	foreach (c; cip.stack)
 		sum += c;
-	ip.stack.clear();
-	ip.stack.push(sum);
+	cip.stack.clear;
+	cip.stack.push(sum);
 }
 
 void mailbox() {
 	cell prod = 1;
-	foreach (c; ip.stack)
+	foreach (c; cip.stack)
 		prod *= c;
-	ip.stack.clear();
-	ip.stack.push(prod);
+	cip.stack.clear;
+	cip.stack.push(prod);
 }
 
 void calipers() {
-	cellidx tx, ty, i, j;
+	cell i, j;
 
-	popVector(tx, ty);
+	Coords t = popOffsetVector();
 
-	with (ip.stack) {
+	with (cip.stack) {
 		// j's location not in spec...
-		j = cast(cellidx)pop;
-		i = cast(cellidx)pop;
+		j = pop;
+		i = pop;
 
-		for (auto y = ty; y < ty + j; ++y)
-			for (auto x = tx; x < tx + i; ++x)
-				space[x, y] = pop;
+		Coords c = t;
+
+		for (c.y = t.y; c.y < t.y + j; ++c.y)
+		for (c.x = t.x; c.x < t.x + i; ++c.x)
+			space[c] = pop;
 	}
 }
 void counterclockwise() {
-	cellidx ox, oy, i, j;
+	cell i, j;
 
-	popVector(ox, oy);
+	Coords o = popOffsetVector();
 
-	with (ip.stack) {
+	with (cip.stack) {
 		// j's location not in spec...
-		j = cast(cellidx)pop;
-		i = cast(cellidx)pop;
+		j = pop;
+		i = pop;
 
-		for (auto y = oy + j; y-- > oy;)
-			for (auto x = ox + i; x-- > ox;)
-				push(space[x, y]);
+		Coords c = o;
+
+		for (c.y = o.y + j; c.y-- > o.y;)
+		for (c.x = o.x + i; c.x-- > o.x;)
+			push(space[c]);
 	}
 }
 
 void necklace() {
-	cell v = ip.stack.pop;
-	cellidx x = ip.x,
-	        y = ip.y;
-
-	reverse();
-	ip.move();
-	space[ip.x, ip.y] = v;
-	ip.x = x;
-	ip.y = y;
-	reverse();
+	with (cip) space[pos - delta] = stack.pop;
 }
 
 void barstool() {
-	switch (ip.stack.pop) {
+	// TODO: befunge-only
+	switch (cip.stack.pop) {
 		case 0: eastWestIf(); break;
 		case 1: northSouthIf(); break;
 		default: reverse(); break;
@@ -342,33 +387,37 @@ void barstool() {
 }
 
 void tumbler() {
+	// TODO: befunge-only
 	switch (rand_up_to!(4)()) {
-		case 0: space[ip.x, ip.y] = '<'; goWest (); break;
-		case 1: space[ip.x, ip.y] = '>'; goEast (); break;
-		case 2: space[ip.x, ip.y] = 'v'; goSouth(); break;
-		case 3: space[ip.x, ip.y] = '^'; goNorth(); break;
+		case 0: space[cip.pos] = '<'; goWest (); break;
+		case 1: space[cip.pos] = '>'; goEast (); break;
+		case 2: space[cip.pos] = 'v'; goSouth(); break;
+		case 3: space[cip.pos] = '^'; goNorth(); break;
 		default: assert (false);
 	}
 }
 
 // television antenna
 void televisionAntenna() {
-	cellidx x, y;
-	popVector(x, y);
+	Coords c = popOffsetVector();
 
-	auto v = ip.stack.pop,
-	     c = space[x, y];
+	auto
+		v = cip.stack.pop,
+		x = space[c];
 
-	if (c < v) with (ip.stack) {
-		push(v);
-		pushVector(x, y);
-		reverse();
-		ip.move();
-		reverse();
-	} else if (c > v)
+	if (x < v) {
+		cip.stack.push(v);
+		pushOffsetVector(c);
+		cip.pos -= cip.delta;
+	} else if (x > v)
 		reverse();
 }
 
 // buried treasure
-void buriedTreasure() { ++ip.x; }
-void slingshot()      { ++ip.y; }
+void buriedTreasure() {                      ++cip.pos.x; }
+void slingshot()      { static if (dim >= 2) ++cip.pos.y; else reverse; }
+
+// barn door
+void barnDoor()       { static if (dim >= 3) ++cip.pos.z; else reverse; }
+
+}
