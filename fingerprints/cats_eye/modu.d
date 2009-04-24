@@ -2,22 +2,23 @@
 
 // File created: 2007-01-20 20:32:07
 
-module ccbi.fingerprints.cats_eye.modu; private:
+module ccbi.fingerprints.cats_eye.modu;
 
 import ccbi.fingerprint;
-import ccbi.ip;
 
 // 0x4d4f4455: MODU
 // Modulo Arithmetic Extension
 // ---------------------------
 
-static this() {
-	mixin (Code!("MODU"));
+mixin (Fingerprint!(
+	"MODU",
 
-	fingerprints[MODU]['M'] =& signedResultModulo;
-	fingerprints[MODU]['U'] =& unsignedResultModulo;
-	fingerprints[MODU]['R'] =& cIntegerRemainder;
-}
+	"M",   "signedResultModulo",
+	"U", "unsignedResultModulo",
+	"R", "cIntegerRemainder"
+));
+
+template MODU() {
 
 // signed-result modulo
 void signedResultModulo() {
@@ -29,7 +30,7 @@ void signedResultModulo() {
 			return x;
 	}
 
-	with (ip.stack) {
+	with (cip.stack) {
 		cell y = pop,
 		     x = pop;
 
@@ -47,7 +48,7 @@ void unsignedResultModulo() {
 	 + but the following always gives an unsigned (positive) result...
 	 +/
 
-	with (ip.stack) {
+	with (cip.stack) {
 		cell y = pop,
 		     x = pop;
 
@@ -71,17 +72,20 @@ void cIntegerRemainder() {
 	 + so that's what we're going with
 	 +/
 
-	with (ip.stack) {
+	with (cip.stack) {
 		cell y = pop,
 		     x = pop;
 
 		if (y) {
 			auto r = x % y;
-			if ((x <= 0 && r <= 0) || (x >= 0 && r >= 0))
+
+			if ((x < 0) == (r < 0))
 				push(r);
 			else
 				push(-r);
 		} else
 			push(0);
 	}
+}
+
 }
