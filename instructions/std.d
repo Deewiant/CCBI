@@ -151,10 +151,26 @@ void goWest () { if (cip.mode & cip.HOVER) --cip.delta.x; else reallyGoWest;  }
 void goNorth() { if (cip.mode & cip.HOVER) --cip.delta.y; else reallyGoNorth; }
 void goSouth() { if (cip.mode & cip.HOVER) ++cip.delta.y; else reallyGoSouth; }
 
-void reallyGoEast () { cip.delta.x =  1; cip.delta.y =  0; }
-void reallyGoWest () { cip.delta.x = -1; cip.delta.y =  0; }
-void reallyGoNorth() { cip.delta.x =  0; cip.delta.y = -1; }
-void reallyGoSouth() { cip.delta.x =  0; cip.delta.y =  1; }
+void reallyGoEast () {
+	                     cip.delta.x = 1;
+	static if (dim >= 2) cip.delta.y = 0;
+	static if (dim >= 3) cip.delta.z = 0;
+}
+void reallyGoWest () {
+	                     cip.delta.x = -1;
+	static if (dim >= 2) cip.delta.y =  0;
+	static if (dim >= 3) cip.delta.z =  0;
+}
+void reallyGoNorth() {
+	                     cip.delta.x =  0;
+	                     cip.delta.y = -1;
+	static if (dim >= 3) cip.delta.z =  0;
+}
+void reallyGoSouth() {
+	                     cip.delta.x =  0;
+	                     cip.delta.y =  1;
+	static if (dim >= 3) cip.delta.z =  0;
+}
 
 // Go Away
 void goAway() {
