@@ -70,7 +70,8 @@ void eval(bool convertToInteger)() {
 
 		static if (convertToInteger) {
 			static assert (
-				cell.min >= typeof(parse("")).min && cell.max <= typeof(parse("")).max,
+				   cell.min >= typeof(parse("")).min
+				&& cell.max <= typeof(parse("")).max,
 				"Change conversion in ccbi.fingerprints.cats_eye.perl.eval"
 			);
 
