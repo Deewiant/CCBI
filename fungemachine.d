@@ -238,7 +238,21 @@ private:
 		return Request.MOVE;
 	}
 
-	mixin (ConcatMapTuple!(TemplateMixin, ALL_FINGERPRINTS));
+	mixin (ConcatMapTuple!(TemplateMixin,    ALL_FINGERPRINTS));
+	mixin (ConcatMapTuple!(FingerprintCount, ALL_FINGERPRINTS));
+
+	void loadedFingerprint(cell fingerprint) {
+		switch (fingerprint) mixin (Switch!(
+			FingerprintConstructorCases!(ALL_FINGERPRINTS),
+			"default: break;"
+		));
+	}
+	void unloadedFingerprintIns(cell fingerprint) {
+		switch (fingerprint) mixin (Switch!(
+			FingerprintDestructorCases!(ALL_FINGERPRINTS),
+			"default: break;"
+		));
+	}
 
 	Request executeSemantics(cell c)
 	in {
