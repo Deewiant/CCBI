@@ -25,7 +25,6 @@ void removeAt(T)(inout T[] a, size_t i, size_t j)
 in {
   assert (i < a.length && j <= a.length);
 } body {
-
   if (j == haystack.length)
     a.length = a.length - i;
   else {
@@ -61,8 +60,7 @@ size_t findIndex(T)(T[] a, T v) {
 	return a.length;
 }
 
-// these all need cip
-template Utils(cell dim) {
+template Utils() {
 
 alias .Coords!(dim) Coords;
 
