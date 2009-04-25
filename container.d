@@ -9,18 +9,27 @@ import ccbi.cell;
 abstract class Container(T) {
 	const size_t DEFAULT_SIZE = 0100;
 
-	T pop();
-	T popHead(); // different to pop() in queuemode, needed for tracing
-	void pop(size_t); // pop this many elements, ignoring their values
-	void clear();
+	abstract {
+		T pop();
 
-	T top();
+		// different to pop() in queuemode, needed for tracing
+		T popHead();
 
-	void push(T[]...);
-	void pushHead(T[]...); // different to push() in invertmode, needed for tracing and copying
+		// pop this many elements, ignoring their values
+		void pop(size_t);
 
-	size_t size();
-	bool empty();
+		void clear();
+
+		T top();
+
+		void push(T[]...);
+
+		// different to push() in invertmode, needed for tracing and copying
+		void pushHead(T[]...);
+
+		size_t size();
+		bool empty();
+	}
 
 	protected {
 		T[] array;
@@ -31,12 +40,14 @@ abstract class Container(T) {
 	// (since it's meant to be per-IP) if it's declared here
 	byte mode;
 
-	int opApply    (int delegate(inout T t) dg);
+	abstract {
+		int opApply    (int delegate(inout T t) dg);
 
-	int topToBottom(int delegate(inout T t) dg);
-	int bottomToTop(int delegate(inout T t) dg);
+		int topToBottom(int delegate(inout T t) dg);
+		int bottomToTop(int delegate(inout T t) dg);
 
-	T[] elementsBottomToTop();
+		T[] elementsBottomToTop();
+	}
 }
 
 /+ The stack is, by default, a Stack instead of a Deque even though the MODE
