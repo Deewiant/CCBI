@@ -397,7 +397,7 @@ void printDrawing() {
 	tryAddPoint();
 
 	File file;
-	try file = new typeof(file)(filename, WriteCreate);
+	try file = new typeof(file)(filename, file.WriteCreate);
 	catch {
 		return reverse();
 	}
