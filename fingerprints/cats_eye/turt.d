@@ -600,8 +600,8 @@ void printDrawing() {
 
 	style.data(styleData);
 
-	file.output.write((new DocPrinter!(char))(svg));
-	file.output.write(NewlineString);
+	file.write((new DocPrinter!(char))(svg));
+	file.write(NewlineString);
 }
 
 // }}}
