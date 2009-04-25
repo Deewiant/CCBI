@@ -720,7 +720,7 @@ void outputFile() {
 		vbE = vb.extend(1);
 
 	File f;
-	try f = new typeof(f)(filename, WriteCreate);
+	try f = new typeof(f)(filename, f.WriteCreate);
 	catch {
 		return reverse();
 	}
