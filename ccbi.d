@@ -315,13 +315,12 @@ int main(char[][] args) {
 			return 0;
 		}
 
-		// WORKAROUND http://www.dsource.org/projects/ldc/ticket/267
-		switch (arg) /+with (flags)+/ {
-			case "-t", "--trace":           flags.tracing             = true;  break;
+		with (flags) switch (arg) {
+			case "-t", "--trace":           tracing             = true;  break;
 //			case "-c", "--count-ticks":     countTicks          = true;  break;
-			case "-w", "--warnings":        flags.warnings            = true;  break;
-			case "-s", "--script":          flags.script              = true;  break;
-			case "-P", "--disable-fprints": flags.fingerprintsEnabled = false; break;
+			case "-w", "--warnings":        warnings            = true;  break;
+			case "-s", "--script":          script              = true;  break;
+			case "-P", "--disable-fprints": fingerprintsEnabled = false; break;
 
 /+			case "-m", "--mini-funge":
 				auto s = nextArg();
