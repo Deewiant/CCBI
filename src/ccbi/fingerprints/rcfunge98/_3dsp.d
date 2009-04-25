@@ -2,39 +2,37 @@
 
 // File created: 2008-08-10 12:26:22
 
-module ccbi.fingerprints.rcfunge98._3dsp; private:
-
-import tango.math.Math;
+module ccbi.fingerprints.rcfunge98._3dsp;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.utils;
 
 // 0x33445350: 3DSP
 // 3D space manipulation extension
 // -------------------------------
-static this() {
-	mixin (Code!("3DSP", "_3DSP"));
+mixin (Fingerprint!(
+	"3DSP",
 
-	fingerprints[_3DSP]['A'] =& add;
-	fingerprints[_3DSP]['B'] =& subtract;
-	fingerprints[_3DSP]['C'] =& cross;
-	fingerprints[_3DSP]['D'] =& dot;
-	fingerprints[_3DSP]['L'] =& length;
-	fingerprints[_3DSP]['M'] =& mulVector;
-	fingerprints[_3DSP]['N'] =& normalize;
-	fingerprints[_3DSP]['P'] =& copy;
-	fingerprints[_3DSP]['R'] =& makeRotate;
-	fingerprints[_3DSP]['S'] =& makeScale;
-	fingerprints[_3DSP]['T'] =& makeTranslate;
-	fingerprints[_3DSP]['U'] =& dup;
-	fingerprints[_3DSP]['V'] =& to2D;
-	fingerprints[_3DSP]['X'] =& transform;
-	fingerprints[_3DSP]['Y'] =& mulMatrix;
-	fingerprints[_3DSP]['Z'] =& scale;
-}
+	"A", "add",
+	"B", "subtract",
+	"C", "cross",
+	"D", "dot",
+	"L", "length",
+	"M", "mulVector",
+	"N", "normalize",
+	"P", "copy",
+	"R", "makeRotate",
+	"S", "makeScale",
+	"T", "makeTranslate",
+	"U", "dup",
+	"V", "to2D",
+	"X", "transform",
+	"Y", "mulMatrix",
+	"Z", "scale"
+));
+
+template _3DSP() {
+
+import tango.math.Math : sqrt, sin, cos;
 
 union Union {
 	float f;
@@ -42,8 +40,8 @@ union Union {
 }
 static assert (Union.sizeof == float.sizeof);
 
-float pop ()        { Union u; u.c = ip.stack.pop; return u.f; }
-void  push(float f) { Union u; u.f = f; ip.stack.push(u.c); }
+float pop ()        { Union u; u.c = cip.stack.pop; return u.f; }
+void  push(float f) { Union u; u.f = f; cip.stack.push(u.c); }
 
 void popVec(float[] v) {
 	assert (v.length == 3);
@@ -59,8 +57,6 @@ void pushVec(float[] v) {
 	push(v[1]);
 	push(v[2]);
 }
-
-//////////
 
 void add() {
 	float[3] a = void, b = void;
@@ -151,31 +147,35 @@ void dup() {
 }
 
 void copy() {
-	cellidx sx, sy, tx, ty;
-	popVector(sx, sy);
-	popVector(tx, ty);
+	Coords
+		s = popOffsetVector(),
+		t = popOffsetVector();
 
-	for (cellidx x = 0; x < 4; ++x)
-	for (cellidx y = 0; y < 4; ++y)
-		space[tx+x, ty+y] = space[sx+x, sy+y];
+	for (cell y = 0; y < 4; ++y, ++t.y, ++s.y) {
+		for (cell x = 0; x < 4; ++x, ++t.x, ++s.x)
+			space[t] = space[s];
+		t.x -= 4;
+		s.x -= 4;
+	}
 }
 
 // helper
-void writeMatrix(cellidx x, cellidx y, float[] m) {
+void writeMatrix(Coords c, float[] m) {
 	assert (m.length == 16);
-	for (cellidx i = 0; i < 4; ++i)
-	for (cellidx j = 0; j < 4; ++j) {
-		Union u;
-		u.f = m[4*j + i];
-		space[x+i, y+j] = u.c;
+	for (cell y = 0; y < 4; ++y, ++c.y) {
+		for (cell x = 0; x < 4; ++x, ++c.x) {
+			Union u = void;
+			u.f = m[4*y + x];
+			space[c] = u.c;
+		}
+		c.x -= 4;
 	}
 }
 
 void makeRotate() {
 	float angle = pop();
-	cell axis = ip.stack.pop();
-	cellidx x, y;
-	popVector(x, y);
+	cell axis = cip.stack.pop();
+	Coords pos = popOffsetVector();
 
 	if (!(axis >= 1 && axis <= 3))
 		return reverse();
@@ -187,21 +187,21 @@ void makeRotate() {
 
 	switch (axis) {
 		case 1:
-			writeMatrix(x, y,
+			writeMatrix(pos,
 				[1f, 0, 0, 0
 				, 0, c,-s, 0
 				, 0, s, c, 0
 				, 0, 0, 0, 1]);
 			break;
 		case 2:
-			writeMatrix(x, y,
+			writeMatrix(pos,
 				[ c, 0, s, 0
 				, 0, 1, 0, 0
 				,-s, 0, c, 0
 				, 0, 0, 0, 1]);
 			break;
 		case 3:
-			writeMatrix(x, y,
+			writeMatrix(pos,
 				[ c,-s, 0, 0
 				, s, c, 0, 0
 				, 0, 0, 1, 0
@@ -212,10 +212,8 @@ void makeRotate() {
 void makeScale() {
 	float[3] v = void;
 	popVec(v);
-	cellidx x, y;
-	popVector(x, y);
 
-	writeMatrix(x, y,
+	writeMatrix(popOffsetVector(),
 		[v[0],   0,   0,   0
 		,   0,v[1],   0,   0
 		,   0,   0,v[2],   0
@@ -224,10 +222,8 @@ void makeScale() {
 void makeTranslate() {
 	float[3] v = void;
 	popVec(v);
-	cellidx x, y;
-	popVector(x, y);
 
-	writeMatrix(x, y,
+	writeMatrix(popOffsetVector(),
 		[  1f,   0,   0,v[0]
 		,   0,   1,   0,v[1]
 		,   0,   0,   1,v[2]
@@ -243,18 +239,20 @@ void to2D() {
 	Union u1 = void, u2 = void;
 	u1.f = v[0];
 	u2.f = v[1];
-	ip.stack.push(u1.c, u2.c);
+	cip.stack.push(u1.c, u2.c);
 }
 
 // helper
-void readMatrix(float[] m, cellidx mx, cellidx my) {
+void readMatrix(float[] m, Coords c) {
 	assert (m.length == 16);
 
-	for (cellidx x = 0; x < 4; ++x)
-	for (cellidx y = 0; y < 4; ++y) {
-		Union u = void;
-		u.c = space[mx+x, my+y];
-		m[y*4 + x] = u.f;
+	for (cell y = 0; y < 4; ++y, ++c.y) {
+		for (cell x = 0; x < 4; ++x, ++c.x) {
+			Union u = void;
+			u.c = space[c];
+			m[y*4 + x] = u.f;
+		}
+		c.x -= 4;
 	}
 }
 
@@ -308,14 +306,14 @@ unittest {
 }
 
 void transform() {
-	cellidx mx, my;
-	popVector(mx, my);
+	Coords mc = popOffsetVector();
+
 	float[4] v = void;
 	popVec(v[0..3]);
 	v[3] = 1;
 
 	float[16] m = void;
-	readMatrix(m, mx, my);
+	readMatrix(m, mc);
 
 	float[4] r = void;
 	mulMatrices!(4,4,4,1)(m, v, r);
@@ -323,21 +321,25 @@ void transform() {
 }
 
 void mulMatrix() {
-	cellidx tx, ty, ax, ay, bx, by;
-	popVector(bx, by);
-	popVector(ax, ay);
-	popVector(tx, ty);
+	Coords
+		bc = popOffsetVector(),
+		ac = popOffsetVector(),
+		tc = popOffsetVector();
 
 	float[16] a = void, b = void, r = void;
-	readMatrix(b, bx, by);
-	readMatrix(a, ax, ay);
+	readMatrix(b, bc);
+	readMatrix(a, ac);
 
 	mulMatrices!(4,4,4,4)(b, a, r);
 
-	for (cellidx x = 0; x < 4; ++x)
-	for (cellidx y = 0; y < 4; ++y) {
-		Union u = void;
-		u.f = r[y*4 + x];
-		space[tx+x, ty+y] = u.c;
+	for (cell y = 0; y < 4; ++y, ++tc.y) {
+		for (cell x = 0; x < 4; ++x, ++tc.x) {
+			Union u = void;
+			u.f = r[y*4 + x];
+			space[tc] = u.c;
+		}
+		tc.x -= 4;
 	}
+}
+
 }
