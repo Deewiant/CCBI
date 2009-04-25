@@ -62,13 +62,13 @@ private template WrapForCasing(ins...) {
 template Fingerprint(char[] name, ins...) {
 	const Fingerprint =
 		TemplateRangedLookup!(
-			name ~ "InsFunc",
+			PrefixName!(name) ~ "InsFunc",
 			"cell", "c",
-			"const "~name~"InsFunc = `reverse`;",
+			"const "~PrefixName!(name)~"InsFunc = `reverse`;",
 			WrapForCasing!(ins)
 		) ~
-		"template "~name~"Instructions() {"
-			"const "~name~"Instructions = "
+		"template "~PrefixName!(name)~"Instructions() {"
+			"const "~PrefixName!(name)~"Instructions = "
 				~ ConcatMapTuple!(Wrap, Firsts!(ins)) ~ ";"
 		"}";
 }

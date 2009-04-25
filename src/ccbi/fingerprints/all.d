@@ -20,6 +20,7 @@ public import
 	ccbi.fingerprints.glfunge98.scke,
 	ccbi.fingerprints.jvh.jstr,
 	ccbi.fingerprints.jvh.ncrs,
+	ccbi.fingerprints.rcfunge98._3dsp,
 	ccbi.fingerprints.rcfunge98.base,
 	ccbi.fingerprints.rcfunge98.cpli,
 	ccbi.fingerprints.rcfunge98.date,
@@ -52,9 +53,9 @@ alias Tuple!(
 	"JSTR", "NCRS",
 
 	// RC/Funge-98
-	"BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP", "FPSP",
-	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", TERM, "TIME",
-	"TRDS",
+	"3DSP", "BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP",
+	"FPSP", "FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", TERM,
+	"TIME", "TRDS",
 
 	// GLfunge98
 	"SCKE" // Uses stuff from SOCK: must be after it in this list!
@@ -72,7 +73,7 @@ private template FingerprintInstructionsCases(fing...) {
 	static if (fing.length)
 		const FingerprintInstructionsCases =
 			`case `~ToString!(HexCode!(fing[0]))~`:`
-				`return `~fing[0]~`Instructions!();`
+				`return `~PrefixName!(fing[0])~`Instructions!();`
 			~ FingerprintInstructionsCases!(fing[1..$]);
 	else
 		const FingerprintInstructionsCases = "";
@@ -93,31 +94,34 @@ char[] instructionsOf(cell fingerprint) {
 // The count is local to the FungeMachine: there are (at least currently) no
 // static fingerprint constructors/destructors.
 
-// <fingerprint>_count if the fingerprint has a constructor
+// _<fingerprint>_count if the fingerprint has a constructor
+//
+// Leading underscore because we have names like 3DSP; could use PrefixName,
+// but simpler to just always prefix.
 template FingerprintCount(char[] fing) {
 	const FingerprintCount =
-		"static if (is(typeof(" ~fing~ ".ctor))) {
-			uint " ~fing~ "_count;
+		"static if (is(typeof(" ~PrefixName!(fing)~ ".ctor))) {
+			uint _" ~fing~ "_count;
 		}";
 }
 
 // foreach fingerprint:
 // 	static if (is(typeof(<fingerprint>.ctor))) {
 // 		case HexCode!("<fingerprint>"):
-// 			if (<fingerprint>_count == 0)
+// 			if (_<fingerprint>_count == 0)
 // 				<fingerprint>.ctor;
-// 			<fingerprint>_count += <fingerprint>Instructions!().length;
+// 			_<fingerprint>_count += <fingerprint>Instructions!().length;
 // 	}
 template FingerprintConstructorCases(fing...) {
 	static if (fing.length == 0)
 		const FingerprintConstructorCases = "";
 	else {
 		const FingerprintConstructorCases =
-			"static if (is(typeof(" ~fing[0]~ ".ctor))) {
+			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
 				case " ~ToString!(HexCode!(fing[0])) ~":
-					if (" ~fing[0]~"_count == 0)
-						" ~fing[0]~ ".ctor;
-					" ~fing[0]~"_count += "~fing[0]~"Instructions!().length;
+					if (_" ~fing[0]~"_count == 0)
+						" ~PrefixName!(fing[0])~ ".ctor;
+					_" ~fing[0]~"_count += "~PrefixName!(fing[0])~"Instructions!().length;
 					break;
 			}"
 			~ FingerprintConstructorCases!(fing[1..$]);
@@ -127,11 +131,11 @@ template FingerprintConstructorCases(fing...) {
 // foreach fingerprint:
 // 	static if (is(typeof(<fingerprint>.ctor))) {
 // 		case HexCode!("<fingerprint>"):
-// 			--<fingerprint>_count;
-// 			assert (<fingerprint>_count >= 0);
+// 			--_<fingerprint>_count;
+// 			assert (_<fingerprint>_count >= 0);
 //
 // 			static if (is(typeof(<fingerprint>.dtor))) {
-// 				if (<fingerprint>_count == 0)
+// 				if (_<fingerprint>_count == 0)
 // 					<fingerprint>.dtor;
 // 			}
 // 	}
@@ -140,14 +144,14 @@ template FingerprintDestructorCases(fing...) {
 		const FingerprintDestructorCases = "";
 	else {
 		const FingerprintDestructorCases =
-			"static if (is(typeof(" ~fing[0]~ ".ctor))) {
+			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
 				case " ~ToString!(HexCode!(fing[0])) ~":
-					--" ~fing[0]~"_count;
-					assert (" ~fing[0]~"_count >= 0);
+					--_" ~fing[0]~"_count;
+					assert (_" ~fing[0]~"_count >= 0);
 
-					static if (is(typeof(" ~fing[0]~ ".dtor))) {
-						if (" ~fing[0]~"_count == 0)
-							" ~fing[0]~ ".dtor;
+					static if (is(typeof(" ~PrefixName!(fing[0])~ ".dtor))) {
+						if (_" ~fing[0]~"_count == 0)
+							" ~PrefixName!(fing[0])~ ".dtor;
 					}
 					break;
 			}"
@@ -167,7 +171,7 @@ template FingerprintExecutionCases(char[] ins, char[] def, fing...) {
 		const FingerprintExecutionCases =
 			`case `~ToString!(HexCode!(fing[0]))~`: `
 				`switch (`~ins~`) mixin (Switch!(`\n\t
-					`Ins!(`~Wrap!(fing[0])~`, Range!('A', 'Z')),`\n\t
+					`Ins!(`~Wrap!(PrefixName!(fing[0]))~`, Range!('A', 'Z')),`\n\t
 					~ Wrap!(`default: `~ def) ~
 				`));`\n
 				`break;`\n
