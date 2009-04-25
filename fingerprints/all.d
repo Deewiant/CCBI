@@ -16,12 +16,16 @@ public import
 	ccbi.fingerprints.cats_eye.refc,
 	ccbi.fingerprints.cats_eye.roma,
 	ccbi.fingerprints.cats_eye.toys,
-	ccbi.fingerprints.cats_eye.turt;
+	ccbi.fingerprints.cats_eye.turt,
+	ccbi.fingerprints.jvh.jstr;
 
 alias Tuple!(
 	// Cat's Eye
 	"HRTI", "MODE", "MODU", "NULL", "ORTH", "PERL", "REFC", "ROMA", "TOYS",
-	"TURT"
+	"TURT",
+
+	// Jesse van Herk
+	"JSTR"
 ) ALL_FINGERPRINTS;
 
 // TODO: can't these be made to use ConcatMap? Either here or at the caller

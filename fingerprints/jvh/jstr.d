@@ -2,56 +2,52 @@
 
 // File created: 2007-01-20 21:16:29
 
-module ccbi.fingerprints.jvh.jstr; private:
+module ccbi.fingerprints.jvh.jstr;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.utils;
 
 // 0x4a535452: JSTR
 // ----------------
 
-static this() {
-	mixin (Code!("JSTR"));
+mixin (Fingerprint!(
+	"JSTR",
 
-	fingerprints[JSTR]['P'] =& popN;
-	fingerprints[JSTR]['G'] =& pushN;
-}
+	"P", "popN",
+	"G", "pushN"
+));
+
+template JSTR() {
 
 void popN() {
-	auto n = ip.stack.pop;
-	cellidx x, y, dx, dy;
+	auto n = cip.stack.pop;
 
-	popVector        ( x,  y);
-	popVector!(false)(dx, dy);
+	Coords c = popOffsetVector();
+	Coords d = popVector();
 
 	if (n < 0)
 		return reverse();
 
 	while (n--) {
-		space[x, y] = ip.stack.pop;
-		x += dx;
-		y += dy;
+		space[c] = cip.stack.pop;
+		c += d;
 	}
 }
 
 void pushN() {
-	auto n = ip.stack.pop;
-	cellidx x, y, dx, dy;
+	auto n = cip.stack.pop;
 
-	popVector        ( x,  y);
-	popVector!(false)(dx, dy);
+	Coords c = popOffsetVector();
+	Coords d = popVector();
 
 	if (n < 0)
 		return reverse();
 
-	ip.stack.push(0);
+	cip.stack.push(0);
 
 	while (n--) {
-		ip.stack.push(space[x, y]);
-		x += dx;
-		y += dy;
+		cip.stack.push(space[c]);
+		c += d;
 	}
+}
+
 }
