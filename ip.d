@@ -88,7 +88,7 @@ final class IP(cell dim) {
 				while (space[pos] == ' ');
 			}
 
-			if (space.unsafeGet(pos) == ';') {
+			if (space[pos] == ';') {
 				// no operation until next ';', takes no time
 				do move();
 				while (space[pos] != ';');
