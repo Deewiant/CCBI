@@ -137,7 +137,10 @@ final class FungeSpace(cell dim) {
 
 	this(InputStream source) {
 		load(source, &end, InitCoords!(0), false, false);
-		lastVal = this[lastCoords = InitCoords!(0)];
+
+		                     assert (beg.x >= 0);
+		static if (dim >= 2) assert (beg.y >= 0);
+		static if (dim >= 3) assert (beg.z >= 0);
 	}
 
 	this(FungeSpace other) {
@@ -170,11 +173,6 @@ final class FungeSpace(cell dim) {
 		return p ? *p : ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
-		if (c == lastCoords) {
-			assert (c in space);
-			lastVal = v;
-		}
-
 		auto p = c in space;
 
 		if (v != ' ')
@@ -188,12 +186,6 @@ final class FungeSpace(cell dim) {
 			return *p = v;
 		else
 			return space[c] = v;
-	}
-
-	cell unsafeGet(Coords c) {
-		if (c != lastCoords)
-			lastVal = space[lastCoords = c];
-		return lastVal;
 	}
 
 	// these are array indices, starting from 0
@@ -220,10 +212,6 @@ final class FungeSpace(cell dim) {
 		// TODO
 	}
 
-	// cache the last get, speeds up most programs
-	private Coords lastCoords;
-	private cell   lastVal;
-
 	private cell[Coords] space;
 
 	// Takes ownership of the InputStream, closing it.
@@ -233,6 +221,10 @@ final class FungeSpace(cell dim) {
 		bool binary, bool getAllBeg
 	) in {
 		assert (end !is null);
+	} out {
+		                     assert (beg.x <= end.x);
+		static if (dim >= 2) assert (beg.y <= end.y);
+		static if (dim >= 3) assert (beg.z <= end.z);
 	} body {
 		scope file = new TypedInput!(ubyte)(fc);
 		scope (exit) { file.close; fc.close; }
@@ -243,7 +235,7 @@ final class FungeSpace(cell dim) {
 		// Since we start with a delta of (1,0,0) we can assume beg.y = beg.z = 0
 		// when first loading the file.
 		// (If that's not the case, we never execute any instructions!)
-		int getBegInit = getAllBeg ? 0b111 : 0b100;
+		int getBegInit = getAllBeg ? 0b111 : 0b001;
 		int getBeg = getBegInit;
 
 		// we never actually use the lowest bit of getEnd

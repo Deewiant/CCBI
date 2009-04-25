@@ -268,7 +268,7 @@ Request iterate() {
 
 	if (i == ' ' || i == ';') {
 		cip.gotoNextInstruction();
-		i = space.unsafeGet(cip.pos);
+		i = space[cip.pos];
 	}
 
 	// negative argument is undefined by spec, just ignore it
