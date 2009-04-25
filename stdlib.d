@@ -15,8 +15,6 @@ import tango.io.model.IFile         : FileConst;
 import tango.math.Math              : min;
 import tango.sys.Common;
 
-const File.Style WriteCreate = { File.Access.Write, File.Open.Create, File.Share.init, File.Cache.Stream, };
-
 public alias FileConst.NewlineString NewlineString;
 
 A ipow(A, B)(A x, B exp) {
