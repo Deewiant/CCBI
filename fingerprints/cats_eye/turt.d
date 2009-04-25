@@ -314,11 +314,7 @@ void clearWithColour(uint c) {
 	delete turt.pic.pathBeg;
 }
 // }}}
-// {{{ instructions and dtor
-
-void dtor() {
-	clearWithColour(turt.pic.TRANSPARENT);
-}
+// {{{ instructions
 
 // Turn Left, Turn Right, Set Heading
 void turnLeft()   { turt.heading -= toRad(cip.stack.pop); turt.normalize(); }
