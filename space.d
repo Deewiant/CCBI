@@ -112,6 +112,10 @@ final class FungeSpace(cell dim) {
 
 	this(InputStream source) {
 		load(source, &end, InitCoords!(0), false, false);
+
+		                     assert (beg.x >= 0);
+		static if (dim >= 2) assert (beg.y >= 0);
+		static if (dim >= 3) assert (beg.z >= 0);
 	}
 
 	this(FungeSpace other) {
@@ -193,9 +197,6 @@ final class FungeSpace(cell dim) {
 	) in {
 		assert (end !is null);
 	} out {
-		                     assert (beg.x >= 0);
-		static if (dim >= 2) assert (beg.y >= 0);
-		static if (dim >= 3) assert (beg.z >= 0);
 		                     assert (beg.x <= end.x);
 		static if (dim >= 2) assert (beg.y <= end.y);
 		static if (dim >= 3) assert (beg.z <= end.z);
