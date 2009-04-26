@@ -52,6 +52,10 @@ final class IP(cell dim) {
 			);
 		}
 		stack = stackStack.top;
+
+		// deep copy semantics
+		foreach (i, inout sem; semantics)
+			sem = new typeof(sem)(o.semantics[i]);
 	}
 
 	void move() {
