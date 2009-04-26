@@ -2,7 +2,7 @@
 
 // File created: 2008-08-09 20:43:40
 
-module ccbi.fingerprints.rcfunge98.date; private:
+module ccbi.fingerprints.rcfunge98.date;
 
 import ccbi.fingerprint;
 
