@@ -60,7 +60,7 @@ template PopThree() {
 		// But nah, most likely it's user error
 		static if (dim >= 3) if (d.z < 0) return reverse;
 		static if (dim >= 2) if (d.y < 0) return reverse;
-	                     	if (d.x < 0) return reverse;
+		                     if (d.x < 0) return reverse;
 
 		Coords!(3) de = d.extend(1);`;
 }
