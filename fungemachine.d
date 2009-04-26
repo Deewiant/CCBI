@@ -366,8 +366,13 @@ private:
 	void placeTimeTravellers() {
 		for (size_t i = 0; i < travellers.length; ++i) {
 			// if coming here, come here
-			if (tick == travellers[i].jumpedTo)
+			if (tick == travellers[i].jumpedTo) {
 				ips ~= travellers[i];
+
+				// IIPC depends on IPs being in order by id
+				for (size_t j = 0; j < ips.length - 1; ++j)
+					assert (ips[j].id <= ips[j+1].id);
+			}
 
 			/+
 			Whenever we jump back in time, history from the jump target forward is
