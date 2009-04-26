@@ -635,11 +635,10 @@ char[] stackString(in IP ip) {
 }
 
 char[] modeString(in IP ip) {
-	char[] str = "      ".dup;
+	char[] str = "       ".dup;
 	size_t i = 0;
 
 	if (ip.mode & IP.STRING)      str[i++] = '"';
-
 	if (ip.mode & IP.HOVER)       str[i++] = 'H';
 
 	auto q = cast(Deque)ip.stack;
@@ -649,7 +648,7 @@ char[] modeString(in IP ip) {
 	}
 
 	if (ip.mode & IP.SWITCH)      str[i++] = 'S';
-
+	if (ip.mode & IP.DORMANT)     str[i++] = 'D';
 	if (ip.mode & IP.FROM_FUTURE) str[i++] = 'T';
 
 	return str;
