@@ -197,9 +197,11 @@ final class FungeSpace(cell dim) {
 	) in {
 		assert (end !is null);
 	} out {
-		                     assert (beg.x <= end.x);
-		static if (dim >= 2) assert (beg.y <= end.y);
-		static if (dim >= 3) assert (beg.z <= end.z);
+		if (space.length > 0) {
+		                     	assert (beg.x <= end.x);
+			static if (dim >= 2) assert (beg.y <= end.y);
+			static if (dim >= 3) assert (beg.z <= end.z);
+		}
 	} body {
 		scope file = new TypedInput!(ubyte)(fc);
 		scope (exit) { file.close; fc.close; }
