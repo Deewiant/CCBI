@@ -2,32 +2,31 @@
 
 // File created: 2007-01-20 21:13:38
 
-module ccbi.fingerprints.rcfunge98.cpli; private:
-
-import tango.io.Stdout : Stdout;
-import tango.math.Math : sqrt;
+module ccbi.fingerprints.rcfunge98.cpli;
 
 import ccbi.fingerprint;
-import ccbi.instructions : Out;
-import ccbi.ip;
 
 // 0x43504c49: CPLI
 // Complex Integer extension
 // -------------------------
 
-static this() {
-	mixin (Code!("CPLI"));
+mixin (Fingerprint!(
+	"CPLI",
 
-	fingerprints[CPLI]['A'] =& cplxAdd;
-	fingerprints[CPLI]['D'] =& cplxDiv;
-	fingerprints[CPLI]['M'] =& cplxMul;
-	fingerprints[CPLI]['O'] =& cplxOut;
-	fingerprints[CPLI]['S'] =& cplxSub;
-	fingerprints[CPLI]['V'] =& cplxAbs;
-}
+	"A", "cplxAdd",
+	"D", "cplxDiv",
+	"M", "cplxMul",
+	"O", "cplxOut",
+	"S", "cplxSub",
+	"V", "cplxAbs"
+));
+
+template CPLI() {
+
+import tango.math.Math : sqrt;
 
 void cplxAdd() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -37,7 +36,7 @@ void cplxAdd() {
 }
 
 void cplxSub() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -47,7 +46,7 @@ void cplxSub() {
 }
 
 void cplxMul() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -57,7 +56,7 @@ void cplxMul() {
 }
 
 void cplxDiv() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -73,7 +72,7 @@ void cplxDiv() {
 }
 
 void cplxAbs() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell i = pop,
 		     r = pop;
 		push(cast(cell)sqrt(cast(real)(r*r + i*i)));
@@ -81,14 +80,16 @@ void cplxAbs() {
 }
 
 void cplxOut() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell i = pop,
 		     r = pop;
-		Stdout(r);
+		Sout(r);
 		if (i > 0) {
 			ubyte b = '+';
-			Out.write(b);
+			Cout.write(b);
 		}
-		Stdout(i)("i ");
+		Sout(i)("i ");
 	}
+}
+
 }
