@@ -28,7 +28,8 @@ public import
 	ccbi.fingerprints.rcfunge98.fixp,
 	ccbi.fingerprints.rcfunge98.fpdp,
 	ccbi.fingerprints.rcfunge98.fpsp,
-	ccbi.fingerprints.rcfunge98.frth;
+	ccbi.fingerprints.rcfunge98.frth,
+	ccbi.fingerprints.rcfunge98.iipc;
 
 alias Tuple!(
 	// Cat's Eye
@@ -40,7 +41,7 @@ alias Tuple!(
 
 	// RC/Funge-98
 	"BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP", "FPSP",
-	"FRTH"
+	"FRTH", "IIPC"
 ) ALL_FINGERPRINTS;
 
 // TODO: can't these be made to use ConcatMap? Either here or at the caller
