@@ -20,7 +20,8 @@ public import
 	ccbi.fingerprints.jvh.jstr,
 	ccbi.fingerprints.jvh.ncrs,
 	ccbi.fingerprints.rcfunge98.base,
-	ccbi.fingerprints.rcfunge98.cpli;
+	ccbi.fingerprints.rcfunge98.cpli,
+	ccbi.fingerprints.rcfunge98.date;
 
 alias Tuple!(
 	// Cat's Eye
@@ -31,7 +32,7 @@ alias Tuple!(
 	"JSTR", "NCRS",
 
 	// RC/Funge-98
-	"BASE", "CPLI"
+	"BASE", "CPLI", "DATE"
 ) ALL_FINGERPRINTS;
 
 // TODO: can't these be made to use ConcatMap? Either here or at the caller
