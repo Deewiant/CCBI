@@ -2,29 +2,30 @@
 
 // File created: 2007-01-20 21:14:19
 
-module ccbi.fingerprints.rcfunge98.frth; private:
+module ccbi.fingerprints.rcfunge98.frth;
 
 import ccbi.fingerprint;
-import ccbi.ip;
 
 // 0x46525448: FRTH
 // Some common forth commands
 // --------------------------
 
-static this() {
-	mixin (Code!("FRTH"));
+mixin (Fingerprint!(
+	"FRTH",
 
-	fingerprints[FRTH]['D'] =& stackSize;
-	fingerprints[FRTH]['L'] =& forthRoll;
-	fingerprints[FRTH]['O'] =& forthOver;
-	fingerprints[FRTH]['P'] =& forthPick;
-	fingerprints[FRTH]['R'] =& forthRot;
-}
+	"D", "stackSize",
+	"L", "forthRoll",
+	"O", "forthOver",
+	"P", "forthPick",
+	"R", "forthRot"
+));
 
-void stackSize() { ip.stack.push(cast(cell)ip.stack.size); }
+template FRTH() {
+
+void stackSize() { with (cip.stack) push(cast(cell)size); }
 
 void forthOver() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto b = pop, a = pop;
 
 		push(a, b, a);
@@ -32,7 +33,7 @@ void forthOver() {
 }
 
 void forthRot() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto c = pop, b = pop, a = pop;
 
 		push(b, c, a);
@@ -41,7 +42,7 @@ void forthRot() {
 
 // copy u-th from top to top
 void forthPick() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto u = pop,
 		     s = size;
 
@@ -54,10 +55,11 @@ void forthPick() {
 
 // move u-th from top to top
 void forthRoll() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto u = pop,
 		     s = size;
 
+		// TODO: -ROLL for negative
 		if (u >= s)
 			push(0);
 		else {
@@ -70,4 +72,6 @@ void forthRoll() {
 			push(xu);
 		}
 	}
+}
+
 }
