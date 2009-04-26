@@ -4,62 +4,84 @@
 
 module ccbi.fingerprints.rcfunge98.fixp; private:
 
-import math = tango.math.Math;
-alias math.rndint round;
-
 import ccbi.fingerprint;
-import ccbi.ip;
-import ccbi.random;
-import ccbi.utils;
 
 // 0x46495850: FIXP
 // Some useful math functions
 // --------------------------
 
-static this() {
-	mixin (Code!("FIXP"));
+mixin (Fingerprint!(
+	"FIXP",
 
-	fingerprints[FIXP]['A'] =& and;
-	fingerprints[FIXP]['B'] =& acos;
-	fingerprints[FIXP]['C'] =& cos;
-	fingerprints[FIXP]['D'] =& rand;
-	fingerprints[FIXP]['I'] =& sin;
-	fingerprints[FIXP]['J'] =& asin;
-	fingerprints[FIXP]['N'] =& neg;
-	fingerprints[FIXP]['O'] =& or;
-	fingerprints[FIXP]['P'] =& mulpi;
-	fingerprints[FIXP]['Q'] =& sqrt;
-	fingerprints[FIXP]['R'] =& pow;
-	fingerprints[FIXP]['S'] =& signbit;
-	fingerprints[FIXP]['T'] =& tan;
-	fingerprints[FIXP]['U'] =& atan;
-	fingerprints[FIXP]['V'] =& abs;
-	fingerprints[FIXP]['X'] =& xor;
+	"A", "and",
+	"B", "acos",
+	"C", "cos",
+	"D", "rand",
+	"I", "sin",
+	"J", "asin",
+	"N", "neg",
+	"O", "or",
+	"P", "mulpi",
+	"Q", "sqrt",
+	"R", "pow",
+	"S", "signbit",
+	"T", "tan",
+	"U", "atan",
+	"V", "abs",
+	"X", "xor"
+));
+
+template FIXP() {
+
+import ieee = tango.math.IEEE;
+import math = tango.math.Math;
+
+void pushFixp(real r) {
+	if (ieee.isInfinity(r))
+		cip.stack.push(ieee.signbit(r) ? cell.min : cell.max);
+	else if (ieee.isNaN(r))
+		reverse;
+	else
+		cip.stack.push(cast(cell)math.rndint(10000 * r));
+}
+real popFixp() {
+	return cast(real)cip.stack.pop / 10000;
 }
 
-void and() { with (ip.stack) push(pop & pop); }
-void or () { with (ip.stack) push(pop | pop); }
-void xor() { with (ip.stack) push(pop ^ pop); }
+void and() { with (cip.stack) push(pop & pop); }
+void or () { with (cip.stack) push(pop | pop); }
+void xor() { with (cip.stack) push(pop ^ pop); }
 
-void  sin() { ip.stack.push(cast(cell)round(10000 * math. sin(cast(real)ip.stack.pop / 10000  * (math.PI / 180.0)))); }
-void  cos() { ip.stack.push(cast(cell)round(10000 * math. cos(cast(real)ip.stack.pop / 10000  * (math.PI / 180.0)))); }
-void  tan() { ip.stack.push(cast(cell)round(10000 * math. tan(cast(real)ip.stack.pop / 10000  * (math.PI / 180.0)))); }
-void asin() { ip.stack.push(cast(cell)round(10000 * math.asin(cast(real)ip.stack.pop / 10000) * (180.0 / math.PI) )); }
-void acos() { ip.stack.push(cast(cell)round(10000 * math.acos(cast(real)ip.stack.pop / 10000) * (180.0 / math.PI) )); }
-void atan() { ip.stack.push(cast(cell)round(10000 * math.atan(cast(real)ip.stack.pop / 10000) * (180.0 / math.PI) )); }
+void  sin() { pushFixp(math. sin(popFixp()  * (math.PI / 180.0))); }
+void  cos() { pushFixp(math. cos(popFixp()  * (math.PI / 180.0))); }
+void  tan() { pushFixp(math. tan(popFixp()  * (math.PI / 180.0))); }
+void asin() { pushFixp(math.asin(popFixp()) * (180.0 / math.PI) ); }
+void acos() { pushFixp(math.acos(popFixp()) * (180.0 / math.PI) ); }
+void atan() { pushFixp(math.atan(popFixp()) * (180.0 / math.PI) ); }
 
-void rand   () { ip.stack.push(cast(cell)rand_up_to(cast(uint)ip.stack.pop)); }
-void neg    () { ip.stack.push(-ip.stack.pop); }
-void mulpi  () { ip.stack.push(cast(cell)round(math.PI * ip.stack.pop)); }
-void sqrt   () { ip.stack.push(cast(cell)round(math.sqrt(cast(real)ip.stack.pop))); }
-void abs    () { ip.stack.push(cast(cell)math.abs(cast(int)ip.stack.pop)); }
+void rand() {
+	auto c = cip.stack.pop;
+	if (c < 0) {
+		c = -c;
+		cip.stack.push(cast(cell)-rand_up_to(c));
+	} else
+		cip.stack.push(cast(cell) rand_up_to(c));
+}
+void neg    () { cip.stack.push(-cip.stack.pop); }
+void mulpi  () { cip.stack.push(cast(cell)round(math.PI * cip.stack.pop)); }
+void abs    () { cip.stack.push(cast(cell)math.abs(cast(cell_base)cip.stack.pop)); }
+void sqrt   () {
+	auto r = cast(real)cip.stack.pop;
+	if (r < 0)
+		reverse;
+	else
+		cip.stack.push(cast(cell)round(math.sqrt(r)));
+}
 
-static assert (cell.sizeof == int.sizeof, "Change abs function in FIXP");
-
-void signbit() { auto n = ip.stack.pop; ip.stack.push(n > 0 ? 1 : (n < 0 ? -1 : 0)); }
+void signbit() { auto n = cip.stack.pop; cip.stack.push(n > 0 ? 1 : (n < 0 ? -1 : 0)); }
 
 void pow() {
-	auto b = ip.stack.pop, a = ip.stack.pop;
+	auto b = cip.stack.pop, a = cip.stack.pop;
 
 	// try to be smart instead of just casting to float and calculating it
 	// which would probably be faster
@@ -77,5 +99,7 @@ void pow() {
 	} else
 		a = 1; // n^0, also 0^0: though indeterminate, it's defined thus in some contexts, so it's okay
 
-	ip.stack.push(a);
+	cip.stack.push(a);
+}
+
 }
