@@ -2,90 +2,94 @@
 
 // File created: 2007-01-20 21:14:10
 
-module ccbi.fingerprints.rcfunge98.fpdp; private:
-
-import tango.text.convert.Float : toFloat;
-import math = tango.math.Math;
-import tango.io.Stdout;
-
-alias math.rndint round;
+module ccbi.fingerprints.rcfunge98.fpdp;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.utils : popString;
 
 // 0x46504450: FPDP
 // Double precision floating point
 // -------------------------------
 
-static this() {
-	mixin (Code!("FPDP"));
+mixin (Fingerprint!(
+	"FPDP",
 
-	fingerprints[FPDP]['A'] =& add;
-	fingerprints[FPDP]['B'] =& sin;
-	fingerprints[FPDP]['C'] =& cos;
-	fingerprints[FPDP]['D'] =& div;
-	fingerprints[FPDP]['E'] =& asin;
-	fingerprints[FPDP]['F'] =& fromInt;
-	fingerprints[FPDP]['G'] =& atan;
-	fingerprints[FPDP]['H'] =& acos;
-	fingerprints[FPDP]['I'] =& toInt;
-	fingerprints[FPDP]['K'] =& ln;
-	fingerprints[FPDP]['L'] =& log10;
-	fingerprints[FPDP]['M'] =& mul;
-	fingerprints[FPDP]['N'] =& neg;
-	fingerprints[FPDP]['P'] =& print;
-	fingerprints[FPDP]['Q'] =& sqrt;
-	fingerprints[FPDP]['R'] =& fromASCII;
-	fingerprints[FPDP]['S'] =& sub;
-	fingerprints[FPDP]['T'] =& tan;
-	fingerprints[FPDP]['V'] =& abs;
-	fingerprints[FPDP]['X'] =& exp;
-	fingerprints[FPDP]['Y'] =& pow;
-}
+	"A", "add",
+	"B", "sin",
+	"C", "cos",
+	"D", "div",
+	"E", "asin",
+	"F", "fromInt",
+	"G", "atan",
+	"H", "acos",
+	"I", "toInt",
+	"K", "ln",
+	"L", "log10",
+	"M", "mul",
+	"N", "neg",
+	"P", "print",
+	"Q", "sqrt",
+	"R", "fromASCII",
+	"S", "sub",
+	"T", "tan",
+	"V", "abs",
+	"X", "exp",
+	"Y", "pow"
+));
+
+template FPDP() {
+
+import math = tango.math.Math;
+import tango.text.convert.Float : toFloat;
 
 union Union {
 	double d;
 	align (1) struct { cell h, l; }
 }
 static assert (Union.sizeof == double.sizeof);
-Union u;
-double d;
 
-void popDbl() {
-	u.l = ip.stack.pop;
-	u.h = ip.stack.pop;
+Union popDbl() {
+	Union u;
+	u.l = cip.stack.pop;
+	u.h = cip.stack.pop;
+	return u;
 }
-void pushDbl() {
-	ip.stack.push(u.h);
-	ip.stack.push(u.l);
+void pushDbl(Union u) {
+	cip.stack.push(u.h);
+	cip.stack.push(u.l);
 }
 
-void add() { popDbl(); d = u.d; popDbl(); u.d += d; pushDbl(); }
-void sub() { popDbl(); d = u.d; popDbl(); u.d -= d; pushDbl(); }
-void mul() { popDbl(); d = u.d; popDbl(); u.d *= d; pushDbl(); }
-void div() { popDbl(); d = u.d; popDbl(); u.d /= d; pushDbl(); }
+void add() { auto u = popDbl; auto d = u.d; u = popDbl; u.d += d; pushDbl(u); }
+void sub() { auto u = popDbl; auto d = u.d; u = popDbl; u.d -= d; pushDbl(u); }
+void mul() { auto u = popDbl; auto d = u.d; u = popDbl; u.d *= d; pushDbl(u); }
+void div() { auto u = popDbl; auto d = u.d; u = popDbl; u.d /= d; pushDbl(u); }
+void pow() { auto u = popDbl; auto d = u.d; u = popDbl; u.d = math.pow(u.d, d); pushDbl(u); }
 
-void  sin() { popDbl(); u.d = math. sin(u.d); pushDbl(); }
-void  cos() { popDbl(); u.d = math. cos(u.d); pushDbl(); }
-void  tan() { popDbl(); u.d = math. tan(u.d); pushDbl(); }
-void asin() { popDbl(); u.d = math.asin(u.d); pushDbl(); }
-void acos() { popDbl(); u.d = math.acos(u.d); pushDbl(); }
-void atan() { popDbl(); u.d = math.atan(u.d); pushDbl(); }
+void  sin() { auto u = popDbl; u.d = math. sin(u.d); pushDbl(u); }
+void  cos() { auto u = popDbl; u.d = math. cos(u.d); pushDbl(u); }
+void  tan() { auto u = popDbl; u.d = math. tan(u.d); pushDbl(u); }
+void asin() { auto u = popDbl; u.d = math.asin(u.d); pushDbl(u); }
+void acos() { auto u = popDbl; u.d = math.acos(u.d); pushDbl(u); }
+void atan() { auto u = popDbl; u.d = math.atan(u.d); pushDbl(u); }
 
-void neg() { popDbl(); u.d *= -1;           pushDbl(); }
-void abs() { popDbl(); u.d = math.abs(u.d); pushDbl(); }
+void neg() { auto u = popDbl; u.d *= -1;           pushDbl(u); }
+void abs() { auto u = popDbl; u.d = math.abs(u.d); pushDbl(u); }
 
-void pow () { popDbl(); d = u.d; popDbl(); u.d = math.pow(u.d, d); pushDbl(); }
+void sqrt () { auto u = popDbl; u.d = math.sqrt (u.d); pushDbl(u); }
+void ln   () { auto u = popDbl; u.d = math.log  (u.d); pushDbl(u); }
+void log10() { auto u = popDbl; u.d = math.log10(u.d); pushDbl(u); }
+void exp  () { auto u = popDbl; u.d = math.exp  (u.d); pushDbl(u); }
 
-void sqrt () { popDbl(); u.d = math.sqrt (u.d); pushDbl(); }
-void ln   () { popDbl(); u.d = math.log  (u.d); pushDbl(); }
-void log10() { popDbl(); u.d = math.log10(u.d); pushDbl(); }
-void exp  () { popDbl(); u.d = math.exp  (u.d); pushDbl(); }
+void fromASCII() {
+	Union u;
+	try u.d = toFloat(popString());
+	catch {
+		return reverse;
+	}
+	pushDbl(u);
+}
+void fromInt() { auto c = cip.stack.pop; Union u; u.d = math.rndint(c); pushDbl(u); }
 
-void fromASCII() { auto str = popString(); try u.d = toFloat(cast(char[])str); catch { return reverse(); } pushDbl(); }
-void fromInt  () { auto c = ip.stack.pop; u.d = math.rndint(c); pushDbl(); }
+void toInt() { auto u = popDbl; cip.stack.push(cast(cell)math.rndint(u.d)); }
+void print() { auto u = popDbl; Stdout.format("{:f6} ", u.d); }
 
-void toInt() { popDbl(); ip.stack.push(cast(cell)round(u.d)); }
-void print() { popDbl(); Stdout.format("{:f6} ", u.d); }
+}
