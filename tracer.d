@@ -209,9 +209,17 @@ The last is related to the TRDS fingerprint.`
 	}
 
 	void showInfo(IP ip) {
-		auto i = space[ip.pos];
-		printCell(i, NewlineString ~ "Instruction: ", NewlineString);
-		Serr.formatln(
+		auto p = ip.pos;
+		ip.gotoNextInstruction();
+
+		printCell(space[ip.pos], NewlineString ~ "Instruction: ");
+
+		if (ip.pos != p) {
+			printCell(space[p], " (via marker: ", " at ");
+			Serr(p)(')');
+		}
+
+		Serr.newline.formatln(
 			"Position: {} -- Delta: {} -- Offset: {}",
 			ip.pos, ip.delta, ip.offset);
 		Serr.formatln("Stack: {} cell(s): {}", ip.stack.size, stackString(ip));
@@ -220,6 +228,8 @@ The last is related to the TRDS fingerprint.`
 			"Tick: {} -- IPs: {} -- Index/ID: {}/{} -- Stacks: {} -- Mode: {}"
 			~ NewlineString,
 			tick, ipCount, index, ip.id, ip.stackStack.size, modeString(ip));
+
+		ip.pos = p;
 	}
 
 	showInfo(tip);
