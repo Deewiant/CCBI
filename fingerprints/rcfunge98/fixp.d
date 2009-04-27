@@ -2,7 +2,7 @@
 
 // File created: 2007-01-20 21:14:23
 
-module ccbi.fingerprints.rcfunge98.fixp; private:
+module ccbi.fingerprints.rcfunge98.fixp;
 
 import ccbi.fingerprint;
 
