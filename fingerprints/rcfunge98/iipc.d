@@ -24,22 +24,11 @@ mixin (Fingerprint!(
 template IIPC() {
 
 IP findIP(cell id) {
-	// Binary search
-	size_t beg = 0, end = ips.length, mid = end / 2;
-
-	while (beg < end) {
-		if (ips[mid].id < id)
-			beg = mid + 1;
-		else
-			end = mid;
-
-		mid = beg + (end - beg)/2;
-	}
-	if (mid < ips.length) {
-		IP ip = ips[mid];
-		return ip.id == id ? ip : null;
-	} else
-		return null;
+	// We could use a binary search if it weren't for TRDS
+	foreach (ip; ips)
+		if (ip.id == id)
+			return ip;
+	return null;
 }
 
 void ancestorID() {
