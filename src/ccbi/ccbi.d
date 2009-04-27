@@ -13,7 +13,7 @@ module ccbi.ccbi;
 import tango.core.Exception : ArgEx = IllegalArgumentException;
 import tango.io.Stdout;
 import tango.io.device.File : File;
-import regex = tango.text.Regex;
+import tango.text.Ascii     : toLower;
 
 import ccbi.flags;
 import ccbi.globals : VERSION_STRING;
@@ -295,10 +295,17 @@ int main(char[][] args) {
 	Flags flags;
 
 	// {{{ parse arguments
-	scope helpRegex = regex.Regex("^(?--?|/)(?[?]|h(?e?lp)?)$", "i");
 	argLoop: for (size_t i = 0; i < args.length; ++i) {
 
-		bool help(char[] s) { return helpRegex.test(s); }
+		bool help(char[] s) {
+			switch (toLower(s.dup)) {
+				case
+					"-?", "--?", "/?", "-h", "--h", "/h",
+					"-hlp", "--hlp", "/hlp", "-help", "--help", "/help":
+						return true;
+				default: return false;
+			}
+		}
 
 		auto arg = args[i];
 
