@@ -31,6 +31,7 @@ public import
 	ccbi.fingerprints.rcfunge98.fpsp,
 	ccbi.fingerprints.rcfunge98.frth,
 	ccbi.fingerprints.rcfunge98.iipc,
+	ccbi.fingerprints.rcfunge98.imap,
 	ccbi.fingerprints.rcfunge98.indv,
 	ccbi.fingerprints.rcfunge98.sock,
 	ccbi.fingerprints.rcfunge98.strn,
@@ -47,7 +48,7 @@ alias Tuple!(
 
 	// RC/Funge-98
 	"BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP", "FPSP",
-	"FRTH", "IIPC", "INDV", "SOCK", "STRN", "SUBR", "TIME",
+	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", "TIME",
 
 	// GLfunge98
 	"SCKE" // Uses stuff from SOCK: must be after it in this list!
