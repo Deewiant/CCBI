@@ -2,42 +2,37 @@
 
 // File created: 2007-01-20 21:14:53
 
-module ccbi.fingerprints.rcfunge98.strn; private:
-
-import tango.io.Stdout            : Stdout;
-import tango.text.Ascii           : compare;
-import tango.text.Util            : locatePattern;
-import tango.text.convert.Integer : format, parse;
+module ccbi.fingerprints.rcfunge98.strn;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse, outputCharacter;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.utils;
 
 // 0x5354524e: STRN
 // String functions
 // ----------------
 
-static this() {
-	mixin (Code!("STRN"));
+mixin (Fingerprint!(
+	"STRN",
 
-	fingerprints[STRN]['A'] =& append;
-	fingerprints[STRN]['C'] =& compare;
-	fingerprints[STRN]['D'] =& display;
-	fingerprints[STRN]['F'] =& search;
-	fingerprints[STRN]['G'] =& get;
-	fingerprints[STRN]['I'] =& input;
-	fingerprints[STRN]['L'] =& left;
-	fingerprints[STRN]['M'] =& slice;
-	fingerprints[STRN]['N'] =& length;
-	fingerprints[STRN]['P'] =& put;
-	fingerprints[STRN]['R'] =& right;
-	fingerprints[STRN]['S'] =& itoa;
-	fingerprints[STRN]['V'] =& atoi;
-	
-	fingerprintConstructors[STRN] =& ctor;
-}
+	"A", "append",
+	"C", "compare",
+	"D", "display",
+	"F", "search",
+	"G", "get",
+	"I", "input",
+	"L", "left",
+	"M", "slice",
+	"N", "length",
+	"P", "put",
+	"R", "right",
+	"S", "itoa",
+	"V", "atoi"
+));
+
+template STRN() {
+
+import ascii = tango.text.Ascii;
+import tango.text.Util            : locatePattern;
+import tango.text.convert.Integer : format, parse;
 
 void append() {
 	auto top = popString().dup,
@@ -50,11 +45,11 @@ void append() {
 void compare() {
 	auto s = popString().dup;
 
-	ip.stack.push(cast(cell)compare(s, popString()));
+	cip.stack.push(cast(cell)ascii.compare(s, popString()));
 }
 
 // Done like so so that \n flushes
-void display() { while (ip.stack.top) outputCharacter; ip.stack.pop(); }
+void display() { while (cip.stack.top) outputCharacter; cip.stack.pop(1); }
 
 void search() {
 	auto s = popString().dup;
@@ -67,29 +62,29 @@ char[] buf;
 void ctor() { buf = new char[80]; }
 
 void get() {
-	cellidx x, y;
-	popVector(x, y);
+	Coords c = popOffsetVector();
 
-	if (y > space.endY)
-		return reverse();
+	static if (dim >= 3) if (c.z > space.end.z) return reverse;
+	static if (dim >= 2) if (c.y > space.end.y) return reverse;
 
 	size_t i = 0;
 	do {
 		if (i == buf.length)
 			buf.length = buf.length * 2;
 
-		if (x > space.endX)
+		if (c.x > space.end.x)
 			return reverse();
 
-		buf[i++] = space[x, y];
+		buf[i] = space[c];
+		++c.x;
 
-	} while (space[x++, y] != 0);
+	} while (buf[i++] != 0);
 
 	pushStringz(buf[0..i]);
 }
 
 void input() {
-	Stdout.stream.flush;
+	Sout.flush;
 
 	size_t i = 0;
 	try {
@@ -110,7 +105,7 @@ void input() {
 }
 
 void left() {
-	auto n = ip.stack.pop,
+	auto n = cip.stack.pop,
 	     s = popString();
 
 	if (n < 0 || n > s.length)
@@ -120,8 +115,8 @@ void left() {
 }
 
 void slice() {
-	auto n = ip.stack.pop,
-	     p = ip.stack.pop,
+	auto n = cip.stack.pop,
+	     p = cip.stack.pop,
 	     s = popString(),
 	     e = p+n;
 
@@ -135,21 +130,22 @@ void length() {
 	auto s = popString();
 
 	pushStringz(s);
-	ip.stack.push(cast(cell)s.length);
+	cip.stack.push(cast(cell)s.length);
 }
 
 void put() {
-	cellidx x, y;
-	popVector(x, y);
+	Coords c = popOffsetVector();
 
-	auto s = popString!(true);
+	auto s = popStringWithZero();
 
-	foreach (i, c; s)
-		space[x+cast(cellidx)i, y] = cast(cell)c;
+	foreach (ch; s) {
+		space[c] = cast(cell)ch;
+		++c.x;
+	}
 }
 
 void right() {
-	auto n = ip.stack.pop,
+	auto n = cip.stack.pop,
 	     s = popString();
 
 	if (n < 0 || n > s.length)
@@ -159,10 +155,9 @@ void right() {
 }
 
 void itoa() {
-	cell n = ip.stack.pop;
+	cell n = cip.stack.pop;
 
-	static assert (cell.sizeof == 4 && cell.min < 0, "Need more than 11 chars here");
-	char[11] buf;
+	char[ToString!(cell.min).length] buf;
 
 	try pushStringz(format(buf, n));
 	catch {
@@ -173,8 +168,10 @@ void itoa() {
 void atoi() {
 	auto s = popString();
 
-	try ip.stack.push(cast(cell)parse(s));
+	try cip.stack.push(cast(cell)parse(s));
 	catch {
 		reverse();
 	}
+}
+
 }
