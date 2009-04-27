@@ -2,37 +2,35 @@
 
 // File created: 2007-01-20 21:13:52
 
-module ccbi.fingerprints.rcfunge98.file; private:
-
-import Path = tango.io.Path;
-import c = tango.stdc.stdio;
+module ccbi.fingerprints.rcfunge98.file;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.utils;
 
 // 0x46494c45: FILE
 // File I/O functions
 // ------------------
-static this() {
-	mixin (Code!("FILE"));
+mixin (Fingerprint!(
+	"FILE",
 
-	fingerprints[FILE]['C'] =& fclose;
-	fingerprints[FILE]['D'] =& unlink;
-	fingerprints[FILE]['G'] =& fgets;
-	fingerprints[FILE]['L'] =& ftell;
-	fingerprints[FILE]['O'] =& fopen;
-	fingerprints[FILE]['P'] =& fputs;
-	fingerprints[FILE]['R'] =& fread;
-	fingerprints[FILE]['S'] =& fseek;
-	fingerprints[FILE]['W'] =& fwrite;
-}
+	"C", "fclose",
+	"D", "unlink",
+	"G", "fgets",
+	"L", "ftell",
+	"O", "fopen",
+	"P", "fputs",
+	"R", "fread",
+	"S", "fseek",
+	"W", "fwrite"
+));
+
+template FILE() {
+
+import Path = tango.io.Path;
+import c = tango.stdc.stdio;
 
 struct FileHandle {
 	c.FILE* handle;
-	cellidx x, y; // IO buffer in Funge-Space
+	Coords buf; // IO buffer in Funge-Space
 }
 
 FileHandle[] handles;
@@ -49,9 +47,8 @@ cell nextFreeHandle() {
 
 void fopen() {
 	auto name = popStringz();
-	cell modeCell = ip.stack.pop;
-	cellidx x, y;
-	popVector(x, y);
+	cell modeCell = cip.stack.pop;
+	Coords buf = popOffsetVector();
 
 	cell h = nextFreeHandle();
 
@@ -67,14 +64,13 @@ void fopen() {
 	}
 
 	handles[h].handle = file;
-	handles[h].x = x;
-	handles[h].y = y;
+	handles[h].buf = buf;
 
-	ip.stack.push(h);
+	cip.stack.push(h);
 }
 
 void fclose() {
-	cell h = ip.stack.pop;
+	cell h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
 
@@ -94,10 +90,10 @@ void unlink() {
 }
 
 void fgets() {
-	cell h = ip.stack.pop;
+	cell h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
-	ip.stack.push(h);
+	cip.stack.push(h);
 
 	auto hnd = handles[h].handle;
 
@@ -140,7 +136,7 @@ void fgets() {
 		str.length = s;
 
 		pushStringz(str);
-		ip.stack.push(cast(cell)str.length);
+		cip.stack.push(cast(cell)str.length);
 	} catch {
 		return reverse();
 	}
@@ -148,10 +144,10 @@ void fgets() {
 
 void fputs() {
 	auto str = popStringz();
-	cell h = ip.stack.pop;
+	cell h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
-	ip.stack.push(h);
+	cip.stack.push(h);
 
 	if (c.fputs(cast(char*)str, handles[h].handle) == c.EOF) {
 		assert (c.ferror(handles[h].handle));
@@ -161,10 +157,10 @@ void fputs() {
 }
 
 void ftell() {
-	cell h = ip.stack.pop;
+	cell h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
-	ip.stack.push(h);
+	cip.stack.push(h);
 
 	auto p = c.ftell(handles[h].handle);
 	if (p == -1) {
@@ -173,16 +169,16 @@ void ftell() {
 		return reverse();
 	}
 
-	ip.stack.push(cast(cell)p);
+	cip.stack.push(cast(cell)p);
 }
 
 void fseek() {
-	cell n = ip.stack.pop,
-	     m = ip.stack.pop,
-	     h = ip.stack.pop;
+	cell n = cip.stack.pop,
+	     m = cip.stack.pop,
+	     h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
-	ip.stack.push(h);
+	cip.stack.push(h);
 
 	switch (m) {
 		case 0: if (c.fseek(handles[h].handle, n, c.SEEK_SET)) break; else return;
@@ -198,11 +194,11 @@ void fseek() {
 }
 
 void fread() {
-	cell n = ip.stack.pop,
-	     h = ip.stack.pop;
+	cell n = cip.stack.pop,
+	     h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
-	ip.stack.push(h);
+	cip.stack.push(h);
 
 	ubyte[] buf;
 	try buf = new ubyte[n];
@@ -221,16 +217,19 @@ void fread() {
 			assert (c.feof(hnd));
 	}
 
-	foreach (i, b; buf)
-		space[handles[h].x + cast(cellidx)i, handles[h].y] = cast(cell)b;
+	Coords pos = handles[h].buf;
+	foreach (b; buf) {
+		space[pos] = cast(cell)b;
+		++pos.x;
+	}
 }
 
 void fwrite() {
-	cell n = ip.stack.pop,
-	     h = ip.stack.pop;
+	cell n = cip.stack.pop,
+	     h = cip.stack.pop;
 	if (h >= handles.length || !handles[h].handle)
 		return reverse();
-	ip.stack.push(h);
+	cip.stack.push(h);
 
 	ubyte[] buf;
 	try buf = new ubyte[n];
@@ -238,8 +237,11 @@ void fwrite() {
 		return reverse();
 	}
 
-	foreach (i, inout b; buf)
-		b = cast(ubyte)space[handles[h].x + cast(cellidx)i, handles[h].y];
+	Coords pos = handles[h].buf;
+	foreach (inout b; buf) {
+		b = cast(ubyte)space[pos];
+		++pos.x;
+	}
 
 	auto hnd = handles[h].handle;
 
@@ -248,4 +250,6 @@ void fwrite() {
 		c.clearerr(hnd);
 		return reverse();
 	}
+}
+
 }

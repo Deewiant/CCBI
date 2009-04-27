@@ -2,39 +2,40 @@
 
 // File created: 2007-06-08 12:03:42
 
-module ccbi.fingerprints.rcfunge98.sock; private:
-
-import tango.net.Socket;
+module ccbi.fingerprints.rcfunge98.sock;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.utils;
+
+// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
+import tango.net.Socket;
 
 // 0x534f434b: SOCK
 // tcp/ip [sic] socket extension
 // -----------------------------
 
-static this() {
-	mixin (Code!("SOCK"));
+mixin (Fingerprint!(
+	"SOCK",
 
-	fingerprints[SOCK]['A'] =& accept;
-	fingerprints[SOCK]['B'] =& bind;
-	fingerprints[SOCK]['C'] =& connect;
-	fingerprints[SOCK]['I'] =& toInt;
-	fingerprints[SOCK]['K'] =& kill;
-	fingerprints[SOCK]['L'] =& listen;
-	fingerprints[SOCK]['O'] =& setOption;
-	fingerprints[SOCK]['R'] =& receive;
-	fingerprints[SOCK]['S'] =& create;
-	fingerprints[SOCK]['W'] =& send;
-}
+	"A", "accept",
+	"B", "bind",
+	"C", "connect",
+	"I", "toInt",
+	"K", "kill",
+	"L", "listen",
+	"O", "setOption",
+	"R", "receive",
+	"S", "create",
+	"W", "send"
+));
+
+template SOCK() {
+
+import tango.net.Socket;
 
 Socket[] sockets;
 
 AddressFamily popFam() {
-	switch (ip.stack.pop) {
+	switch (cip.stack.pop) {
 		case 1:  return AddressFamily.UNIX;
 		case 2:  return AddressFamily.INET;
 		default: return AddressFamily.UNSPEC;
@@ -45,7 +46,7 @@ void create() {
 	ProtocolType protocol;
 	SocketType   type;
 
-	with (ip.stack) {
+	with (cip.stack) {
 		switch (pop) {
 			case 1: protocol = ProtocolType.TCP; break;
 			case 2: protocol = ProtocolType.UDP; break;
@@ -84,7 +85,7 @@ void create() {
 }
 
 void kill() {
-	auto s = cast(size_t)ip.stack.pop;
+	auto s = cast(size_t)cip.stack.pop;
 
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
@@ -101,7 +102,7 @@ void kill() {
 }
 
 void connect() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto address = cast(uint)  pop,
 		     port    = cast(ushort)pop,
 		     fam     = popFam(),
@@ -118,7 +119,7 @@ void connect() {
 }
 
 void bind() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto address = cast(uint)  pop,
 		     port    = cast(ushort)pop,
 		     fam     = popFam(),
@@ -135,7 +136,7 @@ void bind() {
 }
 
 void accept() {
-	auto s = cast(size_t)ip.stack.pop;
+	auto s = cast(size_t)cip.stack.pop;
 
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
@@ -155,7 +156,7 @@ void accept() {
 
 		auto addr = cast(IPv4Address)as.remoteAddress;
 
-		ip.stack.push(
+		cip.stack.push(
 			cast(cell)addr.port,
 			cast(cell)addr.addr,
 			cast(cell)i
@@ -168,12 +169,11 @@ void accept() {
 ubyte[] buffer;
 
 void receive() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto s   = cast(size_t)pop,
 		     len = cast(size_t)pop;
 
-		cellidx x, y;
-		popVector(x, y);
+		Coords c = popOffsetVector();
 
 		if (s >= sockets.length || !sockets[s])
 			return reverse();
@@ -188,18 +188,17 @@ void receive() {
 
 		push(cast(cell)got);
 
-		for (cellidx i = 0; i < cast(cellidx)got; ++i)
-			space[x + i, y] = cast(cell)buffer[i];
+		for (typeof(got) i = 0; i < got; ++i, ++c.x)
+			space[c] = cast(cell)buffer[i];
 	}
 }
 
 void send() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto s   = cast(size_t)pop,
 		     len = cast(size_t)pop;
 
-		cellidx x, y;
-		popVector(x, y);
+		Coords c = popOffsetVector();
 
 		if (s >= sockets.length || !sockets[s])
 			return reverse();
@@ -207,8 +206,8 @@ void send() {
 		if (len > buffer.length)
 			buffer.length = len;
 
-		for (cellidx i = 0; i < cast(cellidx)len; ++i)
-			buffer[i] = space[x + i, y];
+		for (typeof(len) i = 0; i < len; ++i, ++c.x)
+			buffer[i] = space[c];
 
 		auto sent = sockets[s].send(buffer[0..len]);
 
@@ -220,8 +219,8 @@ void send() {
 }
 
 void listen() {
-	auto s = cast(size_t)ip.stack.pop,
-	     n = cast(int)   ip.stack.pop;
+	auto s = cast(size_t)cip.stack.pop,
+	     n = cast(int)   cip.stack.pop;
 
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
@@ -239,9 +238,9 @@ void setOption() {
 	}
 	Value val;
 
-	auto s        = cast(size_t)ip.stack.pop,
-	     t        =             ip.stack.pop;
-	     val.n[0] = cast(int)   ip.stack.pop;
+	auto s        = cast(size_t)cip.stack.pop,
+	     t        =             cip.stack.pop;
+	     val.n[0] = cast(int)   cip.stack.pop;
 
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
@@ -269,5 +268,7 @@ void toInt() {
 	if (n == IPv4Address.ADDR_NONE)
 		return reverse();
 	else
-		ip.stack.push(cast(cell)n);
+		cip.stack.push(cast(cell)n);
+}
+
 }

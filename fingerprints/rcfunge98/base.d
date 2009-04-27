@@ -2,41 +2,50 @@
 
 // File created: 2007-01-20 21:12:24
 
-module ccbi.fingerprints.rcfunge98.base; private:
+module ccbi.fingerprints.rcfunge98.base;
 
-import tango.core.BitManip        : bsr;
-import tango.io.Stdout            : Stdout;
-import tango.text.convert.Integer : toString;
-import tango.text.Util            : repeat;
+import tango.core.BitManip : bsr;
 
-import ccbi.cell;
 import ccbi.fingerprint;
-import ccbi.instructions : reverse, Out;
-import ccbi.ip;
-import ccbi.stdlib;
-import ccbi.utils;
 
 // 0x42415345: BASE
 // I/O for numbers in other bases
 // ------------------------------
 
-static this() {
-	mixin (Code!("BASE"));
+mixin (Fingerprint!(
+	"BASE",
 
-	fingerprints[BASE]['B'] =& outputBinary;
-	fingerprints[BASE]['H'] =& outputHex;
-	fingerprints[BASE]['I'] =& inputBase;
-	fingerprints[BASE]['N'] =& outputBase;
-	fingerprints[BASE]['O'] =& outputOctal;
+	"B", "outputBinary",
+	"H", "outputHex",
+	"I", "inputBase",
+	"N", "outputBase",
+	"O", "outputOctal"
+));
+
+bool contains(char[] a, char b) {
+	foreach (c; a)
+		if (c == b)
+			return true;
+	return false;
 }
 
-void outputBinary() { Stdout(toString(ip.stack.pop, "b")); ubyte b = ' '; Out.write(b); }
-void outputHex   () { Stdout(toString(ip.stack.pop, "x")); ubyte b = ' '; Out.write(b); }
-void outputOctal () { Stdout(toString(ip.stack.pop, "o")); ubyte b = ' '; Out.write(b); }
+uint floorLog(uint base, uint val) {
+	// bsr is just an integer log2
+	return bsr(val) / bsr(base);
+}
+
+template BASE() {
+
+import tango.text.convert.Integer : intToString = toString;
+import tango.text.Util            : repeat;
+
+void outputBinary() { Sout(intToString(cip.stack.pop, "b")); ubyte b = ' '; Cout.write(b); }
+void outputHex   () { Sout(intToString(cip.stack.pop, "x")); ubyte b = ' '; Cout.write(b); }
+void outputOctal () { Sout(intToString(cip.stack.pop, "o")); ubyte b = ' '; Cout.write(b); }
 
 void outputBase() {
-	auto base = ip.stack.pop,
-	     val  = ip.stack.pop;
+	auto base = cip.stack.pop,
+	     val  = cip.stack.pop;
 
 	if (base <= 0 || base > 36)
 		return reverse();
@@ -58,18 +67,18 @@ void outputBase() {
 			result[i++] = DIGITS[val % base];
 	}
 
-	Stdout(result[0..i].reverse);
+	Sout(result[0..i].reverse);
 	ubyte b = ' ';
-	Out.write(b);
+	Cout.write(b);
 }
 
 void inputBase() {
-	auto base = ip.stack.pop;
+	auto base = cip.stack.pop;
 
 	if (base <= 0 || base > 36)
 		return reverse();
 
-	Stdout.stream.flush();
+	Sout.flush();
 
 	auto digits = "0123456789abcdefghijklmnopqrstuvwxyz"[0..base];
 	char c;
@@ -97,28 +106,28 @@ void inputBase() {
 	try {
 		for (;;) {
 			c = toLower(cget());
-	
+
 			if (!digits.contains(c))
 				break;
-	
+
 			if (j == s.length)
 				s.length = 2 * s.length;
-	
+
 			s[j++] = c;
-	
+
 			cell tmp = 0;
-	
+
 			// value of characters read so far, in base
 			foreach_reverse (i, ch; s[0..j])
 				tmp += ipow(base, j-i-1) * (ch < 'a' ? ch - '0' : ch - 'a' + 10);
-	
+
 			// oops, overflow, stop here
 			if (tmp < 0)
 				break;
-	
+
 			n = tmp;
 		}
-		
+
 		// put back eaten char if it wasn't line break
 		if (c == '\r') {
 			if (cget() != '\n')
@@ -129,17 +138,7 @@ void inputBase() {
 		return reverse();
 	}
 
-	ip.stack.push(n);
+	cip.stack.push(n);
 }
 
-bool contains(char[] a, char b) {
-	foreach (c; a)
-		if (c == b)
-			return true;
-	return false;
-}
-
-uint floorLog(uint base, uint val) {
-	// bsr is just an integer log2
-	return bsr(val) / bsr(base);
 }

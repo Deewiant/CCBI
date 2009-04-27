@@ -2,7 +2,31 @@
 
 // File created: 2007-01-20 21:13:48
 
-module ccbi.fingerprints.rcfunge98.evar; private:
+module ccbi.fingerprints.rcfunge98.evar;
+
+import ccbi.fingerprint;
+
+// 0x45564152: EVAR
+// Environment variables extension
+// -------------------------------
+
+mixin (Fingerprint!(
+	"EVAR",
+
+	"G", "getEnv",
+	"N", "getEnvCount",
+	"P", "putEnv",
+	"V", "getNthEnv"
+));
+
+size_t getEqualsSign(char[] s) {
+	foreach (i, c; s)
+	if (c == '=')
+		return i;
+	return s.length;
+}
+
+template EVAR() {
 
 import tango.stdc.stringz : toStringz;
 import tango.text.Ascii   : icompare;
@@ -13,31 +37,6 @@ else version (Posix)
 	import tango.stdc.posix.stdlib : setenv;
 else
 	static assert (false, "No setenv for non-Win32 and non-Posix");
-
-import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.utils;
-
-// 0x45564152: EVAR
-// Environment variables extension
-// -------------------------------
-
-static this() {
-	mixin (Code!("EVAR"));
-
-	fingerprints[EVAR]['G'] =& getEnv;
-	fingerprints[EVAR]['N'] =& getEnvCount;
-	fingerprints[EVAR]['P'] =& putEnv;
-	fingerprints[EVAR]['V'] =& getNthEnv;
-}
-
-private size_t getEqualsSign(char[] s) {
-	foreach (i, c; s)
-	if (c == '=')
-		return i;
-	return s.length;
-}
 
 void getEnv() {
 	auto s = popString();
@@ -59,7 +58,7 @@ void getEnv() {
 }
 
 void getEnvCount() {
-	ip.stack.push(cast(cell)environment().length);
+	cip.stack.push(cast(cell)environment().length);
 }
 
 void putEnv() {
@@ -84,10 +83,12 @@ void putEnv() {
 
 void getNthEnv() {
 	auto env = environment(),
-	       n = ip.stack.pop;
+	       n = cip.stack.pop;
 
 	if (n >= env.length)
 		return reverse();
 
 	pushStringz(env[n]);
+}
+
 }

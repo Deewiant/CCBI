@@ -1,39 +1,39 @@
 // This file is part of CCBI - Conforming Concurrent Befunge-98 Interpreter
 
-// File createD: 2007-01-20 21:06:53
+// File created: 2007-01-20 21:06:53
 
-module ccbi.fingerprints.cats_eye.perl; private:
+module ccbi.fingerprints.cats_eye.perl;
 
-import tango.core.Exception       : ProcessException;
-import tango.io.Stdout            : Stdout;
+// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 import tango.sys.Process;
-import tango.text.convert.Integer : parse;
 
-import ccbi.cell;
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.utils;
 
 // 0x4d4f4445: PERL
 // Generic Interface to the Perl Language
 // --------------------------------------
 
-static this() {
-	mixin (Code!("PERL"));
+mixin (Fingerprint!(
+	"PERL",
 
-	fingerprints[PERL]['E'] =& eval!(false);
-	fingerprints[PERL]['I'] =& eval!(true);
-	fingerprints[PERL]['S'] =& shelled;
-}
+	"E", "eval!(false)",
+	"I", "eval!(true)",
+	"S", "shelled"
+));
 
-void shelled() { ip.stack.push(1); /+ this is not Perl, this is D +/ }
+template PERL() {
+
+import tango.core.Exception       : ProcessException;
+import tango.sys.Process;
+import tango.text.convert.Integer : parse;
+
+void shelled() { cip.stack.push(1); /+ this is not Perl, this is D +/ }
 
 void eval(bool convertToInteger)() {
 	auto program = popString();
 	try {
 		/+ The code below combines stderr and stdout for the Perl, so that we may
-			pass it all through to our stdout.
+		   pass it all through to our stdout.
 
 		   This is done so that:
 		   	- We can easily get to the eval return value - it's stderr.
@@ -56,7 +56,7 @@ void eval(bool convertToInteger)() {
 		auto p = new Process("perl", "-e", PERLCODE, program);
 		p.execute();
 		p.stdin.detach();
-		Stdout.copy(p.stdout);
+		Sout.copy(p.stdout);
 
 		char[] string;
 		char[80] buf = void;
@@ -70,7 +70,8 @@ void eval(bool convertToInteger)() {
 
 		static if (convertToInteger) {
 			static assert (
-				cell.min >= typeof(parse("")).min && cell.max <= typeof(parse("")).max,
+				   cell.min >= typeof(parse("")).min
+				&& cell.max <= typeof(parse("")).max,
 				"Change conversion in ccbi.fingerprints.cats_eye.perl.eval"
 			);
 
@@ -80,10 +81,12 @@ void eval(bool convertToInteger)() {
 			catch {
 				c = -1;
 			}
-			ip.stack.push(c);
+			cip.stack.push(c);
 		} else
 			pushStringz(string);
 
 	} catch (ProcessException)
 		return reverse();
+}
+
 }

@@ -111,18 +111,16 @@ s(t)ack [ip]
 	;
 
 	const MODESTRING =
-`The complete mode string is "HIQST.
+`The complete mode string is "HIQSDT.
 If any of the five characters is a space, that mode is not set.
 
 " stands for stringmode.
-H stands for hovermode.
-I stands for invertmode.
-Q stands for queuemode.
-S stands for switchmode.
-T stands for being a time traveler from the future.
-
-The middle four are modes related to the MODE fingerprint.
-The last is related to the TRDS fingerprint.`
+H stands for hovermode.                             (MODE fingerprint.)
+I stands for invertmode.                            (MODE fingerprint.)
+Q stands for queuemode.                             (MODE fingerprint.)
+S stands for switchmode.                            (MODE fingerprint.)
+D stands for being dormant.                         (IIPC fingerprint.)
+T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	;
 
 	void printIP(size_t i, IP ip) {
@@ -645,11 +643,10 @@ char[] stackString(in IP ip) {
 }
 
 char[] modeString(in IP ip) {
-	char[] str = "      ".dup;
+	char[] str = "       ".dup;
 	size_t i = 0;
 
 	if (ip.mode & IP.STRING)      str[i++] = '"';
-
 	if (ip.mode & IP.HOVER)       str[i++] = 'H';
 
 	auto q = cast(Deque)ip.stack;
@@ -659,7 +656,7 @@ char[] modeString(in IP ip) {
 	}
 
 	if (ip.mode & IP.SWITCH)      str[i++] = 'S';
-
+	if (ip.mode & IP.DORMANT)     str[i++] = 'D';
 	if (ip.mode & IP.FROM_FUTURE) str[i++] = 'T';
 
 	return str;

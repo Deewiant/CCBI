@@ -2,53 +2,63 @@
 
 // File created: 2007-01-20 21:14:30
 
-module ccbi.fingerprints.rcfunge98.iipc; private:
+module ccbi.fingerprints.rcfunge98.iipc;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
 
 // 0x49495043: IIPC
 // Inter IP [sic] communicaiton [sic] extension
 // --------------------------------------------
 
-static this() {
-	mixin (Code!("IIPC"));
+mixin (Fingerprint!(
+	"IIPC",
 
-	fingerprints[IIPC]['A'] =& ancestorID;
-	fingerprints[IIPC]['D'] =& goDormant;
-	fingerprints[IIPC]['G'] =& popIP;
-	fingerprints[IIPC]['I'] =& ownID;
-	fingerprints[IIPC]['L'] =& topIP;
-	fingerprints[IIPC]['P'] =& pushIP;
+	"A", "ancestorID",
+	"D", "goDormant",
+	"G", "popIP",
+	"I", "ownID",
+	"L", "topIP",
+	"P", "pushIP"
+));
+
+template IIPC() {
+
+IP findIP(cell id) {
+	// We could use a binary search if it weren't for TRDS
+	foreach (ip; ips)
+		if (ip.id == id)
+			return ip;
+	return null;
 }
 
 void ancestorID() {
-	if (ip.id == ip.parentID)
+	if (cip.id == cip.parentID)
 		reverse();
 	else
-		ip.stack.push(ip.parentID);
+		cip.stack.push(cip.parentID);
 }
 
-void ownID() { ip.stack.push(ip.id); }
-void goDormant() { ip.mode |= IP.DORMANT; }
+void ownID() { cip.stack.push(cip.id); }
+void goDormant() { cip.mode |= cip.DORMANT; }
 
 void topIP() {
-	if (auto i = findIP(ip.stack.pop))
-		ip.stack.push(i.stack.top);
+	if (auto ip = findIP(cip.stack.pop))
+		cip.stack.push(ip.stack.top);
 }
 void popIP() {
-	if (auto i = findIP(ip.stack.pop)) {
-		ip.stack.push(i.stack.pop);
-		i.mode &= ~IP.DORMANT;
+	if (auto ip = findIP(cip.stack.pop)) {
+		cip.stack.push(ip.stack.pop);
+		ip.mode &= ~cip.DORMANT;
 	}
 }
 void pushIP() {
-	auto id = ip.stack.pop,
-	      c = ip.stack.pop;
+	auto id = cip.stack.pop,
+	      c = cip.stack.pop;
 
-	if (auto i = findIP(id)) {
-		i.stack.push(c);
-		i.mode &= ~IP.DORMANT;
+	if (auto ip = findIP(id)) {
+		ip.stack.push(c);
+		ip.mode &= ~cip.DORMANT;
 	}
+}
+
 }

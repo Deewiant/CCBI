@@ -68,7 +68,9 @@ private:
 
 	char[][] fungeArgs;
 
-	ulong
+	// TRDS pretty much forces this to be signed (either that or handle signed
+	// time displacements manually)
+	long
 		tick = 0,
 		// for TRDS: when rerunning time to jump point, don't output
 		// (since that isn't "happening")
@@ -76,12 +78,12 @@ private:
 
 	// more TRDS stuff
 	struct StoppedIPData {
-		cell id;
-		int jumpedAt, jumpedTo;
+		typeof(cip.id) id;
+		typeof(tick) jumpedAt, jumpedTo;
 	}
 	StoppedIPData[] stoppedIPdata;
 	IP[] travellers;
-	cell latestJumpTarget;
+	typeof(tick) latestJumpTarget;
 	IP timeStopper = null;
 
 	int returnVal;
@@ -131,23 +133,7 @@ private:
 	}
 
 	bool executeTick() {
-		bool normalTime = void; // TRDS
-
-		if (flags.fingerprintsEnabled) {
-			normalTime = timeStopper is null;
-
-			if (normalTime) {
-				++tick;
-
-				// If an IP is jumping to the future and it is the only one alive,
-				// just jump.
-				if (ips[0].jumpedTo > tick && ips.length == 1)
-					tick = cip.jumpedTo;
-
-				placeTimeTravellers();
-			}
-		} else
-			++tick;
+		bool normalTime = timeStopper is null; // TRDS
 
 		if (flags.tracing && !Tracer.doTrace())
 			return false;
@@ -178,6 +164,18 @@ private:
 
 			Sout.flush;
 			Serr.flush;
+		}
+		if (normalTime) {
+			++tick;
+
+			if (flags.fingerprintsEnabled) {
+				// If an IP is jumping to the future and it is the only one alive,
+				// just jump.
+				if (ips[0].jumpedTo > tick && ips.length == 1)
+					tick = ips[0].jumpedTo;
+
+				placeTimeTravellers();
+			}
 		}
 		return true;
 	}
@@ -238,7 +236,21 @@ private:
 		return Request.MOVE;
 	}
 
-	mixin (ConcatMapTuple!(TemplateMixin, ALL_FINGERPRINTS));
+	mixin (ConcatMapTuple!(TemplateMixin,    ALL_FINGERPRINTS));
+	mixin (ConcatMapTuple!(FingerprintCount, ALL_FINGERPRINTS));
+
+	void loadedFingerprint(cell fingerprint) {
+		switch (fingerprint) mixin (Switch!(
+			FingerprintConstructorCases!(ALL_FINGERPRINTS),
+			"default: break;"
+		));
+	}
+	void unloadedFingerprintIns(cell fingerprint) {
+		switch (fingerprint) mixin (Switch!(
+			FingerprintDestructorCases!(ALL_FINGERPRINTS),
+			"default: break;"
+		));
+	}
 
 	Request executeSemantics(cell c)
 	in {
@@ -305,14 +317,13 @@ private:
 				bool found = false;
 
 				foreach (dat; stoppedIPdata)
-					if (dat.id == ip.id && dat.jumpedAt == ip.jumpedAt) {
-						found = true;
-						break;
-					}
+				if (dat.id == ip.id && dat.jumpedAt == ip.jumpedAt) {
+					found = true;
+					break;
+				}
 
 				if (!found)
-					stoppedIPdata ~=
-						StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
+					stoppedIPdata ~= StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
 			}
 		}
 
@@ -322,10 +333,11 @@ private:
 
 	void timeJump(IP ip) {
 		// nothing special if jumping to the future, just don't trace it
-		if (tick != 0) {
+		if (tick > 0) {
 			if (ip.jumpedTo >= ip.jumpedAt)
 				ip.mode &= ~IP.FROM_FUTURE;
 
+			// TODO: move this to Tracer
 			if (ip is tip)
 				tip = null;
 			return;
@@ -353,7 +365,8 @@ private:
 		for (size_t i = 0; i < travellers.length; ++i) {
 			// if coming here, come here
 			if (tick == travellers[i].jumpedTo)
-				ips ~= travellers[i];
+				// This must be appended to preserve correct execution order
+				ips ~= new IP(travellers[i]);
 
 			/+
 			Whenever we jump back in time, history from the jump target forward is

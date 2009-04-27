@@ -2,41 +2,33 @@
 
 // File created: 2007-06-10 11:49:14
 
-module ccbi.fingerprints.rcfunge98.term; private:
-
-import tango.core.Exception       : IOException;
-import tango.io.Stdout            : Stdout;
-import tango.sys.Common;
-import tango.text.convert.Integer : format;
+module ccbi.fingerprints.rcfunge98.term;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
 
 // 0x5445524d: TERM
 // Terminal control functions
 // --------------------------
 
-version (Win32) {
-static this() {
-	mixin (Code!("TERM"));
+mixin (Fingerprint!(
+	"TERM",
 
-	fingerprints[TERM]['C'] =& clearScreen;
-	fingerprints[TERM]['D'] =& goDown;
-	fingerprints[TERM]['G'] =& gotoXY;
-	fingerprints[TERM]['H'] =& goHome;
-	fingerprints[TERM]['L'] =& clearToEOL;
-	fingerprints[TERM]['S'] =& clearToEOS;
-	fingerprints[TERM]['U'] =& goUp;
+	"C", "clearScreen",
+	"D", "goDown",
+	"G", "gotoXY",
+	"H", "goHome",
+	"L", "clearToEOL",
+	"S", "clearToEOS",
+	"U", "goUp"
+));
 
-	fingerprintConstructors[TERM] =& ctor;
+template TERM() {
 
-	version (Posix)
-		fingerprintDestructors[TERM] =& dtor;
-}
-}
+import tango.core.Exception : IOException;
 
 version (Win32) {
+	import tango.sys.win32.UserGdi;
+
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	HANDLE stdout;
 
@@ -48,7 +40,7 @@ version (Win32) {
 
 	// straight from http://msdn2.microsoft.com/en-us/library/ms682022.aspx
 	void clearScreen() {
-		Stdout.stream.flush;
+		Sout.flush;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -71,7 +63,7 @@ version (Win32) {
 		goHome();
 	}
 	void clearToEOL() {
-		Stdout.stream.flush;
+		Sout.flush;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -90,7 +82,7 @@ version (Win32) {
 			return reverse();
 	}
 	void clearToEOS() {
-		Stdout.stream.flush;
+		Sout.flush;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -110,7 +102,7 @@ version (Win32) {
 	}
 
 	void goDown() {
-		auto n = ip.stack.pop;
+		auto n = cip.stack.pop;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -118,7 +110,7 @@ version (Win32) {
 		xy(csbi.dwCursorPosition.X, csbi.dwCursorPosition.Y + n);
 	}
 	void goUp() {
-		auto n = ip.stack.pop;
+		auto n = cip.stack.pop;
 
 		if (!GetConsoleScreenBufferInfo(stdout, &csbi))
 			return reverse();
@@ -129,12 +121,12 @@ version (Win32) {
 		xy(0, 0);
 	}
 	void gotoXY() {
-		auto y = ip.stack.pop;
-		xy(ip.stack.pop, y);
+		auto y = cip.stack.pop;
+		xy(cip.stack.pop, y);
 	}
 
 	private void xy(DWORD x, DWORD y) {
-		Stdout.stream.flush;
+		Sout.flush;
 
 		if (!SetConsoleCursorPosition(stdout, COORD(x, y)))
 			reverse();
@@ -226,4 +218,6 @@ version (Win32) {
 		else
 			reverse();
 	}+/
+}
+
 }
