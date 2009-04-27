@@ -36,7 +36,8 @@ public import
 	ccbi.fingerprints.rcfunge98.sock,
 	ccbi.fingerprints.rcfunge98.strn,
 	ccbi.fingerprints.rcfunge98.subr,
-	ccbi.fingerprints.rcfunge98.time;
+	ccbi.fingerprints.rcfunge98.time,
+	ccbi.fingerprints.rcfunge98.trds;
 
 alias Tuple!(
 	// Cat's Eye
@@ -48,7 +49,7 @@ alias Tuple!(
 
 	// RC/Funge-98
 	"BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP", "FPSP",
-	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", "TIME",
+	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", "TIME", "TRDS",
 
 	// GLfunge98
 	"SCKE" // Uses stuff from SOCK: must be after it in this list!
