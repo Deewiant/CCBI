@@ -17,7 +17,7 @@ import tango.core.Traits          : isSignedIntegerType, isUnsignedIntegerType;
 import tango.io.Console           : Cin;
 import tango.math.Math            : min;
 import tango.text.convert.Integer : parse, convert;
-import tango.text.Ascii           : toLower;
+import tango.text.Ascii           : icompare, toLower;
 import tango.text.Util            : split;
 
 import ccbi.container;
@@ -245,8 +245,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			input = last;
 
 		auto args = words(input);
-		foreach (arg; args)
-			toLower(arg);
+		toLower(args[0]);
 
 		switch (args[0]) {
 			case "h", "hlp", "?", "help": Serr(DEBUGHELP ).newline; break;
@@ -736,8 +735,8 @@ bool read(T)(inout T n, char[] s) {
 
 bool readBool(inout bool b, char[] s) {
 	if (!s) return true;
-	if (s == "true"  || s == "1") { b = true;  return true; }
-	if (s == "false" || s == "0") { b = false; return true; }
+	if (!icompare(s, "true")  || s == "1") { b = true;  return true; }
+	if (!icompare(s, "false") || s == "0") { b = false; return true; }
 
 	Serr('\'')(s)("' is not a valid boolean value.").newline;
 	return false;
