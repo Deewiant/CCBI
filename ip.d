@@ -52,6 +52,10 @@ final class IP(cell dim) {
 			);
 		}
 		stack = stackStack.top;
+
+		// deep copy semantics
+		foreach (i, inout sem; semantics)
+			sem = new typeof(sem)(o.semantics[i]);
 	}
 
 	void move() {
@@ -116,14 +120,11 @@ final class IP(cell dim) {
 	cell id = void, parentID = void;
 
 	// timeStopper for TRDS
-	static cell
-		currentID   = CURRENTID_INIT,
-		timeStopper = TIMESTOPPER_INIT;
+	// TODO: should be in the VM, not static here
+	static cell currentID = CURRENTID_INIT;
 
 	// thanks to the new .init behaviour in 2.001 / 1.017...
-	static const cell
-		CURRENTID_INIT   = 0,
-		TIMESTOPPER_INIT = cell.max;
+	static const cell CURRENTID_INIT = 0;
 
 	Container!(cell)      stack;
 	Stack!(typeof(stack)) stackStack;
@@ -154,6 +155,6 @@ final class IP(cell dim) {
 	bool timerMarked = false;
 
 	// for TRDS
-	Coords tardis, tardisReturn, tardisDelta, tardisReturnDelta;
-	cell tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
+	Coords tardisPos, tardisReturnPos, tardisDelta, tardisReturnDelta;
+	long tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
 }

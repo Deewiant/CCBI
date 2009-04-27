@@ -40,28 +40,53 @@ struct Coords(cell dim) {
 	   return c;
 	}
 
-	template OpAssigns(T...) {
+	int opEquals(cell c) {
+		static if (dim >= 3) if (z != c) return false;
+		static if (dim >= 2) if (y != c) return false;
+		return x == c;
+	}
+	int opEquals(Coords c) {
+		static if (dim >= 3) if (z != c.z) return false;
+		static if (dim >= 2) if (y != c.y) return false;
+		return x == c.x;
+	}
+
+	template Ops(T...) {
 		static assert (T.length != 1);
 
 		static if (T.length == 0)
-			const char[] OpAssigns = "";
+			const Ops = "";
 		else
-			const char[] OpAssigns =
-				"void op" ~T[0]~ "Assign(cell c) {
+			const Ops =
+				"Coords op" ~T[0]~ "(cell c) {
+					Coords co = *this;
+					                     co.x "~T[1]~"= c;
+					static if (dim >= 2) co.y "~T[1]~"= c;
+					static if (dim >= 3) co.y "~T[1]~"= c;
+					return co;
+				}
+				void op" ~T[0]~ "Assign(cell c) {
 					                     x "~T[1]~"= c;
 					static if (dim >= 2) y "~T[1]~"= c;
 					static if (dim >= 3) z "~T[1]~"= c;
 				}
 
+				Coords op" ~T[0]~ "(Coords c) {
+					Coords co = *this;
+					                     co.x "~T[1]~"= c.x;
+					static if (dim >= 2) co.y "~T[1]~"= c.y;
+					static if (dim >= 3) co.z "~T[1]~"= c.z;
+					return co;
+				}
 				void op" ~T[0]~ "Assign(Coords c) {
 					                     x "~T[1]~"= c.x;
 					static if (dim >= 2) y "~T[1]~"= c.y;
 					static if (dim >= 3) z "~T[1]~"= c.z;
 				}"
-				~ OpAssigns!(T[2..$]);
+				~ Ops!(T[2..$]);
 	}
 
-	mixin (OpAssigns!(
+	mixin (Ops!(
 		"Mul", "*",
 		"Add", "+",
 		"Sub", "-"

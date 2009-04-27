@@ -2,25 +2,24 @@
 
 // File created: 2007-01-20 21:14:41
 
-module ccbi.fingerprints.rcfunge98.indv; private:
+module ccbi.fingerprints.rcfunge98.indv;
 
 import ccbi.fingerprint;
-import ccbi.ip;
-import ccbi.space;
-import ccbi.utils;
 
 // 0x494e4456: INDV
 // Pointer functions
 // -----------------
 
-static this() {
-	mixin (Code!("INDV"));
+mixin (Fingerprint!(
+	"INDV",
 
-	fingerprints[INDV]['G'] =& getNum;
-	fingerprints[INDV]['P'] =& putNum;
-	fingerprints[INDV]['V'] =& getVec;
-	fingerprints[INDV]['W'] =& putVec;
-}
+	"G", "getNum",
+	"P", "putNum",
+	"V", "getVec",
+	"W", "putVec"
+));
+
+// FIXME: decipher this and correct this
 
 // get vector off of stack,,,,apply storage offset,,,,retrieve vector from
 // funge-space,,,,apply storage offset,,,,retrieve vector from funge-space to
@@ -32,48 +31,45 @@ static this() {
 // is....
 
 // the final data read or written is not modified by the storage offset...
-// only the 2 pointer vectors are... 
+// only the 2 pointer vectors are...
+
+template INDV() {
+
+Coords getIndirect() {
+	Coords c = popOffsetVector();
+
+	Coords c2;
+	static if (dim >= 3) { c2.z = space[c]; ++c.x; }
+	static if (dim >= 2) { c2.y = space[c]; ++c.x; }
+	                       c2.x = space[c];
+
+	return c2;
+}
 
 void getNum() {
-	cellidx x, y;
-	popVector(x, y);
-
-	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x,                y];
-
-	ip.stack.push(space[x2, y2]);
+	cip.stack.push(space[getIndirect()]);
 }
 
 void putNum() {
-	cellidx x, y;
-	popVector(x, y);
-
-	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x,                y];
-
-	space[x2, y2] = ip.stack.pop;
+	Coords c = getIndirect();
+	space[c] = cip.stack.pop;
 }
 
 void getVec() {
-	cellidx x, y;
-	popVector(x, y);
+	Coords c = getIndirect();
 
-	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x,                y];
-
-	ip.stack.push(
-		space[x2+cast(cellidx)1, y2],
-		space[x2,                y2]
-	);
+	c.x += dim-1;
+	static if (dim >= 3) { cip.stack.push(space[c]); --c.x; }
+	static if (dim >= 2) { cip.stack.push(space[c]); --c.x; }
+	                       cip.stack.push(space[c]);
 }
 
 void putVec() {
-	cellidx x, y;
-	popVector(x, y);
+	Coords c = getIndirect();
 
-	cellidx x2 = cast(cellidx)space[x+cast(cellidx)1, y],
-	        y2 = cast(cellidx)space[x,                y];
+	                              space[c] = cip.stack.pop;
+	static if (dim >= 2) { ++c.x; space[c] = cip.stack.pop; }
+	static if (dim >= 3) { ++c.x; space[c] = cip.stack.pop; }
+}
 
-	space[x2,                y2] = ip.stack.pop;
-	space[x2+cast(cellidx)1, y2] = ip.stack.pop;
 }

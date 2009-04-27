@@ -2,33 +2,37 @@
 
 // File created: 2008-08-09 20:43:40
 
-module ccbi.fingerprints.rcfunge98.date; private:
+module ccbi.fingerprints.rcfunge98.date;
+
+import ccbi.fingerprint;
+
+// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
+import tango.time.chrono.Gregorian;
+
+// 0x44415445: DATE
+// Date Functions
+// --------------
+
+mixin (Fingerprint!(
+	"DATE",
+
+	"A", "addDays",
+	"C", "jdnToYmd",
+	"D", "dayDiff",
+	"J", "ymdToJdn",
+	"T", "yearDayToFull",
+	"W", "weekDay",
+	"Y", "yearDay"
+));
+
+template DATE() {
 
 import tango.math.Math : floor;
 import tango.time.Time;
 import tango.time.chrono.Gregorian;
 
-import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-
-// 0x44415445: DATE
-// Date Functions
-// --------------
-static this() {
-	mixin (Code!("DATE"));
-
-	fingerprints[DATE]['A'] =& addDays;
-	fingerprints[DATE]['C'] =& jdnToYmd;
-	fingerprints[DATE]['D'] =& dayDiff;
-	fingerprints[DATE]['J'] =& ymdToJdn;
-	fingerprints[DATE]['T'] =& yearDayToFull;
-	fingerprints[DATE]['W'] =& weekDay;
-	fingerprints[DATE]['Y'] =& yearDay;
-}
-
 Time popYMD() {
-	with (ip.stack) {
+	with (cip.stack) {
 		cell
 			day   = pop(),
 			month = pop(),
@@ -50,7 +54,7 @@ Time popYMD() {
 }
 
 void pushYMD(Time time) {
-	ip.stack.push(
+	cip.stack.push(
 		getYear(time),
 		cast(cell)Gregorian.generic.getMonth(time),
 		cast(cell)Gregorian.generic.getDayOfMonth(time)
@@ -69,7 +73,7 @@ uint absY(cell year) { return cast(uint)(year < 0 ? -year : year); }
 uint era (cell year) { return year < 0 ? Gregorian.BC_ERA : Gregorian.AD_ERA; }
 
 void addDays() {
-	cell days = ip.stack.pop();
+	cell days = cip.stack.pop();
 
 	try {
 		auto time = popYMD();
@@ -81,12 +85,12 @@ void addDays() {
 void dayDiff() {
 	try {
 		auto t2 = popYMD().span, t1 = popYMD().span;
-		ip.stack.push(cast(cell)((t1 -= t2).days));
+		cip.stack.push(cast(cell)((t1 -= t2).days));
 	} catch {}
 }
 
 void jdnToYmd() {
-	auto j = ip.stack.pop();
+	auto j = cip.stack.pop();
 
 	auto time = Gregorian.generic.toTime(4714,11,24, 12,0,0,0, Gregorian.BC_ERA);
 	time += TimeSpan.fromDays(j);
@@ -100,12 +104,12 @@ void ymdToJdn() {
 			t = popYMD().span,
 			epoch = Gregorian.generic.toTime(4714,11,24, 0,0,0,0, Gregorian.BC_ERA).span;
 
-		ip.stack.push(cast(cell)(t - epoch).days);
+		cip.stack.push(cast(cell)(t - epoch).days);
 	} catch {}
 }
 
 void yearDayToFull() {
-	with (ip.stack) {
+	with (cip.stack) {
 		auto
 			doy  = pop()+1,
 			year = pop();
@@ -126,11 +130,13 @@ void yearDayToFull() {
 }
 
 void weekDay() {
-	try ip.stack.push(cast(cell)((Gregorian.generic.getDayOfWeek(popYMD())-1) % 7));
+	try cip.stack.push(cast(cell)((Gregorian.generic.getDayOfWeek(popYMD())-1) % 7));
 	catch {}
 }
 
 void yearDay() {
-	try ip.stack.push(cast(cell) (Gregorian.generic.getDayOfYear(popYMD())-1));
+	try cip.stack.push(cast(cell) (Gregorian.generic.getDayOfYear(popYMD())-1));
 	catch {}
+}
+
 }

@@ -2,28 +2,30 @@
 
 // File created: 2007-01-20 21:13:43
 
-module ccbi.fingerprints.rcfunge98.dirf; private:
+module ccbi.fingerprints.rcfunge98.dirf;
 
+import ccbi.fingerprint;
+
+// Both WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 import tango.io.FilePath;
 import tango.io.FileSystem;
-
-import ccbi.cell;
-import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.utils;
 
 // 0x44495246: DIRF
 // Directory functions extension
 // -----------------------------
-static this() {
-	mixin (Code!("DIRF"));
 
-	fingerprints[DIRF]['C'] =& changeDir;
-	fingerprints[DIRF]['M'] =& makeDir;
-	fingerprints[DIRF]['R'] =& removeDir;
-	
-	fingerprintConstructors[DIRF] =& ctor;
-}
+mixin (Fingerprint!(
+	"DIRF",
+
+	"C", "changeDir",
+	"M", "makeDir",
+	"R", "removeDir"
+));
+
+template DIRF() {
+
+import tango.io.FilePath;
+import tango.io.FileSystem;
 
 FilePath path;
 
@@ -53,4 +55,6 @@ void removeDir() {
 		else
 			reverse();
 	} catch { reverse(); }
+}
+
 }

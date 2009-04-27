@@ -1015,6 +1015,8 @@ void loadSemantics() {
 	}
 
 	cip.stack.push(fingerprint, 1);
+
+	loadedFingerprint(fingerprint);
 }
 
 // Unload Semantics
@@ -1032,7 +1034,7 @@ void unloadSemantics() {
 
 	foreach (i; ins) {
 		assert (isSemantics(cast(cell)i));
-		cip.semantics[i - 'A'].pop(1);
+		unloadedFingerprintIns(cip.semantics[i - 'A'].pop.fingerprint);
 	}
 }
 

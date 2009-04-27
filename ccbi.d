@@ -21,7 +21,7 @@ import ccbi.fungemachine;
 import ccbi.templateutils;
 import ccbi.utils;
 
-//import ccbi.fingerprints.cats_eye.turt : turtFile = filename, TURT_FILE_INIT;
+import ccbi.fingerprints.cats_eye.turt : TURT_FILE_INIT;
 
 const char[]
 	HELP = VERSION_STRING ~ `
@@ -60,7 +60,7 @@ ARGS may be one or more of:
 
  -d, --draw-to           Use the following argument as the file name written to
                          in the I instruction of the TURT fingerprint. The
-                         default is ` ~ /*TURT_FILE_INIT*/`` ~ `.
+                         default is ` ~ TURT_FILE_INIT ~ `.
 
  -i, --implementation    Show some implementation details and exit.
 

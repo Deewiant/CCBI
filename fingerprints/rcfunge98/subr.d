@@ -2,30 +2,27 @@
 
 // File created: 2007-01-20 21:14:58
 
-module ccbi.fingerprints.rcfunge98.subr; private:
+module ccbi.fingerprints.rcfunge98.subr;
 
 import ccbi.fingerprint;
-import ccbi.instructions : goEast;
-import ccbi.ip;
-import ccbi.utils;
 
 // 0x53554252: SUBR
 // Subroutine extension
 // --------------------
 
-static this() {
-	mixin (Code!("SUBR"));
+mixin (Fingerprint!(
+	"SUBR",
 
-	fingerprints[SUBR]['A'] =& absolute;
-	fingerprints[SUBR]['C'] =& call;
-	fingerprints[SUBR]['J'] =& jump;
-	fingerprints[SUBR]['O'] =& relative;
-	fingerprints[SUBR]['R'] =& ret;
+	"A", "absolute",
+	"C", "call",
+	"J", "jump",
+	"O", "relative",
+	"R", "ret"
+));
 
-	fingerprintConstructors[SUBR] =& cons;
-}
+template SUBR() {
 
-void cons() {
+void ctor() {
 	if (!callStack.length)
 		callStack.length = 8;
 }
@@ -33,62 +30,60 @@ void cons() {
 cell[] callStack;
 size_t cs;
 
-private void push(cell n) {
+void push(cell n) {
 	if (cs == callStack.length)
 		callStack.length = callStack.length * 2;
 
 	callStack[cs++] = n;
 }
 
-private cell pop() {
-	return callStack[--cs];
-}
+cell pop() { return callStack[--cs]; }
 
-void absolute() { ip.mode &= ~IP.SUBR_RELATIVE; }
-void relative() { ip.mode |=  IP.SUBR_RELATIVE; }
+void absolute() { cip.mode &= ~IP.SUBR_RELATIVE; }
+void relative() { cip.mode |=  IP.SUBR_RELATIVE; }
 
-private void subrPopVector(out cellidx x, out cellidx y) {
-	if (ip.mode & IP.SUBR_RELATIVE)
-		popVector        (x, y);
+Coords subrPopVector() {
+	if (cip.mode & IP.SUBR_RELATIVE)
+		return popOffsetVector;
 	else
-		popVector!(false)(x, y);
+		return popVector;
 }
 
-void call() {
-	auto n = cast(size_t)ip.stack.pop;
-	cellidx x, y;
-	subrPopVector(x, y);
+Request call() {
+	auto n = cast(size_t)cip.stack.pop;
+	Coords c = subrPopVector();
 
 	for (size_t i = 0; i < n; ++i)
-		push(ip.stack.pop());
+		push(cip.stack.pop());
 
-	pushVector!(false)(ip. x, ip. y);
-	pushVector!(false)(ip.dx, ip.dy);
+	pushVector(cip.pos);
+	pushVector(cip.delta);
 
 	while (n--)
-		ip.stack.push(pop());
+		cip.stack.push(pop());
 
-	ip.x = x;
-	ip.y = y;
-	goEast();
-	needMove = false;
+	cip.pos = c;
+	reallyGoEast();
+	return Request.NONE;
 }
 
-void jump() {
-	subrPopVector(ip.x, ip.y);
-	goEast();
-	needMove = false;
+Request jump() {
+	cip.pos = subrPopVector();
+	reallyGoEast();
+	return Request.NONE;
 }
 
 void ret() {
-	auto n = cast(size_t)ip.stack.pop;
+	auto n = cast(size_t)cip.stack.pop;
 
 	for (size_t i = 0; i < n; ++i)
-		push(ip.stack.pop());
+		push(cip.stack.pop());
 
-	popVector!(false)(ip.dx, ip.dy);
-	popVector!(false)(ip. x, ip. y);
+	popVector(cip.delta);
+	popVector(cip.pos);
 
 	while (n--)
-		ip.stack.push(pop());
+		cip.stack.push(pop());
+}
+
 }

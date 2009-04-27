@@ -7,10 +7,60 @@ import tango.core.Tuple;
 import ccbi.cell;
 import ccbi.templateutils;
 public import
+	ccbi.fingerprints.cats_eye.hrti,
+	ccbi.fingerprints.cats_eye.mode,
+	ccbi.fingerprints.cats_eye.modu,
 	ccbi.fingerprints.cats_eye.null_,
-	ccbi.fingerprints.cats_eye.roma;
+	ccbi.fingerprints.cats_eye.orth,
+	ccbi.fingerprints.cats_eye.perl,
+	ccbi.fingerprints.cats_eye.refc,
+	ccbi.fingerprints.cats_eye.roma,
+	ccbi.fingerprints.cats_eye.toys,
+	ccbi.fingerprints.cats_eye.turt,
+	ccbi.fingerprints.glfunge98.scke,
+	ccbi.fingerprints.jvh.jstr,
+	ccbi.fingerprints.jvh.ncrs,
+	ccbi.fingerprints.rcfunge98.base,
+	ccbi.fingerprints.rcfunge98.cpli,
+	ccbi.fingerprints.rcfunge98.date,
+	ccbi.fingerprints.rcfunge98.dirf,
+	ccbi.fingerprints.rcfunge98.evar,
+	ccbi.fingerprints.rcfunge98.file,
+	ccbi.fingerprints.rcfunge98.fixp,
+	ccbi.fingerprints.rcfunge98.fpdp,
+	ccbi.fingerprints.rcfunge98.fpsp,
+	ccbi.fingerprints.rcfunge98.frth,
+	ccbi.fingerprints.rcfunge98.iipc,
+	ccbi.fingerprints.rcfunge98.imap,
+	ccbi.fingerprints.rcfunge98.indv,
+	ccbi.fingerprints.rcfunge98.sock,
+	ccbi.fingerprints.rcfunge98.strn,
+	ccbi.fingerprints.rcfunge98.subr,
+	ccbi.fingerprints.rcfunge98.term,
+	ccbi.fingerprints.rcfunge98.time,
+	ccbi.fingerprints.rcfunge98.trds;
 
-alias Tuple!("NULL", "ROMA") ALL_FINGERPRINTS;
+version (Win32) alias Tuple!("TERM") TERM;
+else            alias Tuple!() TERM;
+
+alias Tuple!(
+	// Cat's Eye
+	"HRTI", "MODE", "MODU", "NULL", "ORTH", "PERL", "REFC", "ROMA", "TOYS",
+	"TURT",
+
+	// Jesse van Herk
+	"JSTR", "NCRS",
+
+	// RC/Funge-98
+	"BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP", "FPSP",
+	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", TERM, "TIME",
+	"TRDS",
+
+	// GLfunge98
+	"SCKE" // Uses stuff from SOCK: must be after it in this list!
+) ALL_FINGERPRINTS;
+
+// TODO: can't these be made to use ConcatMap? Either here or at the caller
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below instructionsOf
@@ -33,6 +83,76 @@ char[] instructionsOf(cell fingerprint) {
 		FingerprintInstructionsCases!(ALL_FINGERPRINTS),
 		"default: return null;"
 	));
+}
+
+// Each fingerprint may have a constructor and a destructor. We keep track of
+// how many instructions of that fingerprint are loaded. If the count is at
+// zero when the fingerprint is loaded, we call the constructor. Likewise, if
+// the number of instructions drops back to zero the destructor is called.
+//
+// The count is local to the FungeMachine: there are (at least currently) no
+// static fingerprint constructors/destructors.
+
+// <fingerprint>_count if the fingerprint has a constructor
+template FingerprintCount(char[] fing) {
+	const FingerprintCount =
+		"static if (is(typeof(" ~fing~ ".ctor))) {
+			uint " ~fing~ "_count;
+		}";
+}
+
+// foreach fingerprint:
+// 	static if (is(typeof(<fingerprint>.ctor))) {
+// 		case HexCode!("<fingerprint>"):
+// 			if (<fingerprint>_count == 0)
+// 				<fingerprint>.ctor;
+// 			<fingerprint>_count += <fingerprint>Instructions!().length;
+// 	}
+template FingerprintConstructorCases(fing...) {
+	static if (fing.length == 0)
+		const FingerprintConstructorCases = "";
+	else {
+		const FingerprintConstructorCases =
+			"static if (is(typeof(" ~fing[0]~ ".ctor))) {
+				case " ~ToString!(HexCode!(fing[0])) ~":
+					if (" ~fing[0]~"_count == 0)
+						" ~fing[0]~ ".ctor;
+					" ~fing[0]~"_count += "~fing[0]~"Instructions!().length;
+					break;
+			}"
+			~ FingerprintConstructorCases!(fing[1..$]);
+	}
+}
+
+// foreach fingerprint:
+// 	static if (is(typeof(<fingerprint>.ctor))) {
+// 		case HexCode!("<fingerprint>"):
+// 			--<fingerprint>_count;
+// 			assert (<fingerprint>_count >= 0);
+//
+// 			static if (is(typeof(<fingerprint>.dtor))) {
+// 				if (<fingerprint>_count == 0)
+// 					<fingerprint>.dtor;
+// 			}
+// 	}
+template FingerprintDestructorCases(fing...) {
+	static if (fing.length == 0)
+		const FingerprintDestructorCases = "";
+	else {
+		const FingerprintDestructorCases =
+			"static if (is(typeof(" ~fing[0]~ ".ctor))) {
+				case " ~ToString!(HexCode!(fing[0])) ~":
+					--" ~fing[0]~"_count;
+					assert (" ~fing[0]~"_count >= 0);
+
+					static if (is(typeof(" ~fing[0]~ ".dtor))) {
+						if (" ~fing[0]~"_count == 0)
+							" ~fing[0]~ ".dtor;
+					}
+					break;
+			}"
+			~ FingerprintDestructorCases!(fing[1..$]);
+	}
 }
 
 // foreach fingerprint:
