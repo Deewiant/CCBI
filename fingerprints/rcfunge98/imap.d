@@ -2,43 +2,45 @@
 
 // File created: 2007-01-20 21:14:36
 
-module ccbi.fingerprints.rcfunge98.imap; private:
+module ccbi.fingerprints.rcfunge98.imap;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
 
 // 0x494d4150: IMAP
 // Instruction remap extension
 // ---------------------------
 
-static this() {
-	mixin (Code!("IMAP"));
+mixin (Fingerprint!(
+	"IMAP",
 
-	fingerprints[IMAP]['C'] =& unmapAll;
-	fingerprints[IMAP]['M'] =& remap;
-	fingerprints[IMAP]['O'] =& unmap;
-}
+	"C", "unmapAll",
+	"M", "remap",
+	"O", "unmap"
+));
+
+template IMAP() {
 
 void remap() {
-	auto old = ip.stack.pop;
-	if (old >= 0 && old < ip.mapping.length)
-		ip.mapping[old] = ip.stack.pop;
+	auto old = cip.stack.pop;
+	if (old >= 0 && old < cip.mapping.length)
+		cip.mapping[old] = cip.stack.pop;
 	else {
-		ip.stack.pop(1);
+		cip.stack.pop(1);
 		reverse();
 	}
 }
 
 void unmap() {
-	auto i = ip.stack.pop;
-	if (i >= 0 && i < ip.mapping.length)
-		ip.mapping[i] = i;
+	auto i = cip.stack.pop;
+	if (i >= 0 && i < cip.mapping.length)
+		cip.mapping[i] = i;
 	else
 		reverse();
 }
 
 void unmapAll() {
-	foreach (j, inout i; ip.mapping)
+	foreach (j, inout i; cip.mapping)
 		i = cast(cell)j;
+}
+
 }
