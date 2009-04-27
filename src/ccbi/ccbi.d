@@ -290,6 +290,7 @@ int main(char[][] args) {
 	}
 
 	auto filePos = size_t.max;
+	auto progName = args[0];
 	args = args[1..$];
 
 	Flags flags;
@@ -355,7 +356,7 @@ int main(char[][] args) {
 				break;
 			default:
 				if (arg.help()) {
-					Stderr.formatln(HELP, args[0]);
+					Stderr.formatln(HELP, progName);
 					return 1;
 				} else {
 					filePos = i;
