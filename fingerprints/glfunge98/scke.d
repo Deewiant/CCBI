@@ -2,47 +2,45 @@
 
 // File created: 2007-01-20 21:19:40
 
-module ccbi.fingerprints.glfunge98.scke; private:
-
-import tango.net.Socket;
-import tango.time.Time;
+module ccbi.fingerprints.glfunge98.scke;
 
 import ccbi.fingerprint;
-import ccbi.instructions : reverse;
-import ccbi.ip;
-import ccbi.utils;
-
-import ccbi.fingerprints.rcfunge98.sock : sockets;
 
 // 0x53434b45: SCKE
 // ----------------
 
-static this() {
-	mixin (Code!("SCKE"));
+mixin (Fingerprint!(
+	"SCKE",
 
-	fingerprints[SCKE]['H'] =& getHostByName;
-	fingerprints[SCKE]['P'] =& peek;
+	"H", "getHostByName",
+	"P", "peek"
+));
 
+template SCKE() {
+
+alias SOCK.sockets sockets;
+
+void ctor() {
 	if (!ss)
 		ss = new SocketSet(1);
 }
 
+SocketSet ss;
+
 void getHostByName() {
 	auto h = new NetHost;
 
-	try if (!h.getHostByName(cast(char[])popString()))
+	try if (!h.getHostByName(popString()))
 		return reverse();
 	catch {
 		return reverse();
 	}
 
-	ip.stack.push(cast(cell)h.addrList[0]);
+	cip.stack.push(cast(cell)h.addrList[0]);
 }
 
-SocketSet ss;
-
 void peek() {
-	auto s = cast(size_t)ip.stack.pop;
+	auto s = cast(size_t)cip.stack.pop;
 
 	if (s >= sockets.length || !sockets[s])
 		return reverse();
@@ -55,5 +53,7 @@ void peek() {
 	if (n == -1)
 		reverse();
 	else
-		ip.stack.push(cast(cell)n);
+		cip.stack.push(cast(cell)n);
+}
+
 }
