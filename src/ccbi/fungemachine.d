@@ -55,12 +55,9 @@ private:
 	alias .FungeSpace!(dim)                   FungeSpace;
 	alias .Dimension !(dim).Coords            InitCoords;
 
-	static if (TupleHas!("TRDS", ALL_FINGERPRINTS)) enum { GOT_TRDS = true  }
-	else                                            enum { GOT_TRDS = false }
-	static if (TupleHas!("IIPC", ALL_FINGERPRINTS)) enum { GOT_IIPC = true  }
-	else                                            enum { GOT_IIPC = false }
-	static if (TupleHas!("IMAP", ALL_FINGERPRINTS)) enum { GOT_IMAP = true  }
-	else                                            enum { GOT_IMAP = false }
+	mixin (EmitGot!("IIPC", ALL_FINGERPRINTS));
+	mixin (EmitGot!("IMAP", ALL_FINGERPRINTS));
+	mixin (EmitGot!("TRDS", ALL_FINGERPRINTS));
 
 	IP[] ips;
 	IP   cip;

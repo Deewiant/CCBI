@@ -13,17 +13,17 @@ public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
        import ccbi.space;
-       import ccbi.templateutils : TupleHas;
+       import ccbi.templateutils : EmitGot;
        import ccbi.utils;
 
 final class IP(cell dim, fings...) {
 	alias   .Coords!(dim) Coords;
 	alias Dimension!(dim).Coords InitCoords;
 
-	static if (TupleHas!("IIPC", fings)) enum { GOT_IIPC = true  }
-	else                                 enum { GOT_IIPC = false }
-	static if (TupleHas!("IMAP", fings)) enum { GOT_IMAP = true  }
-	else                                 enum { GOT_IMAP = false }
+	mixin (EmitGot!("HRTI", fings));
+	mixin (EmitGot!("IIPC", fings));
+	mixin (EmitGot!("IMAP", fings));
+	mixin (EmitGot!("TRDS", fings));
 
 	this(FungeSpace!(dim) s) {
 		id = 0;
@@ -159,12 +159,12 @@ final class IP(cell dim, fings...) {
 
 	ushort mode = 0;
 
-	static if (TupleHas!("HRTI", fings)) {
+	static if (GOT_HRTI) {
 		StopWatch timer;
 		bool timerMarked = false;
 	}
 
-	static if (TupleHas!("TRDS", fings)) {
+	static if (GOT_TRDS) {
 		Coords tardisPos, tardisReturnPos, tardisDelta, tardisReturnDelta;
 		long tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
 	}
