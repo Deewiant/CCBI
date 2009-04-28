@@ -65,7 +65,7 @@ unittest {
 	assert (getInt(-16383_9999) == 16383);
 }
 
-char[] toString(tc n) {
+char[] tcToString(tc n) {
 	static assert (MIN >= -99999_9999 && MAX <= 99999_9999);
 
 	static char[11] buf;
@@ -409,10 +409,10 @@ void printDrawing() {
 		height = turt.pic.max.y + PADDING - (turt.pic.min.y - PADDING);
 
 	auto
-		minX    = toString(turt.pic.min.x - PADDING).dup,
-		minY    = toString(turt.pic.min.y - PADDING).dup,
-		widthS  = toString(width).dup,
-		heightS = toString(height).dup;
+		minX    = tcToString(turt.pic.min.x - PADDING).dup,
+		minY    = tcToString(turt.pic.min.y - PADDING).dup,
+		widthS  = tcToString(width).dup,
+		heightS = tcToString(height).dup;
 
 	auto viewBox =
 		minX   ~ " " ~
@@ -499,9 +499,9 @@ void printDrawing() {
 
 					path = newPath(p.colour);
 					pathdata = "M";
-					pathdata ~= toString(prev.p.x);
+					pathdata ~= tcToString(prev.p.x);
 					pathdata ~= ",";
-					pathdata ~= toString(prev.p.y);
+					pathdata ~= tcToString(prev.p.y);
 					pathdata ~= " ";
 					pathdata ~= NewlineString;
 					i = 0;
@@ -515,9 +515,9 @@ void printDrawing() {
 				pathdata ~= "M";
 
 			if (drawing) {
-				pathdata ~= toString(p.p.x);
+				pathdata ~= tcToString(p.p.x);
 				pathdata ~= ",";
-				pathdata ~= toString(p.p.y);
+				pathdata ~= tcToString(p.p.y);
 				pathdata ~= " ";
 			}
 		}
@@ -532,10 +532,10 @@ void printDrawing() {
 	foreach (dot, colour; turt.pic.dots) {
 
 		auto dotElem = root
-  			.element  (null, "circle")
-  			.attribute(null, "cx",   toString(dot.x).dup)
-  			.attribute(null, "cy",   toString(dot.y).dup)
-  			.attribute(null, "r",    ".00005");
+			.element  (null, "circle")
+			.attribute(null, "cx",   tcToString(dot.x).dup)
+			.attribute(null, "cy",   tcToString(dot.y).dup)
+			.attribute(null, "r",    ".00005");
 
 		auto colourS = toCSSColour(colour);
 
