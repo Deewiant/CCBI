@@ -23,6 +23,11 @@ mixin (Fingerprint!(
 
 template IIPC() {
 
+// FungeMachine callback
+bool executable(IP ip) {
+	return !(ip.mode & IP.DORMANT);
+}
+
 IP findIP(cell id) {
 	// We could use a binary search if it weren't for TRDS
 	foreach (ip; ips)
