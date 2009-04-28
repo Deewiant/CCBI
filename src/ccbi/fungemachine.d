@@ -55,6 +55,11 @@ private:
 	alias .FungeSpace!(dim)        FungeSpace;
 	alias .Dimension !(dim).Coords InitCoords;
 
+	static if (is(typeof(this.TRDS)))
+		enum { GOT_TRDS = true  }
+	else
+		enum { GOT_TRDS = false }
+
 	IP[] ips;
 	IP   cip;
 	IP   tip; // traced IP
@@ -76,16 +81,24 @@ private:
 	public this(File source, Flags f) {
 		flags = f;
 
-		initialSpace = new FungeSpace(source);
+		static if (GOT_TRDS)
+			alias TRDS.initialSpace firstSpace;
+		else
+			alias space firstSpace;
+
+		firstSpace = new FungeSpace(source);
+
 		ips.length = 1;
 		reboot();
 	}
 
 	void reboot() {
-		if (flags.fingerprintsEnabled)
-			space = new typeof(space)(initialSpace);
-		else
-			space = initialSpace;
+		static if (GOT_TRDS) {
+			if (flags.fingerprintsEnabled)
+				space = new typeof(space)(initialSpace);
+			else
+				space = initialSpace;
+		}
 
 		tip = ips[0] = new IP(space);
 		if (
@@ -116,7 +129,10 @@ private:
 	}
 
 	bool executeTick() {
-		bool normalTime = timeStopper is null; // TRDS
+		static if (GOT_TRDS)
+			bool normalTime = TRDS.isNormalTime();
+		else
+			const bool normalTime = true;
 
 		if (flags.tracing && !Tracer.doTrace())
 			return false;
@@ -135,9 +151,11 @@ private:
 					}
 					break;
 
+			static if (GOT_TRDS) {
 				case Request.TIMEJUMP:
 					TRDS.timeJump(cip);
 					return true;
+			}
 
 				case Request.MOVE:
 					cip.move();
@@ -151,7 +169,8 @@ private:
 		if (normalTime) {
 			++tick;
 
-			TRDS.newTick();
+			static if (GOT_TRDS)
+				TRDS.newTick();
 		}
 		return true;
 	}
@@ -282,7 +301,7 @@ private:
 		Tracer.ipStopped(ip);
 
 		if (flags.fingerprintsEnabled)
-			static if (is(typeof(TRDS)))
+			static if (GOT_TRDS)
 				TRDS.ipStopped(ip);
 
 		ips.removeAt(idx);
@@ -290,13 +309,23 @@ private:
 	}
 
 	bool executable(bool normalTime, IP ip) {
-		return
-			ips.length == 1 || (
-				flags.fingerprintsEnabled &&
-				(normalTime || timeStopper is ip) &&
-				tick >= ip.jumpedTo &&
-				!(ip.mode & ip.DORMANT)
-			);
+		if (ips.length == 1)
+			return true;
+
+		static if (GOT_TRDS || is(typeof(this.IIPC))) {
+			if (!flags.fingerprintsEnabled)
+				return true;
+		}
+
+		static if (GOT_TRDS) {
+			if (!TRDS.executable(normalTime, ip))
+				return false;
+		}
+		static if (is(typeof(IIPC))) {
+			if (!IIPC.executable(ip))
+				return false;
+		}
+		return true;
 	}
 
 	void warn(char[] fmt, ...) {

@@ -567,22 +567,29 @@ void put() {
 // Output Decimal
 void outputDecimal() {
 	auto n = cip.stack.pop;
-	if (tick >= printAfter) {
-		Sout(n);
-		ubyte c = ' ';
-		Cout.write(c);
-	}
+
+	static if (GOT_TRDS)
+		if (tick < printAfter)
+			return;
+
+	Sout(n);
+	ubyte c = ' ';
+	Cout.write(c);
 }
 
 // Output Character
 void outputCharacter() {
 	auto c = cast(ubyte)cip.stack.pop;
-	if (tick >= printAfter) {
-		if (c == '\n')
-			Sout.newline;
-		else
-			Cout.write(c);
-	}
+
+	static if (GOT_TRDS)
+		if (tick < printAfter)
+			return;
+
+	// TODO: maybe make this optional?
+	if (c == '\n')
+		Sout.newline;
+	else
+		Cout.write(c);
 }
 
 // Input Decimal

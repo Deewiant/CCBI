@@ -52,6 +52,13 @@ typeof(tick) printAfter = 0;
 // }}}
 // {{{ FungeMachine callbacks
 
+bool isNormalTime() {
+	return timeStopper is null;
+}
+bool executable(bool normalTime, IP ip) {
+	return (normalTime || timeStopper is ip) && tick >= ip.jumpedTo;
+}
+
 void newTick() {
 	if (flags.fingerprintsEnabled) {
 		// If an IP is jumping to the future and it is the only one alive,
