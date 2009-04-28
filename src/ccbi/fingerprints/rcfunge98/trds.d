@@ -31,6 +31,45 @@ template TRDS() {
 
 static assert (is(typeof(tick) == typeof(cip.tardisTick)));
 
+struct StoppedIPData {
+	typeof(cip.id) id;
+	typeof(tick) jumpedAt, jumpedTo;
+}
+StoppedIPData[] stoppedIPdata;
+IP[] travellers;
+IP timeStopper = null;
+
+// Keep a copy of the original space so we don't have to reload from file when
+// rebooting
+FungeSpace initialSpace;
+
+// When rerunning time to jump point, don't output (since that isn't
+// "happening")
+typeof(tick) printAfter = 0;
+
+void ipStopped(IP ip) {
+	// Resume time if the time stopper dies
+	if (ip is timeStopper)
+		timeStopper = null;
+
+	// Store data of stopped IPs which have jumped
+	// See jump() for the reason
+	if (ip.jumpedAt) {
+		bool found = false;
+
+		foreach (dat; stoppedIPdata)
+		if (dat.id == ip.id && dat.jumpedAt == ip.jumpedAt) {
+			found = true;
+			break;
+		}
+
+		if (!found)
+			stoppedIPdata ~= StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
+	}
+}
+
+// {{{ instructions
+
 Request jump() {
 	cip.tardisReturnPos   = cip.pos + cip.delta;
 	cip.tardisReturnDelta = cip.delta;
@@ -50,10 +89,12 @@ Request jump() {
 		cip.delta = cip.tardisDelta;
 
 	if (cip.mode & IP.TIME_SET) {
+
 		cip.jumpedTo = cip.tardisTick;
 		if (!(cip.mode & IP.ABS_TIME))
 			cip.jumpedTo += tick;
 
+		static assert (typeof(cip.jumpedTo).min < 0);
 		if (cip.jumpedTo < 1)
 			cip.jumpedTo = 1;
 
@@ -216,4 +257,5 @@ void vector() {
 	cip.tardisDelta = popVector();
 }
 
+// }}}
 }
