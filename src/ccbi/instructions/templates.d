@@ -5,8 +5,6 @@
 module ccbi.instructions.templates;
 
 import ccbi.templateutils;
-import ccbi.fingerprints.all; // for *InsFuncs
-import ccbi.instructions.std : StdInsFunc;
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below Ins
