@@ -55,10 +55,10 @@ private:
 	alias .FungeSpace!(dim)        FungeSpace;
 	alias .Dimension !(dim).Coords InitCoords;
 
-	static if (is(typeof(this.TRDS)))
-		enum { GOT_TRDS = true  }
-	else
-		enum { GOT_TRDS = false }
+	static if (is(typeof(this.TRDS))) enum { GOT_TRDS = true  }
+	else                              enum { GOT_TRDS = false }
+	static if (is(typeof(this.IIPC))) enum { GOT_IIPC = true  }
+	else                              enum { GOT_IIPC = false }
 
 	IP[] ips;
 	IP   cip;
@@ -312,7 +312,7 @@ private:
 		if (ips.length == 1)
 			return true;
 
-		static if (GOT_TRDS || is(typeof(this.IIPC))) {
+		static if (GOT_TRDS || GOT_IIPC) {
 			if (!flags.fingerprintsEnabled)
 				return true;
 		}
@@ -321,7 +321,7 @@ private:
 			if (!TRDS.executable(normalTime, ip))
 				return false;
 		}
-		static if (is(typeof(IIPC))) {
+		static if (GOT_IIPC) {
 			if (!IIPC.executable(ip))
 				return false;
 		}
