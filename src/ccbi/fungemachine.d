@@ -400,7 +400,8 @@ private:
 
 	bool executable(bool normalTime, IP ip) {
 		return
-			!flags.fingerprintsEnabled || /+TODO verify this works ips.length == 1 ||+/ (
+			ips.length == 1 || (
+				flags.fingerprintsEnabled &&
 				(normalTime || timeStopper is ip) &&
 				tick >= ip.jumpedTo &&
 				!(ip.mode & ip.DORMANT)
