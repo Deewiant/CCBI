@@ -12,9 +12,7 @@ import ccbi.templateutils;
 import ccbi.instructions.utils;
 
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-// both of the below
 import ccbi.random;
-import ccbi.fingerprints.all;
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below StdInsFunc
@@ -119,7 +117,6 @@ import ccbi.fingerprint;
 import ccbi.globals;
 import ccbi.random;
 import ccbi.space;
-import ccbi.fingerprints.all;
 
 alias .Coords!(dim) Coords;
 
