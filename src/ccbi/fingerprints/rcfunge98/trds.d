@@ -152,7 +152,7 @@ Request jump() {
 
 			ips[0]        = cip;
 			ips.length    = 1;
-			cip.currentID = IP.CURRENTID_INIT;
+			currentID     = 0;
 			cip.jumpedAt  = tick;
 			tick          = 0;
 			printAfter    = cip.jumpedTo;
