@@ -117,13 +117,11 @@ import tango.stdc.stdlib : system;
 import ccbi.container;
 import ccbi.fingerprint;
 import ccbi.globals;
-import ccbi.ip;
 import ccbi.random;
 import ccbi.space;
 import ccbi.fingerprints.all;
 
 alias .Coords!(dim) Coords;
-alias .IP    !(dim) IP;
 
 // WORKAROUND for D1: in D2, use __traits("compiles") in MakeSingleIns
 // Bit of a hack to get PushNumber!() instructions to compile
@@ -1049,12 +1047,10 @@ void unloadSemantics() {
 
 // Split IP
 void splitIP() {
-	ips ~= new IP!(dim)(cip);
+	ips ~= new typeof(this.cip)(cip);
 
 	with (ips[$-1]) {
 		id = ++currentID;
-
-		parentID = cip.id;
 
 		reverse();
 

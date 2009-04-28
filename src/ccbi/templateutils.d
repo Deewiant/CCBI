@@ -95,6 +95,19 @@ template Contains(char[] s, char c) {
 	}
 }
 
+// First element is what to search for
+// Can't make this take two args for some reason...
+template TupleHas(xs...) {
+	static if (xs.length <= 1)
+		const TupleHas = false;
+	else {
+		static if (xs[0] == xs[1])
+			const TupleHas = true;
+		else
+			const TupleHas = TupleHas!(xs[0], xs[2..$]);
+	}
+}
+
 // Escape a character for placing within a character literal nested in strings
 // nested to the given depth.
 //
