@@ -55,16 +55,10 @@ private:
 	alias .FungeSpace!(dim)        FungeSpace;
 	alias .Dimension !(dim).Coords InitCoords;
 
-	// TODO: move all this TRDS stuff into TRDS template
-
 	IP[] ips;
 	IP   cip;
 	IP   tip; // traced IP
-	FungeSpace
-		space,
-		// for TRDS: keep a copy of the original space so we don't have to reload
-		// from file
-		initialSpace;
+	FungeSpace space;
 
 	// For IPs
 	cell currentID = 0;
@@ -73,20 +67,7 @@ private:
 
 	// TRDS pretty much forces this to be signed (either that or handle signed
 	// time displacements manually)
-	long
-		tick = 0,
-		// for TRDS: when rerunning time to jump point, don't output
-		// (since that isn't "happening")
-		printAfter = 0;
-
-	// more TRDS stuff
-	struct StoppedIPData {
-		typeof(cip.id) id;
-		typeof(tick) jumpedAt, jumpedTo;
-	}
-	StoppedIPData[] stoppedIPdata;
-	IP[] travellers;
-	IP timeStopper = null;
+	long tick = 0;
 
 	int returnVal;
 
@@ -307,27 +288,9 @@ private:
 
 		Tracer.ipStopped(ip);
 
-		if (flags.fingerprintsEnabled) {
-			// TODO: define TRDS.ipStopped
-			// TRDS: resume time if the time stopper dies
-			if (ip is timeStopper)
-				timeStopper = null;
-
-			// TRDS: store data of stopped IPs which have jumped
-			// see ccbi.fingerprints.rcfunge98.trds.jump() for the reason
-			if (ip.jumpedAt) {
-				bool found = false;
-
-				foreach (dat; stoppedIPdata)
-				if (dat.id == ip.id && dat.jumpedAt == ip.jumpedAt) {
-					found = true;
-					break;
-				}
-
-				if (!found)
-					stoppedIPdata ~= StoppedIPData(ip.id, ip.jumpedAt, ip.jumpedTo);
-			}
-		}
+		if (flags.fingerprintsEnabled)
+			static if (is(typeof(TRDS)))
+				TRDS.ipStopped(ip);
 
 		ips.removeAt(idx);
 		return ips.length > 0;
