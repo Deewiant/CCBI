@@ -51,14 +51,16 @@ static ~this() {
 final class FungeMachine(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 private:
-	alias .IP        !(dim)        IP;
-	alias .FungeSpace!(dim)        FungeSpace;
-	alias .Dimension !(dim).Coords InitCoords;
+	alias .IP        !(dim, ALL_FINGERPRINTS) IP;
+	alias .FungeSpace!(dim)                   FungeSpace;
+	alias .Dimension !(dim).Coords            InitCoords;
 
 	static if (is(typeof(this.TRDS))) enum { GOT_TRDS = true  }
 	else                              enum { GOT_TRDS = false }
 	static if (is(typeof(this.IIPC))) enum { GOT_IIPC = true  }
 	else                              enum { GOT_IIPC = false }
+	static if (is(typeof(this.IMAP))) enum { GOT_IMAP = true  }
+	else                              enum { GOT_IMAP = false }
 
 	IP[] ips;
 	IP   cip;
@@ -188,18 +190,20 @@ private:
 			cip.stack.push(c);
 		else {
 			if (flags.fingerprintsEnabled) {
-				// IMAP
-				if (c >= 0 && c < cip.mapping.length) {
-					c = cip.mapping[c];
+				static if (GOT_IMAP) {
+					if (c >= 0 && c < cip.mapping.length) {
+						c = cip.mapping[c];
 
-					// Semantics are all in the range ['A','Z'], so since this
-					// assert succeeds the isSemantics check can be inside this if
-					// statement.
-					static assert (cip.mapping.length > 'Z');
+						// Semantics are all in the range ['A','Z'], so since this
+						// assert succeeds the isSemantics check can be inside this
+						// if statement.
+						static assert (cip.mapping.length > 'Z');
 
-					if (isSemantics(c))
-						return executeSemantics(c);
-				}
+						if (isSemantics(c))
+							return executeSemantics(c);
+					}
+				} else if (isSemantics(c))
+					return executeSemantics(c);
 			}
 
 			return executeStandard(c);

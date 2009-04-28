@@ -5,6 +5,7 @@
 // The Instruction Pointer.
 module ccbi.ip;
 
+import tango.core.Tuple;
 import tango.time.StopWatch;
 import tango.time.Time;
 
@@ -12,21 +13,30 @@ public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
        import ccbi.space;
+       import ccbi.templateutils : TupleHas;
        import ccbi.utils;
 
-final class IP(cell dim) {
+final class IP(cell dim, fings...) {
 	alias   .Coords!(dim) Coords;
 	alias Dimension!(dim).Coords InitCoords;
 
+	static if (TupleHas!("IIPC", fings)) enum { GOT_IIPC = true  }
+	else                                 enum { GOT_IIPC = false }
+	static if (TupleHas!("IMAP", fings)) enum { GOT_IMAP = true  }
+	else                                 enum { GOT_IMAP = false }
+
 	this(FungeSpace!(dim) s) {
-		id = parentID = 0;
+		id = 0;
+		static if (GOT_IIPC)
+			parentID = 0;
 
 		stackStack = new typeof(stackStack)(1u);
 		stack      = new Stack!(cell);
 		stackStack.push(stack);
 
-		foreach (j, inout i; mapping)
-			i = cast(cell)j;
+		static if (GOT_IMAP)
+			foreach (j, inout i; mapping)
+				i = cast(cell)j;
 
 		foreach (inout sem; semantics)
 			sem = new typeof(sem);
@@ -36,6 +46,9 @@ final class IP(cell dim) {
 
 	this(IP o) {
 		shallowCopy(this, o);
+
+		static if (GOT_IIPC)
+			parentID = o.id;
 
 		// deep copy stack stack
 		stackStack = new typeof(stackStack)(o.stackStack);
@@ -116,14 +129,17 @@ final class IP(cell dim) {
 		offset = InitCoords!(0),
 		breakPt;
 
-	// parentID for IIPC
-	cell id = void, parentID = void;
+	cell id = void;
+
+	static if (GOT_IIPC)
+		cell parentID = void;
 
 	Container!(cell)      stack;
 	Stack!(typeof(stack)) stackStack;
 	Stack!(Semantics)[26] semantics;
 
-	cell[256] mapping = void; // for IMAP
+	static if (GOT_IMAP)
+		cell[256] mapping = void;
 
 	enum : typeof(mode) {
 		STRING        = 1 << 0,
@@ -143,11 +159,13 @@ final class IP(cell dim) {
 
 	ushort mode = 0;
 
-	// for HRTI
-	StopWatch timer;
-	bool timerMarked = false;
+	static if (TupleHas!("HRTI", fings)) {
+		StopWatch timer;
+		bool timerMarked = false;
+	}
 
-	// for TRDS
-	Coords tardisPos, tardisReturnPos, tardisDelta, tardisReturnDelta;
-	long tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
+	static if (TupleHas!("TRDS", fings)) {
+		Coords tardisPos, tardisReturnPos, tardisDelta, tardisReturnDelta;
+		long tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
+	}
 }

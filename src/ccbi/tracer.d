@@ -21,12 +21,10 @@ import tango.text.Ascii           : icompare, toLower;
 import tango.text.Util            : split;
 
 import ccbi.container;
-import ccbi.ip;
 import ccbi.space;
 import ccbi.stdlib;
 
 alias .Coords!(dim) Coords;
-alias .IP    !(dim) IP;
 
 bool stopNext = true;
 
@@ -184,12 +182,16 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	bool[size_t] invalidIndices;
 	auto minimalValid = size_t.max;
 
-	foreach (i, ip; ips)
-	if (tick < ip.jumpedTo) {
-		--ipCount;
-		invalidIndices[i] = true;
-	} else if (i < minimalValid)
-		minimalValid = i;
+	foreach (i, ip; ips) {
+		static if (GOT_TRDS) if (tick < ip.jumpedTo) {
+			--ipCount;
+			invalidIndices[i] = true;
+			continue;
+		}
+
+		if (i < minimalValid)
+			minimalValid = i;
+	}
 
 	if (tip) {
 		foreach (i, ip; ips)
@@ -322,8 +324,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 			case "i", "ips":
 				Serr.formatln("{} IPs, in reverse order of execution:", ipCount);
-				foreach (i, ip; ips)
-				if (tick >= ip.jumpedTo) {
+				foreach (i, ip; ips) {
+					static if (GOT_TRDS)
+						if (tick < ip.jumpedTo)
+							continue;
 
 					char[] str = "[".dup;
 					foreach (st; &ip.stackStack.bottomToTop)
