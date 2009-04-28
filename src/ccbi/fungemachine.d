@@ -86,7 +86,6 @@ private:
 	}
 	StoppedIPData[] stoppedIPdata;
 	IP[] travellers;
-	typeof(tick) latestJumpTarget;
 	IP timeStopper = null;
 
 	int returnVal;
@@ -360,45 +359,40 @@ private:
 			travellers ~= new IP(ip);
 		}
 
-		latestJumpTarget = ip.jumpedTo;
+		/+
+		Whenever we jump back in time, history from the jump target forward is
+		forgotten. Thus if there are travellers that jumped to a time later than
+		the jump target, forget about them as well.
+
+		Example:
+		- IP 1 travels from time 300 to 200.
+		- We rerun from time 0 to 200, then place the IP. It does some stuff,
+		  then teleports and jumps back to 300.
+
+		- IP 2 travels from time 400 to 100.
+		- We rerun from time 0 to 100, then place the IP. It does some stuff,
+		  then teleports and jumps back to 400.
+
+		- At time 300, IP 1 travels again to 200.
+		- We rerun from time 0 to 200. But at time 100, we need to place IP 2
+		  again. So we do. (Hence the whole travellers array.)
+		- IP 2 does its stuff, and teleports and freezes itself until 400.
+
+		- Come time 200, we would place IP 1 again if we hadn't done the
+		  following, and removed it back when we placed IP 2 for the second time.
+		+/
+		for (size_t i = 0; i < travellers.length; ++i)
+			if (ip.jumpedTo < travellers[i].jumpedTo)
+				travellers.removeAt(i--);
+
 		reboot();
 	}
 
 	void placeTimeTravellers() {
-		for (size_t i = 0; i < travellers.length; ++i) {
-			// if coming here, come here
+		// Must be appended: preserves correct execution order
+		for (size_t i = 0; i < travellers.length; ++i)
 			if (tick == travellers[i].jumpedTo)
-				// This must be appended to preserve correct execution order
 				ips ~= new IP(travellers[i]);
-
-			/+
-			Whenever we jump back in time, history from the jump target forward is
-			forgotten. Thus if there are travellers that jumped to a time later
-			than the jump target, forget about them as well.
-
-			Example:
-			- IP 1 travels from time 300 to 200.
-			- We rerun from time 0 to 200, then place the IP. It does some stuff,
-			  then teleports and jumps back to 300.
-
-			- IP 2 travels from time 400 to 100.
-			- We rerun from time 0 to 100, then place the IP. It does some stuff,
-			  then teleports and jumps back to 400.
-
-			- At time 300, IP 1 travels again to 200.
-			- We rerun from time 0 to 200. But at time 100, we need to place IP 2
-			  again. So we do. (Hence the whole travellers array.)
-			- IP 2 does its stuff, and teleports and freezes itself until 400.
-
-			- Come time 200, we would place IP 1 again if we hadn't done the
-			  following, and removed it back when we placed IP 2 for the second
-			  time.
-			+/
-			// TODO: remove these where we set latestJumpTarget so we don't need
-			// the latestJumpTarget variable
-			else if (latestJumpTarget < travellers[i].jumpedTo)
-				travellers.removeAt(i--);
-		}
 	}
 
 	bool executable(bool normalTime, IP ip) {
