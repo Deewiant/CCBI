@@ -66,6 +66,9 @@ private:
 		// from file
 		initialSpace;
 
+	// For IPs
+	cell currentID = 0;
+
 	char[][] fungeArgs;
 
 	// TRDS pretty much forces this to be signed (either that or handle signed

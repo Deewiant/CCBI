@@ -119,13 +119,6 @@ final class IP(cell dim) {
 	// parentID for IIPC
 	cell id = void, parentID = void;
 
-	// timeStopper for TRDS
-	// TODO: should be in the VM, not static here
-	static cell currentID = CURRENTID_INIT;
-
-	// thanks to the new .init behaviour in 2.001 / 1.017...
-	static const cell CURRENTID_INIT = 0;
-
 	Container!(cell)      stack;
 	Stack!(typeof(stack)) stackStack;
 	Stack!(Semantics)[26] semantics;
