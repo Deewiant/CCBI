@@ -43,9 +43,20 @@ template ParseVersion(char[] s) {
 	const ParseVersion = ActualParseVersion!(StripNonVersion!(s, ""));
 }
 
+////////////////////////////////////////////
+// Emit a boolean GOT_x if xs[0] in xs[1..$]
+
+template EmitGot(xs...) {
+	static if (TupleHas!(xs[0], xs[1..$]))
+		const EmitGot = "enum { GOT_" ~ xs[0] ~ " = true  }";
+	else
+		const EmitGot = "enum { GOT_" ~ xs[0] ~ " = false }";
+}
+
 /////////////////////////////////////////
 // Generate setters/getters to a BitArray
 
+// XXX: currently unused, will we need these?
 private template BooleansX(char[] name, uint i, B...) {
 	static if (B.length == 0)
 		const BooleansX =
@@ -97,7 +108,7 @@ template Contains(char[] s, char c) {
 
 // First element is what to search for
 // Can't make this take two args for some reason...
-template TupleHas(xs...) {
+private template TupleHas(xs...) {
 	static if (xs.length <= 1)
 		const TupleHas = false;
 	else {
