@@ -136,7 +136,7 @@ private:
 					break;
 
 				case Request.TIMEJUMP:
-					timeJump(cip);
+					TRDS.timeJump(cip);
 					return true;
 
 				case Request.MOVE:
@@ -151,14 +151,7 @@ private:
 		if (normalTime) {
 			++tick;
 
-			if (flags.fingerprintsEnabled) {
-				// If an IP is jumping to the future and it is the only one alive,
-				// just jump.
-				if (ips[0].jumpedTo > tick && ips.length == 1)
-					tick = ips[0].jumpedTo;
-
-				placeTimeTravellers();
-			}
+			TRDS.newTick();
 		}
 		return true;
 	}
@@ -294,68 +287,6 @@ private:
 
 		ips.removeAt(idx);
 		return ips.length > 0;
-	}
-
-	void timeJump(IP ip) {
-		// nothing special if jumping to the future, just don't trace it
-		if (tick > 0) {
-			if (ip.jumpedTo >= ip.jumpedAt)
-				ip.mode &= ~IP.FROM_FUTURE;
-
-			// TODO: move this to Tracer
-			if (ip is tip)
-				tip = null;
-			return;
-		}
-
-//		++stats.travelledToPast;
-
-		// add ip to travellers unless it's already there
-		bool found = false;
-		foreach (traveller; travellers)
-		if (traveller.id == ip.id && traveller.jumpedAt == ip.jumpedAt) {
-			found = true;
-			break;
-		}
-		if (!found) {
-			ip.mode |= IP.FROM_FUTURE;
-			travellers ~= new IP(ip);
-		}
-
-		/+
-		Whenever we jump back in time, history from the jump target forward is
-		forgotten. Thus if there are travellers that jumped to a time later than
-		the jump target, forget about them as well.
-
-		Example:
-		- IP 1 travels from time 300 to 200.
-		- We rerun from time 0 to 200, then place the IP. It does some stuff,
-		  then teleports and jumps back to 300.
-
-		- IP 2 travels from time 400 to 100.
-		- We rerun from time 0 to 100, then place the IP. It does some stuff,
-		  then teleports and jumps back to 400.
-
-		- At time 300, IP 1 travels again to 200.
-		- We rerun from time 0 to 200. But at time 100, we need to place IP 2
-		  again. So we do. (Hence the whole travellers array.)
-		- IP 2 does its stuff, and teleports and freezes itself until 400.
-
-		- Come time 200, we would place IP 1 again if we hadn't done the
-		  following, and removed it back when we placed IP 2 for the second time.
-		+/
-		for (size_t i = 0; i < travellers.length; ++i)
-			if (ip.jumpedTo < travellers[i].jumpedTo)
-				travellers.removeAt(i--);
-
-		reboot();
-	}
-
-	void placeTimeTravellers() {
-		// Must be appended: preserves correct execution order
-		for (size_t i = 0; i < travellers.length; ++i)
-			if (tick == travellers[i].jumpedTo)
-				ips ~= new IP(travellers[i]);
 	}
 
 	bool executable(bool normalTime, IP ip) {
