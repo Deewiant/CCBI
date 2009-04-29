@@ -382,7 +382,8 @@ private:
 		}
 
 		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
-		foreach (stat; ss) {
+		foreach (stat; ss)
+		if (stat.n) {
 			put(stat.name)(':');
 			for (auto i = stat.name.length; i <= wideName; ++i)
 				put(' ');
