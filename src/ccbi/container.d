@@ -35,8 +35,8 @@ abstract class Container(T) {
 	protected {
 		T[] array;
 		size_t head = 0;
-		ContainerStats* stats;
 	}
+	ContainerStats* stats;
 
 	// only needed in Deque, but it's easier to pass it from stack to stack
 	// (since it's meant to be per-IP) if it's declared here
@@ -73,25 +73,23 @@ abstract class Container(T) {
 final class Stack(T) : Container!(T) {
 	private this() {}
 
-	this(ContainerStats* stats, typeof(super) s) {
-		assert (cast(typeof(this))s || cast(Deque)s);
+	this(Stack s) {
+		super.stats = s.stats;
 
+		array = s.array.dup;
+		head  = s.size;
+
+	}
+
+	this(ContainerStats* stats, Deque q) {
 		super.stats = stats;
 
-		if (cast(typeof(this))s) {
-			array = s.array.dup;
-			head  = s.size;
-		} else {
-			auto q = cast(Deque)s;
-			assert (q);
+		static if (is(T : cell))
+			array = q.elementsBottomToTop.dup;
+		else
+			assert (false, "Trying to make non-cell stack out of deque");
 
-			static if (is(T : cell))
-				array = q.elementsBottomToTop.dup;
-			else
-				assert (false, "Trying to make non-cell stack out of deque");
-
-			head  = q.size;
-		}
+		head = q.size;
 	}
 
 	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
@@ -205,26 +203,22 @@ enum : byte {
 final class Deque : Container!(cell) {
 	private this() {}
 
-	this(ContainerStats* stats, typeof(super) s) {
-		assert (cast(Stack!(cell))s || cast(typeof(this))s);
+	this(Deque q) {
+		super.stats = q.stats;
 
+		mode  = q.mode;
+		tail  = q.tail;
+		head  = q.head;
+		array = q.array.dup;
+	}
+	this(ContainerStats* stats, Stack!(cell) s) {
 		super.stats = stats;
 
-		if (cast(Stack!(cell))s) {
-			assert (mode == 0);
+		assert (mode == 0);
 
-			allocateArray(s.size);
+		allocateArray(s.size);
 
-			this.push(s.elementsBottomToTop);
-		} else {
-			auto q = cast(typeof(this))s;
-			assert (q !is null);
-
-			mode  = q.mode;
-			tail  = q.tail;
-			head  = q.head;
-			array = q.array.dup;
-		}
+		this.push(s.elementsBottomToTop);
 	}
 
 	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
