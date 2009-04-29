@@ -363,7 +363,7 @@ private:
 		ss ~= Stat("Executed",                stats.stdExecutionCount,   "standard instruction");
 		ss ~= Stat("Executed",                stats.fingExecutionCount,  "fingerprint instruction");
 		ss ~= Stat("Encountered",             stats.unimplementedCount,  "unimplemented instruction");
-		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "IP");
+		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "execution");
 		ss ~= Stat("Forked",                  stats.ipForked,            "IP");
 		ss ~= Stat("Stopped",                 stats.ipStopped,           "IP");
 		ss ~= Stat("Were dormant",            stats.ipDormant,           "IP");
