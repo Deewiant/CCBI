@@ -24,7 +24,7 @@ template MODE() {
 void ctor() {
 	foreach (inout ip; ips) {
 		foreach (inout s; ip.stackStack)
-			s = new Deque(s);
+			s = new Deque(ip.dequeStats, s);
 		ip.stack = ip.stackStack.top;
 	}
 }
@@ -38,7 +38,7 @@ void dtor() {
 
 	foreach (inout ip; ips) {
 		foreach (inout s; ip.stackStack)
-			s = new Stack!(cell)(s);
+			s = new Stack!(cell)(ip.stackStats, s);
 		ip.stack = ip.stackStack.top;
 	}
 }

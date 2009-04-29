@@ -79,6 +79,7 @@ private:
 
 	Flags flags;
 	Stats stats;
+	ContainerStats stackStats, stackStackStats, dequeStats, semanticStats;
 
 	public this(File source, Flags f) {
 		flags = f;
@@ -102,7 +103,9 @@ private:
 				space = initialSpace;
 		}
 
-		tip = ips[0] = new IP(space);
+		tip = ips[0] = new IP(
+			space, &stackStats, &stackStackStats, &dequeStats, &semanticStats);
+
 		if (
 			dim >= 2     &&
 			flags.script &&
@@ -358,26 +361,54 @@ private:
 		}
 		Stat[] ss;
 
-		ss ~= Stat("Spent",                   tick+1,                    "tick");
-		ss ~= Stat("Encountered",             stats.executionCount,      "instruction");
-		ss ~= Stat("Executed",                stats.stdExecutionCount,   "standard instruction");
-		ss ~= Stat("Executed",                stats.fingExecutionCount,  "fingerprint instruction");
-		ss ~= Stat("Encountered",             stats.unimplementedCount,  "unimplemented instruction");
-		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "execution");
+		auto wasWere = stats.ipDormant == 1 ? "Was" : "Were";
+
+		ss ~= Stat("Spent",                                  tick+1,                         "tick");
+		ss ~= Stat("Encountered",                            stats.executionCount,           "instruction");
+		ss ~= Stat("Executed",                               stats.stdExecutionCount,        "standard instruction");
+		ss ~= Stat("Executed",                               stats.fingExecutionCount,       "fingerprint instruction");
+		ss ~= Stat("Encountered",                            stats.unimplementedCount,       "unimplemented instruction");
+		ss ~= Stat("Spent in dormancy",                      stats.execDormant,              "execution");
 		ss ~= Stat(null);
-		ss ~= Stat("Performed",               stats.spaceLookups,        "Funge-Space lookup");
-		ss ~= Stat("Performed",               stats.spaceAssignments,    "Funge-Space assignment");
+		ss ~= Stat("Performed",                              stats.spaceLookups,             "Funge-Space lookup");
+		ss ~= Stat("Performed",                              stats.spaceAssignments,         "Funge-Space assignment");
 		ss ~= Stat(null);
-		ss ~= Stat("Forked",                  stats.ipForked,            "IP");
-		ss ~= Stat("Stopped",                 stats.ipStopped,           "IP");
-		ss ~= Stat(
-			stats.ipDormant == 1 ? "Was dormant" : "Were dormant",
-			                                   stats.ipDormant,           "IP");
-		ss ~= Stat("Travelled to the past",   stats.ipTravelledToPast,   "IP");
-		ss ~= Stat("Travelled to the future", stats.ipTravelledToFuture, "IP");
-		ss ~= Stat("Arrived in the past",     stats.travellerArrived,    "IP");
+		ss ~= Stat("Pushed onto stack",                      stackStats.pushes,              "time");
+		ss ~= Stat("Popped from stack",                      stackStats.pops,                "time");
+		ss ~= Stat("Peeked stack",                           stackStats.peeks,               "time");
+		ss ~= Stat("Underflowed stack during pop",           stackStats.popUnderflows,       "time");
+		ss ~= Stat("Underflowed stack during peek",          stackStats.peekUnderflows,      "time");
+		ss ~= Stat("Resized stack",                          stackStats.resizes,             "time");
 		ss ~= Stat(null);
-		ss ~= Stat("Time stopped",            stats.timeStopped,         "time");
+		ss ~= Stat("Pushed onto deque",                      dequeStats.pushes,              "time");
+		ss ~= Stat("Popped from deque",                      dequeStats.pops,                "time");
+		ss ~= Stat("Peeked deque",                           dequeStats.peeks,               "time");
+		ss ~= Stat("Underflowed deque during pop",           dequeStats.popUnderflows,       "time");
+		ss ~= Stat("Underflowed deque during peek",          dequeStats.peekUnderflows,      "time");
+		ss ~= Stat("Resized deque",                          dequeStats.resizes,             "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Pushed onto stack stack",                stackStackStats.pushes,         "time");
+		ss ~= Stat("Popped from stack stack",                stackStackStats.pops,           "time");
+		ss ~= Stat("Peeked stack stack",                     stackStackStats.peeks,          "time");
+		ss ~= Stat("Underflowed stack stack during pop",     stackStackStats.popUnderflows,  "time");
+		ss ~= Stat("Underflowed stack stack during peek",    stackStackStats.peekUnderflows, "time");
+		ss ~= Stat("Resized stack stack",                    stackStackStats.resizes,        "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Pushed onto semantic stack",             semanticStats.pushes,           "time");
+		ss ~= Stat("Popped from semantic stack",             semanticStats.pops,             "time");
+		ss ~= Stat("Peeked semantic stack",                  semanticStats.peeks,            "time");
+		ss ~= Stat("Underflowed semantic stack during pop",  semanticStats.popUnderflows,    "time");
+		ss ~= Stat("Underflowed semantic stack during peek", semanticStats.peekUnderflows,   "time");
+		ss ~= Stat("Resized semantic stack",                 semanticStats.resizes,          "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Forked",                                 stats.ipForked,                 "IP");
+		ss ~= Stat("Stopped",                                stats.ipStopped,                "IP");
+		ss ~= Stat(wasWere ~ " dormant",                     stats.ipDormant,                "IP");
+		ss ~= Stat("Travelled to the past",                  stats.ipTravelledToPast,        "IP");
+		ss ~= Stat("Travelled to the future",                stats.ipTravelledToFuture,      "IP");
+		ss ~= Stat("Arrived in the past",                    stats.travellerArrived,         "IP");
+		ss ~= Stat(null);
+		ss ~= Stat("Time stopped",                           stats.timeStopped,              "time");
 
 		size_t wideName = 0, wideN = 0;
 		foreach (stat; ss)
