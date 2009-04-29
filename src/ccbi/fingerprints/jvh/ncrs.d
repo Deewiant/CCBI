@@ -11,13 +11,7 @@ version (Windows)
 else
 	version = ncurses;
 
-version (PDCurses) {
-	pragma (msg, "Remember to link with a PDCurses library.");
-} else {
-	pragma (msg, "Remember to link with an ncurses library.");
-}
-
-pragma (msg, "Assuming 32-bit chtype...");
+// Seems to be 32-bit everywhere
 alias uint chtype;
 
 extern (C) {
@@ -82,6 +76,12 @@ mixin (Fingerprint!(
 enum { ERR = -1 }
 
 template NCRS() {
+
+version (PDCurses) {
+	pragma (msg, "NCRS :: remember to link with a PDCurses library.");
+} else {
+	pragma (msg, "NCRS :: remember to link with an ncurses library.");
+}
 
 void doBeep () { if (beep()                 == ERR) reverse; }
 void refresh() { if (wrefresh(stdscr)       == ERR) reverse; }
