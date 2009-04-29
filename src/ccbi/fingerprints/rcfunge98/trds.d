@@ -302,9 +302,9 @@ void reset() {
 }
 
 void returnCoords() {
-	// just like RC/Funge-98, we don't set IP.TIME_SET
-	// makes RIJ not work
-	cip.mode |= IP.ABS_SPACE | IP.SPACE_SET | IP.ABS_TIME | IP.DELTA_SET;
+	cip.mode |=
+		IP.ABS_SPACE | IP.SPACE_SET |
+		IP.ABS_TIME  | IP.TIME_SET  | IP.DELTA_SET;
 
 	cip.tardisPos   = cip.tardisReturnPos;
 	cip.tardisDelta = cip.tardisReturnDelta;
