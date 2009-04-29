@@ -564,7 +564,7 @@ void outputDecimal() {
 	auto n = cip.stack.pop;
 
 	static if (GOT_TRDS)
-		if (tick < printAfter)
+		if (tick < ioAfter)
 			return;
 
 	Sout(n);
@@ -577,7 +577,7 @@ void outputCharacter() {
 	auto c = cast(ubyte)cip.stack.pop;
 
 	static if (GOT_TRDS)
-		if (tick < printAfter)
+		if (tick < ioAfter)
 			return;
 
 	// TODO: maybe make this optional?
@@ -589,6 +589,10 @@ void outputCharacter() {
 
 // Input Decimal
 void inputDecimal() {
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return cip.stack.push(0);
+
 	Stdout.flush();
 
 	ubyte c;
@@ -650,6 +654,10 @@ void inputDecimal() {
 
 // Input Character
 void inputCharacter() {
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return cip.stack.push('T');
+
 	Stdout.flush();
 
 	ubyte c;
@@ -679,6 +687,10 @@ void inputFile() {
 	auto filename = popString();
 
 	auto binary = cast(bool)(cip.stack.pop & 1);
+
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return pushVector(InitCoords!(0));
 
 	Coords
 		// the offsets to where to put the file
@@ -711,6 +723,10 @@ void outputFile() {
 	Coords
 		va = popOffsetVector(),
 		vb = popVector();
+
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return;
 
 	static if (dim >= 3) if (vb.z < 0) return reverse;
 	static if (dim >= 2) if (vb.y < 0) return reverse;

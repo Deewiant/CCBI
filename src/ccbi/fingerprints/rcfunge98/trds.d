@@ -47,7 +47,7 @@ FungeSpace initialSpace;
 
 // When rerunning time to jump point, don't output (since that isn't
 // "happening")
-typeof(tick) printAfter = 0;
+typeof(tick) ioAfter = 0;
 
 // }}}
 // {{{ FungeMachine callbacks
@@ -272,12 +272,12 @@ Request jump() {
 				return Request.STOP;
 			}
 
-			ips[0]        = cip;
-			ips.length    = 1;
-			currentID     = 0;
-			cip.jumpedAt  = tick;
-			tick          = 0;
-			printAfter    = cip.jumpedTo;
+			ips[0]       = cip;
+			ips.length   = 1;
+			currentID    = 0;
+			cip.jumpedAt = tick;
+			tick         = 0;
+			ioAfter      = cip.jumpedTo;
 			resume();
 		}
 
