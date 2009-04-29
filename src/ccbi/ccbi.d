@@ -37,13 +37,12 @@ BEFUNGE_ARGS to it as command line arguments.
 ARGS may be one or more of:
  -t, --trace             Trace source during interpretation.
 
- -c, --count-ticks       Output to stderr the number of Funge-98 ticks used in
-                         execution, and the number of instructions executed.
-                         Both are 64-bit unsigned integers and may overflow.
-
  -w, --warnings          Warn when encountering unimplemented instructions.
 
- -s, --script            Begin execution on the second line if the first line
+ -s, --stats             Output some interesting statistics to stderr upon
+                         completion.
+
+     --script            Begin execution on the second line if the first line
                          begins with a shebang ("#!").
 
                          An infinite loop will occur if no second line exists,
@@ -325,9 +324,9 @@ int main(char[][] args) {
 
 		with (flags) switch (arg) {
 			case "-t", "--trace":           tracing             = true;  break;
-//			case "-c", "--count-ticks":     countTicks          = true;  break;
 			case "-w", "--warnings":        warnings            = true;  break;
-			case "-s", "--script":          script              = true;  break;
+			case "-s", "--stats":           useStats            = true;  break;
+			case       "--script":          script              = true;  break;
 			case "-P", "--disable-fprints": fingerprintsEnabled = false; break;
 
 /+			case "-m", "--mini-funge":
