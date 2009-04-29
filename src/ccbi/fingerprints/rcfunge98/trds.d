@@ -68,8 +68,10 @@ void newTick() {
 
 		// Must be appended: preserves correct execution order
 		for (size_t i = 0; i < travellers.length; ++i)
-			if (tick == travellers[i].jumpedTo)
+			if (tick == travellers[i].jumpedTo) {
+				++stats.travellerArrived;
 				ips ~= new IP(travellers[i]);
+			}
 	}
 }
 
@@ -97,6 +99,8 @@ void ipStopped(IP ip) {
 void timeJump(IP ip) {
 	// nothing special if jumping to the future, just don't trace it
 	if (tick > 0) {
+		++stats.ipTravelledToFuture;
+
 		if (ip.jumpedTo >= ip.jumpedAt)
 			ip.mode &= ~IP.FROM_FUTURE;
 
@@ -106,7 +110,7 @@ void timeJump(IP ip) {
 		return;
 	}
 
-//	++stats.travelledToPast;
+	++stats.ipTravelledToPast;
 
 	// add ip to travellers unless it's already there
 	bool found = false;
@@ -286,8 +290,8 @@ Request jump() {
 	return Request.NONE;
 }
 
-void stop  () { timeStopper = cip;  }
-void resume() { timeStopper = null; }
+void stop  () { ++stats.timeStopped; timeStopper = cip;  }
+void resume() {                      timeStopper = null; }
 
 void now() { cip.stack.push(cast(cell)tick); }
 void max() { cip.stack.push(             0); }

@@ -9,6 +9,7 @@ import tango.io.device.File     : File;
 import tango.io.stream.Buffered : BufferedOutput;
 import tango.io.stream.Format;
 import tango.io.stream.Typed;
+import tango.text.convert.Integer : toString;
 
 import ccbi.container;
 import ccbi.fingerprint;
@@ -16,6 +17,7 @@ import ccbi.flags;
 import ccbi.ip;
 import ccbi.request;
 import ccbi.space;
+import ccbi.stats;
 import ccbi.stdlib;
 import ccbi.templateutils;
 import ccbi.tracer;
@@ -76,6 +78,7 @@ private:
 	int returnVal;
 
 	Flags flags;
+	Stats stats;
 
 	public this(File source, Flags f) {
 		flags = f;
@@ -122,7 +125,7 @@ private:
 
 		if (flags.useStats) {
 			Sout.flush;
-//			printStats(Serr);
+			printStats(Serr);
 		}
 		return returnVal;
 	}
@@ -177,7 +180,7 @@ private:
 	mixin .Tracer!() Tracer;
 
 	Request executeInstruction() {
-//		++stats.executionCount;
+		++stats.executionCount;
 
 		auto c = space[cip.pos];
 
@@ -214,6 +217,8 @@ private:
 // TODO: move dim information to instructions themselves, since fingerprints
 // need it as well
 	Request executeStandard(cell c) {
+		++stats.stdExecutionCount;
+
 		switch (c) mixin (Switch!(
 			Ins!("Std",
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
@@ -252,6 +257,8 @@ private:
 	in {
 		assert (isSemantics(c));
 	} body {
+		++stats.fingExecutionCount;
+
 		auto stack = cip.semantics[c - 'A'];
 		if (stack.empty)
 			return unimplemented;
@@ -277,6 +284,8 @@ private:
 	}
 
 	Request unimplemented() {
+		++stats.unimplementedCount;
+
 		if (flags.warnings) {
 			Sout.flush;
 			// XXX: this looks like a hack
@@ -296,6 +305,7 @@ private:
 	}
 
 	bool stop(size_t idx) {
+		++stats.ipStopped;
 
 		auto ip = ips[idx];
 
@@ -333,5 +343,52 @@ private:
 		Serr.layout.convert(
 			delegate uint(char[] s){ return Serr.write(s); },
 			_arguments, _argptr, fmt);
+	}
+
+	void printStats(FormatOutput!(char) put) {
+		put("============").newline;
+		put(" Statistics ").newline;
+		put("============").newline;
+		put.newline;
+
+		struct Stat {
+			char[] name;
+			ulong n;
+			char[] fin;
+		}
+		Stat[] ss;
+
+		ss ~= Stat("Encountered",             stats.executionCount,      "instruction");
+		ss ~= Stat("Executed",                stats.stdExecutionCount,   "standard instruction");
+		ss ~= Stat("Executed",                stats.fingExecutionCount,  "fingerprint instruction");
+		ss ~= Stat("Encountered",             stats.unimplementedCount,  "unimplemented instruction");
+		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "IP");
+		ss ~= Stat("Forked",                  stats.ipForked,            "IP");
+		ss ~= Stat("Stopped",                 stats.ipStopped,           "IP");
+		ss ~= Stat("Were dormant",            stats.ipDormant,           "IP");
+		ss ~= Stat("Travelled to the past",   stats.ipTravelledToPast,   "IP");
+		ss ~= Stat("Travelled to the future", stats.ipTravelledToFuture, "IP");
+		ss ~= Stat("Arrived in the past",     stats.travellerArrived,    "IP");
+		ss ~= Stat("Time stopped",            stats.timeStopped,         "time");
+
+		size_t wideName = 0, wideN = 0;
+		foreach (stat; ss) {
+			uint width = .toString(stat.n).length;
+			if (width > wideN)
+				wideN = width;
+			if (stat.name.length > wideName)
+				wideName = stat.name.length;
+		}
+
+		auto fmt = "{:d" ~ .toString(wideN) ~ "} ";
+		foreach (stat; ss) {
+			put(stat.name);
+			for (auto i = stat.name.length; i < wideName; ++i)
+				put(' ');
+			put.format(fmt, stat.n)(stat.fin);
+			if (stat.n != 1)
+				put('s');
+			put.newline;
+		}
 	}
 }
