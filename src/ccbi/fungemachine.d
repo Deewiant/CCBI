@@ -364,6 +364,7 @@ private:
 		ss ~= Stat("Executed",                stats.fingExecutionCount,  "fingerprint instruction");
 		ss ~= Stat("Encountered",             stats.unimplementedCount,  "unimplemented instruction");
 		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "execution");
+		ss ~= Stat(null);
 		ss ~= Stat("Forked",                  stats.ipForked,            "IP");
 		ss ~= Stat("Stopped",                 stats.ipStopped,           "IP");
 		ss ~= Stat(
@@ -372,10 +373,12 @@ private:
 		ss ~= Stat("Travelled to the past",   stats.ipTravelledToPast,   "IP");
 		ss ~= Stat("Travelled to the future", stats.ipTravelledToFuture, "IP");
 		ss ~= Stat("Arrived in the past",     stats.travellerArrived,    "IP");
+		ss ~= Stat(null);
 		ss ~= Stat("Time stopped",            stats.timeStopped,         "time");
 
 		size_t wideName = 0, wideN = 0;
-		foreach (stat; ss) {
+		foreach (stat; ss)
+		if (stat.name !is null) {
 			uint width = .toString(stat.n).length;
 			if (width > wideN)
 				wideN = width;
@@ -385,7 +388,9 @@ private:
 
 		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
 		foreach (stat; ss)
-		if (stat.n) {
+		if (stat.name is null)
+			put.newline;
+		else if (stat.n) {
 			put(stat.name)(':');
 			for (auto i = stat.name.length; i <= wideName; ++i)
 				put(' ');
