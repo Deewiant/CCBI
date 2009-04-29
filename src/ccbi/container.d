@@ -127,7 +127,12 @@ final class Stack(T) : Container!(T) {
 				head -= i;
 		}
 
-		override void clear() { head = 0; }
+		override void clear() {
+			++stats.clears;
+			stats.cleared += size;
+
+			head = 0;
+		}
 
 		override T top() {
 			++stats.peeks;
@@ -266,7 +271,12 @@ final class Deque : Container!(cell) {
 			return h;
 		}
 
-		override void clear() { head = tail = 0; }
+		override void clear() {
+			++stats.clears;
+			stats.cleared += size;
+
+			head = tail = 0;
+		}
 
 		override cell top() {
 			if (mode & QUEUE_MODE)
