@@ -1044,6 +1044,8 @@ void unloadSemantics() {
 
 // Split IP
 void splitIP() {
+	++stats.ipForked;
+
 	ips ~= new typeof(this.cip)(cip);
 
 	with (ips[$-1]) {

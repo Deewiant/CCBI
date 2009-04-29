@@ -25,7 +25,11 @@ template IIPC() {
 
 // FungeMachine callback
 bool executable(IP ip) {
-	return !(ip.mode & IP.DORMANT);
+	if (ip.mode & IP.DORMANT) {
+		++stats.execDormant;
+		return false;
+	} else
+		return true;
 }
 
 IP findIP(cell id) {
@@ -44,7 +48,7 @@ void ancestorID() {
 }
 
 void ownID() { cip.stack.push(cip.id); }
-void goDormant() { cip.mode |= cip.DORMANT; }
+void goDormant() { ++stats.ipDormant; cip.mode |= cip.DORMANT; }
 
 void topIP() {
 	if (auto ip = findIP(cip.stack.pop))
