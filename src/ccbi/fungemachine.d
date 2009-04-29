@@ -88,7 +88,7 @@ private:
 		else
 			alias space firstSpace;
 
-		firstSpace = new FungeSpace(source);
+		firstSpace = new FungeSpace(&stats, source);
 
 		ips.length = 1;
 		reboot();
@@ -364,6 +364,9 @@ private:
 		ss ~= Stat("Executed",                stats.fingExecutionCount,  "fingerprint instruction");
 		ss ~= Stat("Encountered",             stats.unimplementedCount,  "unimplemented instruction");
 		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "execution");
+		ss ~= Stat(null);
+		ss ~= Stat("Performed",               stats.spaceLookups,        "Funge-Space lookup");
+		ss ~= Stat("Performed",               stats.spaceAssignments,    "Funge-Space assignment");
 		ss ~= Stat(null);
 		ss ~= Stat("Forked",                  stats.ipForked,            "IP");
 		ss ~= Stat("Stopped",                 stats.ipStopped,           "IP");

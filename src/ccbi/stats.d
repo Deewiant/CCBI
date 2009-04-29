@@ -15,5 +15,8 @@ struct Stats {
 		ipTravelledToPast   = 0,
 		ipTravelledToFuture = 0,
 		travellerArrived    = 0,
-		timeStopped         = 0;
+		timeStopped         = 0,
+
+		spaceLookups        = 0,
+		spaceAssignments    = 0;
 };
