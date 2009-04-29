@@ -82,6 +82,12 @@ void fromASCII() {
 void fromInt() { auto c = cip.stack.pop; Union u; u.f = math.rndint(c); pushFl(u); }
 
 void toInt() { auto u = popFl; cip.stack.push(cast(cell)math.rndint(u.f)); }
-void print() { auto u = popFl; Sout.format("{:f6} ", u.f); }
+void print() {
+	auto u = popFl;
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return;
+	Stdout.format("{:f6} ", u.f);
+}
 
 }
