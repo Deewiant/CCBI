@@ -28,5 +28,7 @@ struct ContainerStats {
 		peeks          = 0,
 		popUnderflows  = 0,
 		peekUnderflows = 0,
-		resizes        = 0;
+		resizes        = 0,
+		clears         = 0,
+		cleared        = 0;
 }
