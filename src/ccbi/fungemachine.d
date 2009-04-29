@@ -381,7 +381,7 @@ private:
 				wideName = stat.name.length;
 		}
 
-		auto fmt = "{:d" ~ .toString(wideN) ~ "} ";
+		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
 		foreach (stat; ss) {
 			put(stat.name);
 			for (auto i = stat.name.length; i < wideName; ++i)
