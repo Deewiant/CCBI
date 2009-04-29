@@ -34,7 +34,7 @@ template TERM() {
 	void ctor() {
 		stdout = GetStdHandle(STD_OUTPUT_HANDLE);
 		if (stdout is null)
-			throw new IOException("TERM ctor couldn't get STD_OUTPUT_HANDLE");
+			throw new IOException("TERM :: ctor couldn't get STD_OUTPUT_HANDLE");
 	}
 
 	// straight from http://msdn2.microsoft.com/en-us/library/ms682022.aspx
@@ -151,7 +151,7 @@ template TERM() {
 	import tango.stdc.stringz;
 	import tango.text.convert.Integer : toString;
 
-	pragma (msg, "Assuming the host machine has a terminfo database...");
+	pragma (msg, "TERM :: assuming we have a terminfo database...");
 
 	extern (C) static int my_putchar(int x) {
 		Sout(cast(char)x);
