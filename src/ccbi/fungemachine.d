@@ -421,16 +421,25 @@ private:
 		}
 
 		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
+		bool newline = false;
+
 		foreach (stat; ss)
 		if (stat.name is null)
-			put.newline;
+			newline = true;
 		else if (stat.n) {
+			if (newline) {
+				newline = false;
+				put.newline;
+			}
 			put(stat.name)(':');
+
 			for (auto i = stat.name.length; i <= wideName; ++i)
 				put(' ');
+
 			put.format(fmt, stat.n)(stat.fin);
 			if (stat.n != 1)
 				put('s');
+
 			put.newline;
 		}
 	}
