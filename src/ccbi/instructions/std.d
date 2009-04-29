@@ -688,10 +688,6 @@ void inputFile() {
 
 	auto binary = cast(bool)(cip.stack.pop & 1);
 
-	static if (GOT_TRDS)
-		if (tick < ioAfter)
-			return pushVector(InitCoords!(0));
-
 	Coords
 		// the offsets to where to put the file
 		va = popOffsetVector(),
