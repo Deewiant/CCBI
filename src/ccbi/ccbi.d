@@ -262,7 +262,11 @@ Other notes:
     "TIME"  0x54494d45  Time and Date functions
     "TRDS"  0x54524453  IP travel in time and space
 
-      'G' pushes a 32-bit truncation of the 64-bit counter.
+      Time travel to the past is implemented as rerunning from tick 0. Output
+      (console/file) during rerunning is not performed. Console input results
+      in constant values, which probably won't be the same as those that were
+      originally input. The 'i' instruction is ignorant of TRDS, as are these
+      fingerprints: DIRF, FILE, SOCK, SCKE.
 
     Intentionally unsupported fingerprints:
       Because they are not portable:
