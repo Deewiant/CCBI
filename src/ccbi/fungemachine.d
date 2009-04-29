@@ -366,7 +366,9 @@ private:
 		ss ~= Stat("Spent in dormancy",       stats.execDormant,         "execution");
 		ss ~= Stat("Forked",                  stats.ipForked,            "IP");
 		ss ~= Stat("Stopped",                 stats.ipStopped,           "IP");
-		ss ~= Stat("Were dormant",            stats.ipDormant,           "IP");
+		ss ~= Stat(
+			stats.ipDormant == 1 ? "Was dormant" : "Were dormant",
+			                                   stats.ipDormant,           "IP");
 		ss ~= Stat("Travelled to the past",   stats.ipTravelledToPast,   "IP");
 		ss ~= Stat("Travelled to the future", stats.ipTravelledToFuture, "IP");
 		ss ~= Stat("Arrived in the past",     stats.travellerArrived,    "IP");
