@@ -11,14 +11,21 @@ version (Windows)
 else
 	version = ncurses;
 
-// Seems to be 32-bit everywhere
+template ChtypeMsg() { const ChtypeMsg = "NCRS :: assuming 32-bit chtype..."; }
 alias uint chtype;
+
+template MacroMsg() { const MacroMsg =
+"NCRS :: echo, noecho, and initscr may be macros, but there's no other way to
+        get their functionality than using them. Since both PDCurses and
+        ncurses provide them as actual functions, assuming that your curses
+        implementation also does so..."; }
 
 extern (C) {
 	struct WINDOW;
 
 	int beep();
 
+	// may be macros
 	int echo();
 	int noecho();
 
@@ -76,10 +83,15 @@ enum { ERR = -1 }
 
 template NCRS() {
 
+pragma (msg, ChtypeMsg!());
+pragma (msg, MacroMsg!());
+
 version (PDCurses) {
-	pragma (msg, "NCRS :: remember to link with a PDCurses library.");
+	pragma (msg,
+		"NCRS :: remember to link with a curses library, such as PDCurses.");
 } else {
-	pragma (msg, "NCRS :: remember to link with an ncurses library.");
+	pragma (msg,
+		"NCRS :: remember to link with a curses library, such as ncurses.");
 }
 
 void doBeep () { if (beep()                 == ERR) reverse; }
