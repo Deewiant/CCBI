@@ -45,7 +45,6 @@ extern (C) {
 	int waddch(WINDOW*, chtype);
 	int waddstr(WINDOW*, char*);
 
-	int werase(WINDOW*);
 	int wclrtobot(WINDOW*);
 	int wclrtoeol(WINDOW*);
 
@@ -89,8 +88,11 @@ void unget  () { if (ungetch(cip.stack.pop) == ERR) reverse; }
 
 void clear() {
 	switch (cip.stack.pop) {
-		case 0: return werase(stdscr);
 		case 1: return wclrtoeol(stdscr);
+		case 0:
+			// return werase(stdscr); may be a macro, so do it manually
+			if (wmove(stdscr, 0, 0) == ERR)
+				reverse;
 		case 2: return wclrtobot(stdscr);
 		default: return reverse();
 	}
