@@ -11,6 +11,7 @@ import tango.text.convert.Integer;
 
 public import ccbi.cell;
        import ccbi.templateutils;
+       import ccbi.stats;
        import ccbi.stdlib;
        import ccbi.utils;
 
@@ -135,7 +136,11 @@ final class FungeSpace(cell dim) {
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
 
-	this(InputStream source) {
+	Stats* stats;
+
+	this(Stats* stats, InputStream source) {
+		this.stats = stats;
+
 		load(source, &end, InitCoords!(0), false, false);
 
 		                     assert (beg.x >= 0);
@@ -169,10 +174,12 @@ final class FungeSpace(cell dim) {
 
 	// most of the time we want range checking, unsafeGet is separate
 	cell opIndex(Coords c) {
+		++stats.spaceLookups;
 		cell* p = c in space;
 		return p ? *p : ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
+		++stats.spaceAssignments;
 		auto p = c in space;
 
 		if (v != ' ')
