@@ -408,7 +408,7 @@ private:
 		ss ~= Stat("Travelled to the future",                stats.ipTravelledToFuture,      "IP");
 		ss ~= Stat("Arrived in the past",                    stats.travellerArrived,         "IP");
 		ss ~= Stat(null);
-		ss ~= Stat("Time stopped",                           stats.timeStopped,              "time");
+		ss ~= Stat("Stopped time",                           stats.timeStopped,              "time");
 
 		size_t wideName = 0, wideN = 0;
 		foreach (stat; ss)
