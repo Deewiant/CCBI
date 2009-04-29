@@ -358,6 +358,7 @@ private:
 		}
 		Stat[] ss;
 
+		ss ~= Stat("Spent",                   tick+1,                    "tick");
 		ss ~= Stat("Encountered",             stats.executionCount,      "instruction");
 		ss ~= Stat("Executed",                stats.stdExecutionCount,   "standard instruction");
 		ss ~= Stat("Executed",                stats.fingExecutionCount,  "fingerprint instruction");
