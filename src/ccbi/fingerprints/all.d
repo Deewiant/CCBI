@@ -40,9 +40,6 @@ public import
 	ccbi.fingerprints.rcfunge98.time,
 	ccbi.fingerprints.rcfunge98.trds;
 
-version (Win32) alias Tuple!("TERM") TERM;
-else            alias Tuple!() TERM;
-
 alias Tuple!(
 	// Cat's Eye
 	"HRTI", "MODE", "MODU", "NULL", "ORTH", "PERL", "REFC", "ROMA", "TOYS",
@@ -53,7 +50,7 @@ alias Tuple!(
 
 	// RC/Funge-98
 	"BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP", "FPSP",
-	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", TERM, "TIME",
+	"FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", "TERM", "TIME",
 	"TRDS",
 
 	// GLfunge98
