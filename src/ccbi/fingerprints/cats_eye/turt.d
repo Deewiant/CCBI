@@ -396,6 +396,10 @@ void queryBounds() {
 void printDrawing() {
 	tryAddPoint();
 
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return;
+
 	File file;
 	try file = new typeof(file)(filename, file.WriteCreate);
 	catch {

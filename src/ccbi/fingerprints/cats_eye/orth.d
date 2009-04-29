@@ -60,7 +60,13 @@ void orthoPut() {
 }
 
 // output string
-void outputString() { Sout(popString()); }
+void outputString() {
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return popString();
+
+	Sout(popString());
+}
 
 // change dx
 void changeDx() { cip.delta.x = cip.stack.pop; }

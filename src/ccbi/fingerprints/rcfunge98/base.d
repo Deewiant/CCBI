@@ -15,11 +15,11 @@ import ccbi.fingerprint;
 mixin (Fingerprint!(
 	"BASE",
 
-	"B", "outputBinary",
-	"H", "outputHex",
+	"B", "output!(`b`)",
+	"H", "output!(`x`)",
 	"I", "inputBase",
 	"N", "outputBase",
-	"O", "outputOctal"
+	"O", "output!(`o`)"
 ));
 
 bool contains(char[] a, char b) {
@@ -39,9 +39,15 @@ template BASE() {
 import tango.text.convert.Integer : intToString = toString;
 import tango.text.Util            : repeat;
 
-void outputBinary() { Sout(intToString(cip.stack.pop, "b")); ubyte b = ' '; Cout.write(b); }
-void outputHex   () { Sout(intToString(cip.stack.pop, "x")); ubyte b = ' '; Cout.write(b); }
-void outputOctal () { Sout(intToString(cip.stack.pop, "o")); ubyte b = ' '; Cout.write(b); }
+void output(char[] fmt)() {
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return cip.stack.pop(1);
+
+	Sout(intToString(cip.stack.pop, fmt));
+	ubyte b = ' ';
+	Cout.write(b);
+}
 
 void outputBase() {
 	auto base = cip.stack.pop,
@@ -49,6 +55,10 @@ void outputBase() {
 
 	if (base <= 0 || base > 36)
 		return reverse();
+
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return;
 
 	const DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -77,6 +87,10 @@ void inputBase() {
 
 	if (base <= 0 || base > 36)
 		return reverse();
+
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return cip.stack.push(0);
 
 	Sout.flush();
 
