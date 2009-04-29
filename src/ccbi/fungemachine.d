@@ -413,7 +413,7 @@ private:
 
 		size_t wideName = 0, wideN = 0;
 		foreach (stat; ss)
-		if (stat.name !is null) {
+		if (stat.name !is null && stat.n) {
 			uint width = .toString(stat.n).length;
 			if (width > wideN)
 				wideN = width;
