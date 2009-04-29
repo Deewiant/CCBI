@@ -152,7 +152,8 @@ private:
 				case Request.STOP:
 					if (!stop(j)) {
 				case Request.QUIT:
-							return false;
+						stats.ipStopped += ips.length;
+						return false;
 					}
 					break;
 
@@ -308,8 +309,6 @@ private:
 	}
 
 	bool stop(size_t idx) {
-		++stats.ipStopped;
-
 		auto ip = ips[idx];
 
 		Tracer.ipStopped(ip);
@@ -319,7 +318,13 @@ private:
 				TRDS.ipStopped(ip);
 
 		ips.removeAt(idx);
-		return ips.length > 0;
+
+		if (ips.length > 0) {
+			// Not in the below case because quitting handles that
+			++stats.ipStopped;
+			return true;
+		} else
+			return false;
 	}
 
 	bool executable(bool normalTime, IP ip) {
