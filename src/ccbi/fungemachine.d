@@ -383,8 +383,8 @@ private:
 
 		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
 		foreach (stat; ss) {
-			put(stat.name);
-			for (auto i = stat.name.length; i < wideName; ++i)
+			put(stat.name)(':');
+			for (auto i = stat.name.length; i <= wideName; ++i)
 				put(' ');
 			put.format(fmt, stat.n)(stat.fin);
 			if (stat.n != 1)
