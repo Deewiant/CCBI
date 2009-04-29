@@ -13,6 +13,7 @@ public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
        import ccbi.space;
+       import ccbi.stats;
        import ccbi.templateutils : EmitGot;
        import ccbi.utils;
 
@@ -25,13 +26,28 @@ final class IP(cell dim, fings...) {
 	mixin (EmitGot!("IMAP", fings));
 	mixin (EmitGot!("TRDS", fings));
 
-	this(FungeSpace!(dim) s) {
+	// XXX: these are global to a FungeMachine, do they really have to be stored
+	// here as well as in the containers
+	ContainerStats* stackStats, stackStackStats, dequeStats, semanticStats;
+
+	this(
+		FungeSpace!(dim) s,
+		ContainerStats* stackStats,
+		ContainerStats* stackStackStats,
+		ContainerStats* dequeStats,
+		ContainerStats* semanticStats)
+	{
+		this.stackStats      = stackStats;
+		this.stackStackStats = stackStackStats;
+		this.dequeStats      = dequeStats;
+		this.semanticStats   = semanticStats;
+
 		id = 0;
 		static if (GOT_IIPC)
 			parentID = 0;
 
-		stackStack = new typeof(stackStack)(1u);
-		stack      = new Stack!(cell);
+		stackStack = new typeof(stackStack)(stackStackStats, 1u);
+		stack      = new Stack!(cell)(stackStats);
 		stackStack.push(stack);
 
 		static if (GOT_IMAP)
@@ -39,7 +55,7 @@ final class IP(cell dim, fings...) {
 				i = cast(cell)j;
 
 		foreach (inout sem; semantics)
-			sem = new typeof(sem);
+			sem = new typeof(sem)(semanticStats);
 
 		space = s;
 	}
@@ -51,7 +67,7 @@ final class IP(cell dim, fings...) {
 			parentID = o.id;
 
 		// deep copy stack stack
-		stackStack = new typeof(stackStack)(o.stackStack);
+		stackStack = new typeof(stackStack)(stackStackStats, o.stackStack);
 
 		bool deque = cast(Deque)stack !is null;
 
@@ -60,15 +76,15 @@ final class IP(cell dim, fings...) {
 			alias Stack    !(cell) Ctack;
 
 			stack = (deque
-				? cast(CC)new Deque(cast(Deque)stack)
-				: cast(CC)new Ctack(cast(Ctack)stack)
+				? cast(CC)new Deque(dequeStats, cast(Deque)stack)
+				: cast(CC)new Ctack(stackStats, cast(Ctack)stack)
 			);
 		}
 		stack = stackStack.top;
 
 		// deep copy semantics
 		foreach (i, inout sem; semantics)
-			sem = new typeof(sem)(o.semantics[i]);
+			sem = new typeof(sem)(semanticStats, o.semantics[i]);
 	}
 
 	void move() {
@@ -116,8 +132,8 @@ final class IP(cell dim, fings...) {
 
 	Container!(cell) newStack() {
 		return (cast(Deque)stack
-			? cast(Container!(cell))new Deque
-			: cast(Container!(cell))new Stack!(cell)
+			? cast(Container!(cell))new Deque(dequeStats)
+			: cast(Container!(cell))new Stack!(cell)(stackStats)
 		);
 	}
 

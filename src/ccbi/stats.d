@@ -20,3 +20,13 @@ struct Stats {
 		spaceLookups        = 0,
 		spaceAssignments    = 0;
 };
+
+struct ContainerStats {
+	ulong
+		pushes         = 0,
+		pops           = 0,
+		peeks          = 0,
+		popUnderflows  = 0,
+		peekUnderflows = 0,
+		resizes        = 0;
+}

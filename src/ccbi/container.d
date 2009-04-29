@@ -5,6 +5,7 @@
 module ccbi.container;
 
 import ccbi.cell;
+import ccbi.stats;
 
 abstract class Container(T) {
 	const size_t DEFAULT_SIZE = 0100;
@@ -34,6 +35,7 @@ abstract class Container(T) {
 	protected {
 		T[] array;
 		size_t head = 0;
+		ContainerStats* stats;
 	}
 
 	// only needed in Deque, but it's easier to pass it from stack to stack
@@ -69,8 +71,12 @@ abstract class Container(T) {
  +/
 
 final class Stack(T) : Container!(T) {
-	this(typeof(super) s) {
+	private this() {}
+
+	this(ContainerStats* stats, typeof(super) s) {
 		assert (cast(typeof(this))s || cast(Deque)s);
+
+		super.stats = stats;
 
 		if (cast(typeof(this))s) {
 			array = s.array.dup;
@@ -88,15 +94,21 @@ final class Stack(T) : Container!(T) {
 		}
 	}
 
-	this(size_t n = super.DEFAULT_SIZE) { array.length = n; }
+	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
+		super.stats = stats;
+		array.length = n;
+	}
 
 	final {
 		override T pop() {
+			++stats.pops;
+
 			// not an error to pop an empty stack
 			if (empty) {
-				static if (is (T : cell))
+				static if (is (T : cell)) {
+					++stats.popUnderflows;
 					return 0;
-				else
+				} else
 					assert (false, "Attempted to pop empty non-cell stack.");
 			} else
 				return array[--head];
@@ -105,19 +117,26 @@ final class Stack(T) : Container!(T) {
 		override T popHead() { return pop(); }
 
 		override void pop(size_t i)  {
-			if (i >= head)
+			stats.pops          += i;
+			stats.popUnderflows += i;
+
+			if (i >= head) {
+				stats.popUnderflows -= head;
 				head = 0;
-			else
+			} else
 				head -= i;
 		}
 
 		override void clear() { head = 0; }
 
 		override T top() {
+			++stats.peeks;
+
 			if (empty) {
-				static if (is (T : cell))
+				static if (is (T : cell)) {
+					++stats.peekUnderflows;
 					return 0;
-				else
+				} else
 					assert (false, "Attempted to peek empty non-cell stack.");
 			}
 
@@ -125,10 +144,15 @@ final class Stack(T) : Container!(T) {
 		}
 
 		override void push(T[] ts...) {
+			stats.pushes += ts.length;
+
 			auto neededRoom = head + ts.length;
-			if (neededRoom >= array.length)
+			if (neededRoom >= array.length) {
+				++stats.resizes;
+
 				array.length = 2 * array.length +
 					(neededRoom >= 2 * array.length ? neededRoom : 0);
+			}
 
 			foreach (t; ts)
 				array[head++] = t;
@@ -174,8 +198,12 @@ enum : byte {
 // largely based on java.util.ArrayDeque
 // only used if the MODE fingerprint is loaded
 final class Deque : Container!(cell) {
-	this(typeof(super) s) {
+	private this() {}
+
+	this(ContainerStats* stats, typeof(super) s) {
 		assert (cast(Stack!(cell))s || cast(typeof(this))s);
+
+		super.stats = stats;
 
 		if (cast(Stack!(cell))s) {
 			assert (mode == 0);
@@ -194,7 +222,8 @@ final class Deque : Container!(cell) {
 		}
 	}
 
-	this(size_t n = super.DEFAULT_SIZE) {
+	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
+		super.stats = stats;
 		allocateArray(n);
 	}
 
@@ -209,6 +238,8 @@ final class Deque : Container!(cell) {
 		}
 
 		override void pop(size_t i)  {
+			stats.pops += i;
+
 			if (!empty) {
 				if (mode & QUEUE_MODE) while (i--) {
 					tail = (tail - 1) & (array.length - 1);
@@ -220,10 +251,16 @@ final class Deque : Container!(cell) {
 						break;
 				}
 			}
+
+			stats.popUnderflows += i;
 		}
 		override cell popHead() {
-			if (empty)
+			++stats.pops;
+
+			if (empty) {
+				++stats.popUnderflows;
 				return 0;
+			}
 
 			auto h = array[head];
 			head = (head + 1) & (array.length - 1);
@@ -246,6 +283,8 @@ final class Deque : Container!(cell) {
 				pushHead(ts);
 		}
 		override void pushHead(cell[] cs...) {
+			stats.pushes += cs.length;
+
 			foreach (c; cs) {
 				head = (head - 1) & (array.length - 1);
 				array[head] = c;
@@ -296,6 +335,8 @@ final class Deque : Container!(cell) {
 
 	private final {
 		void pushTail(cell[] cs...) {
+			stats.pushes += cs.length;
+
 			foreach (c; cs) {
 				array[tail] = c;
 				tail = (tail + 1) & (array.length - 1);
@@ -305,18 +346,34 @@ final class Deque : Container!(cell) {
 		}
 
 		cell popTail() {
-			if (empty)
+			++stats.pops;
+
+			if (empty) {
+				++stats.popUnderflows;
 				return 0;
+			}
 
 			tail = (tail - 1) & (array.length - 1);
 			return array[tail];
 		}
 
 		cell peekHead() {
-			return empty ? 0 : array[head];
+			++stats.peeks;
+
+			if (empty) {
+				++stats.peekUnderflows;
+				return 0;
+			} else
+				return array[head];
 		}
 		cell peekTail() {
-			return empty ? 0 : array[(tail - 1) & (array.length - 1)];
+			++stats.peeks;
+
+			if (empty) {
+				++stats.peekUnderflows;
+				return 0;
+			} else
+				return array[(tail - 1) & (array.length - 1)];
 		}
 
 		void allocateArray(size_t length) {
@@ -343,6 +400,8 @@ final class Deque : Container!(cell) {
 
 		void doubleCapacity() {
 			assert (head == tail);
+
+			++stats.resizes;
 
 			// elems to the right of head
 			auto r = array.length - head;
