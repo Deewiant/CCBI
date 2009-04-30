@@ -77,8 +77,9 @@ private:
 
 	Flags flags;
 
-	public this(File source, Flags f) {
+	public this(File source, char[][] args, Flags f) {
 		flags = f;
+		fungeArgs = args;
 
 		static if (GOT_TRDS)
 			alias TRDS.initialSpace firstSpace;

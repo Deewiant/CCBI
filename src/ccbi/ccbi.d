@@ -384,5 +384,5 @@ int main(char[][] args) {
 	}
 
 	// TODO: other dims
-	return (new FungeMachine!(2)(file, flags)).run;
+	return (new FungeMachine!(2)(file, fungeArgs, flags)).run;
 }
