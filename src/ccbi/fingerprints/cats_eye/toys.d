@@ -339,38 +339,42 @@ void mailbox() {
 }
 
 void calipers() {
-	cell i, j;
+	static if (dim >= 2) {
+		cell i, j;
 
-	Coords t = popOffsetVector();
+		Coords t = popOffsetVector();
 
-	with (cip.stack) {
-		// j's location not in spec...
-		j = pop;
-		i = pop;
+		with (cip.stack) {
+			// j's location not in spec...
+			j = pop;
+			i = pop;
 
-		Coords c = t;
+			Coords c = t;
 
-		for (c.y = t.y; c.y < t.y + j; ++c.y)
-		for (c.x = t.x; c.x < t.x + i; ++c.x)
-			space[c] = pop;
-	}
+			for (c.y = t.y; c.y < t.y + j; ++c.y)
+			for (c.x = t.x; c.x < t.x + i; ++c.x)
+				space[c] = pop;
+		}
+	} else reverse;
 }
 void counterclockwise() {
-	cell i, j;
+	static if (dim >= 2) {
+		cell i, j;
 
-	Coords o = popOffsetVector();
+		Coords o = popOffsetVector();
 
-	with (cip.stack) {
-		// j's location not in spec...
-		j = pop;
-		i = pop;
+		with (cip.stack) {
+			// j's location not in spec...
+			j = pop;
+			i = pop;
 
-		Coords c = o;
+			Coords c = o;
 
-		for (c.y = o.y + j; c.y-- > o.y;)
-		for (c.x = o.x + i; c.x-- > o.x;)
-			push(space[c]);
-	}
+			for (c.y = o.y + j; c.y-- > o.y;)
+			for (c.x = o.x + i; c.x-- > o.x;)
+				push(space[c]);
+		}
+	} else reverse;
 }
 
 void necklace() {
@@ -381,7 +385,9 @@ void barstool() {
 	// TODO: befunge-only
 	switch (cip.stack.pop) {
 		case 0: eastWestIf(); break;
+	static if (dim >= 2) {
 		case 1: northSouthIf(); break;
+	}
 		default: reverse(); break;
 	}
 }
@@ -391,8 +397,10 @@ void tumbler() {
 	switch (rand_up_to!(4)()) {
 		case 0: space[cip.pos] = '<'; goWest (); break;
 		case 1: space[cip.pos] = '>'; goEast (); break;
+	static if (dim >= 2) {
 		case 2: space[cip.pos] = 'v'; goSouth(); break;
 		case 3: space[cip.pos] = '^'; goNorth(); break;
+	}
 		default: assert (false);
 	}
 }

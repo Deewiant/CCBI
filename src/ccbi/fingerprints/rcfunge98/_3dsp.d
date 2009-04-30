@@ -147,20 +147,23 @@ void dup() {
 }
 
 void copy() {
-	Coords
-		s = popOffsetVector(),
-		t = popOffsetVector();
+	static if (dim >= 2) {
+		Coords
+			s = popOffsetVector(),
+			t = popOffsetVector();
 
-	for (cell y = 0; y < 4; ++y, ++t.y, ++s.y) {
-		for (cell x = 0; x < 4; ++x, ++t.x, ++s.x)
-			space[t] = space[s];
-		t.x -= 4;
-		s.x -= 4;
-	}
+		for (cell y = 0; y < 4; ++y, ++t.y, ++s.y) {
+			for (cell x = 0; x < 4; ++x, ++t.x, ++s.x)
+				space[t] = space[s];
+			t.x -= 4;
+			s.x -= 4;
+		}
+	} else reverse;
 }
 
 // helper
-void writeMatrix(Coords c, float[] m) {
+static if (dim >= 2) void writeMatrix(Coords c, float[] m) {
+
 	assert (m.length == 16);
 	for (cell y = 0; y < 4; ++y, ++c.y) {
 		for (cell x = 0; x < 4; ++x, ++c.x) {
@@ -173,61 +176,67 @@ void writeMatrix(Coords c, float[] m) {
 }
 
 void makeRotate() {
-	float angle = pop();
-	cell axis = cip.stack.pop();
-	Coords pos = popOffsetVector();
+	static if (dim >= 2) {
+		float angle = pop();
+		cell axis = cip.stack.pop();
+		Coords pos = popOffsetVector();
 
-	if (!(axis >= 1 && axis <= 3))
-		return reverse();
+		if (!(axis >= 1 && axis <= 3))
+			return reverse();
 
-	angle *= PI/180;
+		angle *= PI/180;
 
-	float s = sin(angle);
-	float c = cos(angle);
+		float s = sin(angle);
+		float c = cos(angle);
 
-	switch (axis) {
-		case 1:
-			writeMatrix(pos,
-				[1f, 0, 0, 0
-				, 0, c,-s, 0
-				, 0, s, c, 0
-				, 0, 0, 0, 1]);
-			break;
-		case 2:
-			writeMatrix(pos,
-				[ c, 0, s, 0
-				, 0, 1, 0, 0
-				,-s, 0, c, 0
-				, 0, 0, 0, 1]);
-			break;
-		case 3:
-			writeMatrix(pos,
-				[ c,-s, 0, 0
-				, s, c, 0, 0
-				, 0, 0, 1, 0
-				, 0, 0, 0, 1]);
-			break;
-	}
+		switch (axis) {
+			case 1:
+				writeMatrix(pos,
+					[1f, 0, 0, 0
+					, 0, c,-s, 0
+					, 0, s, c, 0
+					, 0, 0, 0, 1]);
+				break;
+			case 2:
+				writeMatrix(pos,
+					[ c, 0, s, 0
+					, 0, 1, 0, 0
+					,-s, 0, c, 0
+					, 0, 0, 0, 1]);
+				break;
+			case 3:
+				writeMatrix(pos,
+					[ c,-s, 0, 0
+					, s, c, 0, 0
+					, 0, 0, 1, 0
+					, 0, 0, 0, 1]);
+				break;
+		}
+	} else reverse;
 }
 void makeScale() {
-	float[3] v = void;
-	popVec(v);
+	static if (dim >= 2) {
+		float[3] v = void;
+		popVec(v);
 
-	writeMatrix(popOffsetVector(),
-		[v[0],   0,   0,   0
-		,   0,v[1],   0,   0
-		,   0,   0,v[2],   0
-		,   0,   0,   0,   1]);
+		writeMatrix(popOffsetVector(),
+			[v[0],   0,   0,   0
+			,   0,v[1],   0,   0
+			,   0,   0,v[2],   0
+			,   0,   0,   0,   1]);
+	} else reverse;
 }
 void makeTranslate() {
-	float[3] v = void;
-	popVec(v);
+	static if (dim >= 2) {
+		float[3] v = void;
+		popVec(v);
 
-	writeMatrix(popOffsetVector(),
-		[  1f,   0,   0,v[0]
-		,   0,   1,   0,v[1]
-		,   0,   0,   1,v[2]
-		,   0,   0,   0,   1]);
+		writeMatrix(popOffsetVector(),
+			[  1f,   0,   0,v[0]
+			,   0,   1,   0,v[1]
+			,   0,   0,   1,v[2]
+			,   0,   0,   0,   1]);
+	} else reverse;
 }
 
 void to2D() {
@@ -243,7 +252,7 @@ void to2D() {
 }
 
 // helper
-void readMatrix(float[] m, Coords c) {
+static if (dim >= 2) void readMatrix(float[] m, Coords c) {
 	assert (m.length == 16);
 
 	for (cell y = 0; y < 4; ++y, ++c.y) {
@@ -306,40 +315,44 @@ unittest {
 }
 
 void transform() {
-	Coords mc = popOffsetVector();
+	static if (dim >= 2) {
+		Coords mc = popOffsetVector();
 
-	float[4] v = void;
-	popVec(v[0..3]);
-	v[3] = 1;
+		float[4] v = void;
+		popVec(v[0..3]);
+		v[3] = 1;
 
-	float[16] m = void;
-	readMatrix(m, mc);
+		float[16] m = void;
+		readMatrix(m, mc);
 
-	float[4] r = void;
-	mulMatrices!(4,4,4,1)(m, v, r);
-	pushVec(r[0..3]);
+		float[4] r = void;
+		mulMatrices!(4,4,4,1)(m, v, r);
+		pushVec(r[0..3]);
+	} else reverse;
 }
 
 void mulMatrix() {
-	Coords
-		bc = popOffsetVector(),
-		ac = popOffsetVector(),
-		tc = popOffsetVector();
+	static if (dim >= 2) {
+		Coords
+			bc = popOffsetVector(),
+			ac = popOffsetVector(),
+			tc = popOffsetVector();
 
-	float[16] a = void, b = void, r = void;
-	readMatrix(b, bc);
-	readMatrix(a, ac);
+		float[16] a = void, b = void, r = void;
+		readMatrix(b, bc);
+		readMatrix(a, ac);
 
-	mulMatrices!(4,4,4,4)(b, a, r);
+		mulMatrices!(4,4,4,4)(b, a, r);
 
-	for (cell y = 0; y < 4; ++y, ++tc.y) {
-		for (cell x = 0; x < 4; ++x, ++tc.x) {
-			Union u = void;
-			u.f = r[y*4 + x];
-			space[tc] = u.c;
+		for (cell y = 0; y < 4; ++y, ++tc.y) {
+			for (cell x = 0; x < 4; ++x, ++tc.x) {
+				Union u = void;
+				u.f = r[y*4 + x];
+				space[tc] = u.c;
+			}
+			tc.x -= 4;
 		}
-		tc.x -= 4;
-	}
+	} else reverse;
 }
 
 }

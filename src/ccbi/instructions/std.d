@@ -56,6 +56,7 @@ mixin (TemplateLookup!(
 		 '`', "greaterThan",
 		 '_', "eastWestIf",
 		 '|', "northSouthIf",
+		 'm', "highLowIf",
 		 'w', "compare",
 		 '0', PushNumber!(0),
 		 '1', PushNumber!(1),
@@ -143,42 +144,47 @@ IP cip() { return this.cip; }
 // Go East, Go West, Go North, Go South
 void goEast () { if (cip.mode & cip.HOVER) ++cip.delta.x; else reallyGoEast;  }
 void goWest () { if (cip.mode & cip.HOVER) --cip.delta.x; else reallyGoWest;  }
+
+static if (dim >= 2) {
 void goNorth() { if (cip.mode & cip.HOVER) --cip.delta.y; else reallyGoNorth; }
 void goSouth() { if (cip.mode & cip.HOVER) ++cip.delta.y; else reallyGoSouth; }
+}
 
-void reallyGoEast () {
-	                     cip.delta.x = 1;
-	static if (dim >= 2) cip.delta.y = 0;
-	static if (dim >= 3) cip.delta.z = 0;
+static if (dim >= 3) {
+void goHigh() { if (cip.mode & cip.HOVER) ++cip.delta.z; else reallyGoHigh; }
+void goLow () { if (cip.mode & cip.HOVER) --cip.delta.z; else reallyGoLow; }
 }
-void reallyGoWest () {
-	                     cip.delta.x = -1;
-	static if (dim >= 2) cip.delta.y =  0;
-	static if (dim >= 3) cip.delta.z =  0;
+
+void reallyGoEast () { cip.delta = InitCoords!( 1); }
+void reallyGoWest () { cip.delta = InitCoords!(-1); }
+
+static if (dim >= 2) {
+void reallyGoNorth() { cip.delta = InitCoords!(0,-1); }
+void reallyGoSouth() { cip.delta = InitCoords!(0, 1); }
 }
-void reallyGoNorth() {
-	                     cip.delta.x =  0;
-	                     cip.delta.y = -1;
-	static if (dim >= 3) cip.delta.z =  0;
-}
-void reallyGoSouth() {
-	                     cip.delta.x =  0;
-	                     cip.delta.y =  1;
-	static if (dim >= 3) cip.delta.z =  0;
+
+static if (dim >= 3) {
+void reallyGoHigh () { cip.delta = InitCoords!(0,0, 1); }
+void reallyGoLow  () { cip.delta = InitCoords!(0,0,-1); }
 }
 
 // Go Away
 void goAway() {
+	// TODO: befunge only
 	switch (rand_up_to!(4)()) {
 		case 0: reallyGoEast (); break;
 		case 1: reallyGoWest (); break;
+	static if (dim >= 2) {
 		case 2: reallyGoNorth(); break;
 		case 3: reallyGoSouth(); break;
+	}
 		default: assert (false);
 	}
 }
 
 // Funge-98
+
+static if (dim >= 2) {
 
 // Turn Right
 void turnRight() {
@@ -202,6 +208,8 @@ void turnLeft() {
 	cell      x = cip.delta.x;
 	cip.delta.x = cip.delta.y;
 	cip.delta.y = -x;
+}
+
 }
 
 // Reverse
@@ -324,7 +332,12 @@ void greaterThan() {
 
 // East-West If, North-South If
 void eastWestIf  () { if (cip.stack.pop) goWest();  else goEast();  }
+
+static if (dim >= 2)
 void northSouthIf() { if (cip.stack.pop) goNorth(); else goSouth(); }
+
+static if (dim >= 3)
+void highLowIf   () { if (cip.stack.pop) goHigh();  else goLow();   }
 
 // Funge-98
 
