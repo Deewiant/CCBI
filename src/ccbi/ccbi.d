@@ -37,13 +37,12 @@ BEFUNGE_ARGS to it as command line arguments.
 ARGS may be one or more of:
  -t, --trace             Trace source during interpretation.
 
- -c, --count-ticks       Output to stderr the number of Funge-98 ticks used in
-                         execution, and the number of instructions executed.
-                         Both are 64-bit unsigned integers and may overflow.
-
  -w, --warnings          Warn when encountering unimplemented instructions.
 
- -s, --script            Begin execution on the second line if the first line
+ -s, --stats             Output some interesting statistics to stderr upon
+                         completion.
+
+     --script            Begin execution on the second line if the first line
                          begins with a shebang ("#!").
 
                          An infinite loop will occur if no second line exists,
@@ -262,7 +261,11 @@ Other notes:
     "TIME"  0x54494d45  Time and Date functions
     "TRDS"  0x54524453  IP travel in time and space
 
-      'G' pushes a 32-bit truncation of the 64-bit counter.
+      Time travel to the past is implemented as rerunning from tick 0. Output
+      (console/file) during rerunning is not performed. Console input results
+      in constant values, which probably won't be the same as those that were
+      originally input. The 'i' instruction is ignorant of TRDS, as are these
+      fingerprints: DIRF, FILE, SOCK, SCKE.
 
     Intentionally unsupported fingerprints:
       Because they are not portable:
@@ -325,9 +328,9 @@ int main(char[][] args) {
 
 		with (flags) switch (arg) {
 			case "-t", "--trace":           tracing             = true;  break;
-//			case "-c", "--count-ticks":     countTicks          = true;  break;
 			case "-w", "--warnings":        warnings            = true;  break;
-			case "-s", "--script":          script              = true;  break;
+			case "-s", "--stats":           useStats            = true;  break;
+			case       "--script":          script              = true;  break;
 			case "-P", "--disable-fprints": fingerprintsEnabled = false; break;
 
 /+			case "-m", "--mini-funge":

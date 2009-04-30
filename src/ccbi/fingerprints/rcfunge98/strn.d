@@ -84,6 +84,10 @@ void get() {
 }
 
 void input() {
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return cip.stack.push(0);
+
 	Sout.flush;
 
 	size_t i = 0;

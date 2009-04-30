@@ -11,20 +11,21 @@ version (Windows)
 else
 	version = ncurses;
 
-version (PDCurses) {
-	pragma (msg, "Remember to link with a PDCurses library.");
-} else {
-	pragma (msg, "Remember to link with an ncurses library.");
-}
-
-pragma (msg, "Assuming 32-bit chtype...");
+template ChtypeMsg() { const ChtypeMsg = "NCRS :: assuming 32-bit chtype..."; }
 alias uint chtype;
+
+template MacroMsg() { const MacroMsg =
+"NCRS :: echo, noecho, and initscr may be macros, but there's no other way to
+        get their functionality than using them. Since both PDCurses and
+        ncurses provide them as actual functions, assuming that your curses
+        implementation also does so..."; }
 
 extern (C) {
 	struct WINDOW;
 
 	int beep();
 
+	// may be macros
 	int echo();
 	int noecho();
 
@@ -51,7 +52,6 @@ extern (C) {
 	int waddch(WINDOW*, chtype);
 	int waddstr(WINDOW*, char*);
 
-	int werase(WINDOW*);
 	int wclrtobot(WINDOW*);
 	int wclrtoeol(WINDOW*);
 
@@ -83,14 +83,28 @@ enum { ERR = -1 }
 
 template NCRS() {
 
+pragma (msg, ChtypeMsg!());
+pragma (msg, MacroMsg!());
+
+version (PDCurses) {
+	pragma (msg,
+		"NCRS :: remember to link with a curses library, such as PDCurses.");
+} else {
+	pragma (msg,
+		"NCRS :: remember to link with a curses library, such as ncurses.");
+}
+
 void doBeep () { if (beep()                 == ERR) reverse; }
 void refresh() { if (wrefresh(stdscr)       == ERR) reverse; }
 void unget  () { if (ungetch(cip.stack.pop) == ERR) reverse; }
 
 void clear() {
 	switch (cip.stack.pop) {
-		case 0: return werase(stdscr);
 		case 1: return wclrtoeol(stdscr);
+		case 0:
+			// return werase(stdscr); may be a macro, so do it manually
+			if (wmove(stdscr, 0, 0) == ERR)
+				reverse;
 		case 2: return wclrtobot(stdscr);
 		default: return reverse();
 	}

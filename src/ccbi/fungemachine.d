@@ -9,6 +9,7 @@ import tango.io.device.File     : File;
 import tango.io.stream.Buffered : BufferedOutput;
 import tango.io.stream.Format;
 import tango.io.stream.Typed;
+import tango.text.convert.Integer : toString;
 
 import ccbi.container;
 import ccbi.fingerprint;
@@ -16,6 +17,7 @@ import ccbi.flags;
 import ccbi.ip;
 import ccbi.request;
 import ccbi.space;
+import ccbi.stats;
 import ccbi.stdlib;
 import ccbi.templateutils;
 import ccbi.tracer;
@@ -76,6 +78,8 @@ private:
 	int returnVal;
 
 	Flags flags;
+	Stats stats;
+	ContainerStats stackStats, stackStackStats, dequeStats, semanticStats;
 
 	public this(File source, char[][] args, Flags f) {
 		flags = f;
@@ -86,7 +90,7 @@ private:
 		else
 			alias space firstSpace;
 
-		firstSpace = new FungeSpace(source);
+		firstSpace = new FungeSpace(&stats, source);
 
 		ips.length = 1;
 		reboot();
@@ -100,7 +104,9 @@ private:
 				space = initialSpace;
 		}
 
-		tip = ips[0] = new IP(space);
+		tip = ips[0] = new IP(
+			space, &stackStats, &stackStackStats, &dequeStats, &semanticStats);
+
 		if (
 			dim >= 2     &&
 			flags.script &&
@@ -123,7 +129,7 @@ private:
 
 		if (flags.useStats) {
 			Sout.flush;
-//			printStats(Serr);
+			printStats(Serr);
 		}
 		return returnVal;
 	}
@@ -147,7 +153,8 @@ private:
 				case Request.STOP:
 					if (!stop(j)) {
 				case Request.QUIT:
-							return false;
+						stats.ipStopped += ips.length;
+						return false;
 					}
 					break;
 
@@ -178,7 +185,7 @@ private:
 	mixin .Tracer!() Tracer;
 
 	Request executeInstruction() {
-//		++stats.executionCount;
+		++stats.executionCount;
 
 		auto c = space[cip.pos];
 
@@ -215,6 +222,8 @@ private:
 // TODO: move dim information to instructions themselves, since fingerprints
 // need it as well
 	Request executeStandard(cell c) {
+		++stats.stdExecutionCount;
+
 		switch (c) mixin (Switch!(
 			Ins!("Std",
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
@@ -233,7 +242,10 @@ private:
 		return Request.MOVE;
 	}
 
-	mixin (ConcatMapTuple!(TemplateMixin,    ALL_FINGERPRINTS));
+	mixin (
+		ConcatMapTuple!(TemplateMixin,
+			MapTuple!(PrefixName, ALL_FINGERPRINTS)));
+
 	mixin (ConcatMapTuple!(FingerprintCount, ALL_FINGERPRINTS));
 
 	void loadedFingerprint(cell fingerprint) {
@@ -253,6 +265,8 @@ private:
 	in {
 		assert (isSemantics(c));
 	} body {
+		++stats.fingExecutionCount;
+
 		auto stack = cip.semantics[c - 'A'];
 		if (stack.empty)
 			return unimplemented;
@@ -278,6 +292,8 @@ private:
 	}
 
 	Request unimplemented() {
+		++stats.unimplementedCount;
+
 		if (flags.warnings) {
 			Sout.flush;
 			// XXX: this looks like a hack
@@ -297,7 +313,6 @@ private:
 	}
 
 	bool stop(size_t idx) {
-
 		auto ip = ips[idx];
 
 		Tracer.ipStopped(ip);
@@ -307,7 +322,13 @@ private:
 				TRDS.ipStopped(ip);
 
 		ips.removeAt(idx);
-		return ips.length > 0;
+
+		if (ips.length > 0) {
+			// Not in the below case because quitting handles that
+			++stats.ipStopped;
+			return true;
+		} else
+			return false;
 	}
 
 	bool executable(bool normalTime, IP ip) {
@@ -334,5 +355,105 @@ private:
 		Serr.layout.convert(
 			delegate uint(char[] s){ return Serr.write(s); },
 			_arguments, _argptr, fmt);
+	}
+
+	void printStats(FormatOutput!(char) put) {
+		put("============").newline;
+		put(" Statistics ").newline;
+		put("============").newline;
+		put.newline;
+
+		struct Stat {
+			char[] name;
+			ulong n;
+			char[] fin;
+		}
+		Stat[] ss;
+
+		auto wasWere = stats.ipDormant == 1 ? "Was" : "Were";
+
+		ss ~= Stat("Spent",                         tick+1,                    "tick");
+		ss ~= Stat("Encountered",                   stats.executionCount,      "instruction");
+		ss ~= Stat("Executed",                      stats.stdExecutionCount,   "standard instruction");
+		ss ~= Stat("Executed",                      stats.fingExecutionCount,  "fingerprint instruction");
+		ss ~= Stat("Encountered",                   stats.unimplementedCount,  "unimplemented instruction");
+		ss ~= Stat("Spent in dormancy",             stats.execDormant,         "execution");
+		ss ~= Stat(null);
+		ss ~= Stat("Performed",                     stats.spaceLookups,        "Funge-Space lookup");
+		ss ~= Stat("Performed",                     stats.spaceAssignments,    "Funge-Space assignment");
+		ss ~= Stat(null);
+		ss ~= Stat("Pushed onto stack",             stackStats.pushes,         "cell");
+		ss ~= Stat("Popped from stack",             stackStats.pops,           "cell");
+		ss ~= Stat("Cleared from stack",            stackStats.cleared,        "cell");
+		ss ~= Stat("Peeked stack",                  stackStats.peeks,          "time");
+		ss ~= Stat("Cleared stack",                 stackStats.clears,         "time");
+		ss ~= Stat("Underflowed stack during pop",  stackStats.popUnderflows,  "time");
+		ss ~= Stat("Underflowed stack during peek", stackStats.peekUnderflows, "time");
+		ss ~= Stat("Resized stack",                 stackStats.resizes,        "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Pushed onto deque",             dequeStats.pushes,         "cell");
+		ss ~= Stat("Popped from deque",             dequeStats.pops,           "cell");
+		ss ~= Stat("Cleared from deque",            dequeStats.cleared,        "cell");
+		ss ~= Stat("Peeked deque",                  dequeStats.peeks,          "time");
+		ss ~= Stat("Cleared deque",                 dequeStats.clears,         "time");
+		ss ~= Stat("Underflowed deque during pop",  dequeStats.popUnderflows,  "time");
+		ss ~= Stat("Underflowed deque during peek", dequeStats.peekUnderflows, "time");
+		ss ~= Stat("Resized deque",                 dequeStats.resizes,        "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Pushed onto stack stack",       stackStackStats.pushes,    "container");
+		ss ~= Stat("Popped from stack stack",       stackStackStats.pops,      "container");
+		ss ~= Stat("Cleared from stack stack",      stackStackStats.cleared,   "container");
+		ss ~= Stat("Peeked stack stack",            stackStackStats.peeks,     "time");
+		ss ~= Stat("Cleared stack stack",           stackStackStats.clears,    "time");
+		ss ~= Stat("Resized stack stack",           stackStackStats.resizes,   "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Pushed onto semantic stack",    semanticStats.pushes,      "semantic");
+		ss ~= Stat("Popped from semantic stack",    semanticStats.pops,        "semantic");
+		ss ~= Stat("Cleared from semantic stack",   semanticStats.cleared,     "semantic");
+		ss ~= Stat("Peeked semantic stack",         semanticStats.peeks,       "time");
+		ss ~= Stat("Cleared semantic stack",        semanticStats.clears,      "time");
+		ss ~= Stat("Resized semantic stack",        semanticStats.resizes,     "time");
+		ss ~= Stat(null);
+		ss ~= Stat("Forked",                        stats.ipForked,            "IP");
+		ss ~= Stat("Stopped",                       stats.ipStopped,           "IP");
+		ss ~= Stat(wasWere ~ " dormant",            stats.ipDormant,           "IP");
+		ss ~= Stat("Travelled to the past",         stats.ipTravelledToPast,   "IP");
+		ss ~= Stat("Travelled to the future",       stats.ipTravelledToFuture, "IP");
+		ss ~= Stat("Arrived in the past",           stats.travellerArrived,    "IP");
+		ss ~= Stat(null);
+		ss ~= Stat("Stopped time",                  stats.timeStopped,         "time");
+
+		size_t wideName = 0, wideN = 0;
+		foreach (stat; ss)
+		if (stat.name !is null && stat.n) {
+			uint width = .toString(stat.n).length;
+			if (width > wideN)
+				wideN = width;
+			if (stat.name.length > wideName)
+				wideName = stat.name.length;
+		}
+
+		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
+		bool newline = false;
+
+		foreach (stat; ss)
+		if (stat.name is null)
+			newline = true;
+		else if (stat.n) {
+			if (newline) {
+				newline = false;
+				put.newline;
+			}
+			put(stat.name)(':');
+
+			for (auto i = stat.name.length; i <= wideName; ++i)
+				put(' ');
+
+			put.format(fmt, stat.n)(stat.fin);
+			if (stat.n != 1)
+				put('s');
+
+			put.newline;
+		}
 	}
 }

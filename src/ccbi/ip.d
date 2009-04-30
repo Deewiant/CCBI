@@ -13,6 +13,7 @@ public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
        import ccbi.space;
+       import ccbi.stats;
        import ccbi.templateutils : EmitGot;
        import ccbi.utils;
 
@@ -25,13 +26,19 @@ final class IP(cell dim, fings...) {
 	mixin (EmitGot!("IMAP", fings));
 	mixin (EmitGot!("TRDS", fings));
 
-	this(FungeSpace!(dim) s) {
+	this(
+		FungeSpace!(dim) s,
+		ContainerStats* stackStats,
+		ContainerStats* stackStackStats,
+		ContainerStats* dequeStats,
+		ContainerStats* semanticStats)
+	{
 		id = 0;
 		static if (GOT_IIPC)
 			parentID = 0;
 
-		stackStack = new typeof(stackStack)(1u);
-		stack      = new Stack!(cell);
+		stackStack = new typeof(stackStack)(stackStackStats, 1u);
+		stack      = new Stack!(cell)(stackStats);
 		stackStack.push(stack);
 
 		static if (GOT_IMAP)
@@ -39,7 +46,7 @@ final class IP(cell dim, fings...) {
 				i = cast(cell)j;
 
 		foreach (inout sem; semantics)
-			sem = new typeof(sem);
+			sem = new typeof(sem)(semanticStats);
 
 		space = s;
 	}
@@ -116,8 +123,8 @@ final class IP(cell dim, fings...) {
 
 	Container!(cell) newStack() {
 		return (cast(Deque)stack
-			? cast(Container!(cell))new Deque
-			: cast(Container!(cell))new Stack!(cell)
+			? cast(Container!(cell))new Deque       (stack.stats)
+			: cast(Container!(cell))new Stack!(cell)(stack.stats)
 		);
 	}
 

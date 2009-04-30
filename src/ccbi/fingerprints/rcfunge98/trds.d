@@ -47,7 +47,7 @@ FungeSpace initialSpace;
 
 // When rerunning time to jump point, don't output (since that isn't
 // "happening")
-typeof(tick) printAfter = 0;
+typeof(tick) ioAfter = 0;
 
 // }}}
 // {{{ FungeMachine callbacks
@@ -68,8 +68,10 @@ void newTick() {
 
 		// Must be appended: preserves correct execution order
 		for (size_t i = 0; i < travellers.length; ++i)
-			if (tick == travellers[i].jumpedTo)
+			if (tick == travellers[i].jumpedTo) {
+				++stats.travellerArrived;
 				ips ~= new IP(travellers[i]);
+			}
 	}
 }
 
@@ -97,6 +99,8 @@ void ipStopped(IP ip) {
 void timeJump(IP ip) {
 	// nothing special if jumping to the future, just don't trace it
 	if (tick > 0) {
+		++stats.ipTravelledToFuture;
+
 		if (ip.jumpedTo >= ip.jumpedAt)
 			ip.mode &= ~IP.FROM_FUTURE;
 
@@ -106,7 +110,7 @@ void timeJump(IP ip) {
 		return;
 	}
 
-//	++stats.travelledToPast;
+	++stats.ipTravelledToPast;
 
 	// add ip to travellers unless it's already there
 	bool found = false;
@@ -272,12 +276,12 @@ Request jump() {
 				return Request.STOP;
 			}
 
-			ips[0]        = cip;
-			ips.length    = 1;
-			currentID     = 0;
-			cip.jumpedAt  = tick;
-			tick          = 0;
-			printAfter    = cip.jumpedTo;
+			ips[0]       = cip;
+			ips.length   = 1;
+			currentID    = 0;
+			cip.jumpedAt = tick;
+			tick         = 0;
+			ioAfter      = cip.jumpedTo;
 			resume();
 		}
 
@@ -286,8 +290,8 @@ Request jump() {
 	return Request.NONE;
 }
 
-void stop  () { timeStopper = cip;  }
-void resume() { timeStopper = null; }
+void stop  () { ++stats.timeStopped; timeStopper = cip;  }
+void resume() {                      timeStopper = null; }
 
 void now() { cip.stack.push(cast(cell)tick); }
 void max() { cip.stack.push(             0); }
@@ -302,9 +306,9 @@ void reset() {
 }
 
 void returnCoords() {
-	// just like RC/Funge-98, we don't set IP.TIME_SET
-	// makes RIJ not work
-	cip.mode |= IP.ABS_SPACE | IP.SPACE_SET | IP.ABS_TIME | IP.DELTA_SET;
+	cip.mode |=
+		IP.ABS_SPACE | IP.SPACE_SET |
+		IP.ABS_TIME  | IP.TIME_SET  | IP.DELTA_SET;
 
 	cip.tardisPos   = cip.tardisReturnPos;
 	cip.tardisDelta = cip.tardisReturnDelta;
