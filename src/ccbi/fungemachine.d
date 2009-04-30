@@ -60,9 +60,9 @@ private:
 	else
 		alias ALL_FINGERPRINTS fings;
 
-	alias .IP        !(dim, fings) IP;
-	alias .FungeSpace!(dim)        FungeSpace;
-	alias .Dimension !(dim).Coords InitCoords;
+	alias .IP        !(dim, befunge93, fings) IP;
+	alias .FungeSpace!(dim, befunge93)        FungeSpace;
+	alias .Dimension !(dim).Coords            InitCoords;
 
 	mixin (EmitGot!("IIPC", fings));
 	mixin (EmitGot!("IMAP", fings));
@@ -97,7 +97,7 @@ private:
 		else
 			alias space firstSpace;
 
-		firstSpace = new FungeSpace(&stats, source, befunge93);
+		firstSpace = new FungeSpace(&stats, source);
 
 		ips.length = 1;
 		reboot();
