@@ -382,24 +382,25 @@ void necklace() {
 }
 
 void barstool() {
-	// TODO: befunge-only
 	switch (cip.stack.pop) {
-		case 0: eastWestIf(); break;
-	static if (dim >= 2) {
-		case 1: northSouthIf(); break;
-	}
-		default: reverse(); break;
+		                    case 0: eastWestIf;   break;
+	static if (dim >= 2) { case 1: northSouthIf; break; }
+	static if (dim >= 3) { case 2: highLowIf;    break; }
+		                    default: reverse;     break;
 	}
 }
 
 void tumbler() {
-	// TODO: befunge-only
-	switch (rand_up_to!(4)()) {
+	switch (rand_up_to!(2*dim)()) {
 		case 0: space[cip.pos] = '<'; goWest (); break;
 		case 1: space[cip.pos] = '>'; goEast (); break;
 	static if (dim >= 2) {
 		case 2: space[cip.pos] = 'v'; goSouth(); break;
 		case 3: space[cip.pos] = '^'; goNorth(); break;
+	}
+	static if (dim >= 3) {
+		case 4: space[cip.pos] = 'l'; goLow  (); break;
+		case 5: space[cip.pos] = 'h'; goHigh (); break;
 	}
 		default: assert (false);
 	}
