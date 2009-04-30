@@ -748,17 +748,14 @@ bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
 		return false;
 	else {
 		if (!s) return false;
-		try {
-			size_t i;
-			if (!read(i, s) || i >= ips.length || i in invalidIndices)
-				throw new Object;
-			idx = i;
-			return true;
 
-		} catch {
+		size_t i;
+		if (!read(i, s) || i >= ips.length || i in invalidIndices) {
 			Serr('\'')(s)("' is not a valid IP index.").newline;
 			return false;
 		}
+		idx = i;
+		return true;
 	}
 }
 
