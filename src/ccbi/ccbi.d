@@ -29,12 +29,18 @@ const char[]
  Copyright (c) 2006-2009 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
  See the file license.txt for copyright details.
 
-Usage: {} ARGS SOURCE_FILE [BEFUNGE_ARGS...]
+Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]
 
-Interprets SOURCE_FILE as Befunge-98 code, executing it and passing
-BEFUNGE_ARGS to it as command line arguments.
+Interprets SOURCE_FILE as Funge-98 code, executing it and passing FUNGE_ARGS to
+it as command line arguments. The default mode of operation is Befunge-98, but
+this may be modified with the appropriate ARGS.
 
 ARGS may be one or more of:
+ -d1, --unefunge         Treat source as one-dimensional (Unefunge).
+ -d2, --befunge          Treat source as two-dimensional (Befunge). This is the
+                         default.
+ -d3, --trefunge         Treat source as three-dimensional (Trefunge).
+
  -t, --trace             Trace source during interpretation.
 
  -w, --warnings          Warn when encountering unimplemented instructions.
@@ -297,6 +303,7 @@ int main(char[][] args) {
 	args = args[1..$];
 
 	Flags flags;
+	byte dim = 2;
 
 	// {{{ parse arguments
 	argLoop: for (size_t i = 0; i < args.length; ++i) {
@@ -326,7 +333,11 @@ int main(char[][] args) {
 			return 0;
 		}
 
+		// TODO: switch to a proper argument parser
 		with (flags) switch (arg) {
+			case "-d1", "--unefunge":       dim = 1;                     break;
+			case "-d2", "--befunge":        dim = 2;                     break;
+			case "-d3", "--trefunge":       dim = 3;                     break;
 			case "-t", "--trace":           tracing             = true;  break;
 			case "-w", "--warnings":        warnings            = true;  break;
 			case "-s", "--stats":           useStats            = true;  break;
