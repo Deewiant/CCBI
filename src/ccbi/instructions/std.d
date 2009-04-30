@@ -626,7 +626,7 @@ void inputDecimal() {
 		if (tick < ioAfter)
 			return cip.stack.push(0);
 
-	Stdout.flush();
+	Sout.flush();
 
 	reallyInputDecimal();
 }
@@ -694,7 +694,7 @@ void inputCharacter() {
 		if (tick < ioAfter)
 			return cip.stack.push('T');
 
-	Stdout.flush();
+	Sout.flush();
 
 	ubyte c;
 
