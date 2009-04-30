@@ -4,6 +4,7 @@
 
 module ccbi.fungemachine;
 
+import tango.core.Tuple;
 import tango.io.Stdout;
 import tango.io.device.File     : File;
 import tango.io.stream.Buffered : BufferedOutput;
@@ -50,26 +51,38 @@ static ~this() {
 	Serr.flush;
 }
 
-final class FungeMachine(cell dim) {
+final class FungeMachine(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
+	static assert (!befunge93 || dim == 2);
 private:
-	alias .IP        !(dim, ALL_FINGERPRINTS) IP;
-	alias .FungeSpace!(dim)                   FungeSpace;
+	static if (befunge93)
+		alias Tuple!() fings;
+	else
+		alias ALL_FINGERPRINTS fings;
+
+	alias .IP        !(dim, befunge93, fings) IP;
+	alias .FungeSpace!(dim, befunge93)        FungeSpace;
 	alias .Dimension !(dim).Coords            InitCoords;
 
-	mixin (EmitGot!("IIPC", ALL_FINGERPRINTS));
-	mixin (EmitGot!("IMAP", ALL_FINGERPRINTS));
-	mixin (EmitGot!("TRDS", ALL_FINGERPRINTS));
+	mixin (EmitGot!("IIPC", fings));
+	mixin (EmitGot!("IMAP", fings));
+	mixin (EmitGot!("TRDS", fings));
 
-	IP[] ips;
-	IP   cip;
-	IP   tip; // traced IP
+	IP cip;
+
+	static if (!befunge93) {
+		IP   tip; // traced IP
+		IP[] ips;
+	} else
+		alias cip tip;
+
 	FungeSpace space;
 
 	// For IPs
-	cell currentID = 0;
-
-	char[][] fungeArgs;
+	static if (!befunge93) {
+		cell currentID = 0;
+		char[][] fungeArgs;
+	}
 
 	// TRDS pretty much forces this to be signed (either that or handle signed
 	// time displacements manually)
@@ -83,7 +96,9 @@ private:
 
 	public this(File source, char[][] args, Flags f) {
 		flags = f;
-		fungeArgs = args;
+
+		static if (!befunge93)
+			fungeArgs = args;
 
 		static if (GOT_TRDS)
 			alias TRDS.initialSpace firstSpace;
@@ -92,7 +107,8 @@ private:
 
 		firstSpace = new FungeSpace(&stats, source);
 
-		ips.length = 1;
+		static if (!befunge93)
+			ips.length = 1;
 		reboot();
 	}
 
@@ -104,14 +120,23 @@ private:
 				space = initialSpace;
 		}
 
-		tip = ips[0] = new IP(
+		IP ip = new IP(
 			space, &stackStats, &stackStackStats, &dequeStats, &semanticStats);
 
-		static if (dim >= 2) if (
+		static if (befunge93)
+			tip = cip    = ip;
+		else
+			tip = ips[0] = ip;
+
+		static if (dim >= 2)
+		if (
 			flags.script &&
 			space[InitCoords!(0,0)] == '#' &&
 			space[InitCoords!(0,1)] == '!'
 		)
+		static if (befunge93)
+			cip.pos.y = 1;
+		else
 			ips[0].pos.y = 1;
 	}
 
@@ -142,11 +167,16 @@ private:
 		if (flags.tracing && !Tracer.doTrace())
 			return false;
 
-		for (auto j = ips.length; j-- > 0;)
+		static if (befunge93) {
+			switch (executeInstruction()) {
+				case Request.STOP: stop(0); return false;
+				case Request.MOVE: cip.move;
+				default:           break;
+			}
+		} else for (auto j = ips.length; j-- > 0;)
 		if (executable(normalTime, ips[j])) {
 
 			cip = ips[j];
-			cip.gotoNextInstruction();
 			switch (executeInstruction()) {
 
 				case Request.STOP:
@@ -186,6 +216,9 @@ private:
 	Request executeInstruction() {
 		++stats.executionCount;
 
+		static if (!befunge93)
+			cip.gotoNextInstruction();
+
 		auto c = space[cip.pos];
 
 		if (c == '"')
@@ -193,7 +226,7 @@ private:
 		else if (cip.mode & IP.STRING)
 			cip.stack.push(c);
 		else {
-			if (flags.fingerprintsEnabled) {
+			static if (!befunge93) if (flags.fingerprintsEnabled) {
 				static if (GOT_IMAP) {
 					if (c >= 0 && c < cip.mapping.length) {
 						c = cip.mapping[c];
@@ -225,6 +258,8 @@ private:
 
 		switch (c) mixin (Switch!(
 			Ins!("Std",
+				befunge93 ? " !\"#$%&*+,-./0123456789:<>?@\\^_`gpv|~" :
+
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
 				"!\"#$%&'()*+,-./0123456789:<=>?@\\_`abcdefgijknopqrstuxyz{" ~
 
@@ -241,53 +276,52 @@ private:
 		return Request.MOVE;
 	}
 
-	mixin (
-		ConcatMapTuple!(TemplateMixin,
-			MapTuple!(PrefixName, ALL_FINGERPRINTS)));
+	static if (!befunge93) {
+		mixin (ConcatMapTuple!(TemplateMixin, MapTuple!(PrefixName, fings)));
+		mixin (ConcatMapTuple!(FingerprintCount, fings));
 
-	mixin (ConcatMapTuple!(FingerprintCount, ALL_FINGERPRINTS));
+		void loadedFingerprint(cell fingerprint) {
+			switch (fingerprint) mixin (Switch!(
+				FingerprintConstructorCases!(fings),
+				"default: break;"
+			));
+		}
+		void unloadedFingerprintIns(cell fingerprint) {
+			switch (fingerprint) mixin (Switch!(
+				FingerprintDestructorCases!(fings),
+				"default: break;"
+			));
+		}
 
-	void loadedFingerprint(cell fingerprint) {
-		switch (fingerprint) mixin (Switch!(
-			FingerprintConstructorCases!(ALL_FINGERPRINTS),
-			"default: break;"
-		));
-	}
-	void unloadedFingerprintIns(cell fingerprint) {
-		switch (fingerprint) mixin (Switch!(
-			FingerprintDestructorCases!(ALL_FINGERPRINTS),
-			"default: break;"
-		));
-	}
+		Request executeSemantics(cell c)
+		in {
+			assert (isSemantics(c));
+		} body {
+			++stats.fingExecutionCount;
 
-	Request executeSemantics(cell c)
-	in {
-		assert (isSemantics(c));
-	} body {
-		++stats.fingExecutionCount;
+			auto stack = cip.semantics[c - 'A'];
+			if (stack.empty)
+				return unimplemented;
 
-		auto stack = cip.semantics[c - 'A'];
-		if (stack.empty)
-			return unimplemented;
+			auto sem = stack.top;
 
-		auto sem = stack.top;
+			switch (sem.fingerprint) mixin (Switch!(
+				// foreach fing, generates the following:
+				// case HexCode!(fing):
+				// 	switch (sem.instruction) mixin (Switch!(
+				// 		mixin (Ins!(fing, Range!('A', 'Z'))),
+				// 		"default: assert (false);"
+				// 	));
 
-		switch (sem.fingerprint) mixin (Switch!(
-			// foreach fing, generates the following:
-			// case HexCode!(fing):
-			// 	switch (sem.instruction) mixin (Switch!(
-			// 		mixin (Ins!(fing, Range!('A', 'Z'))),
-			// 		"default: assert (false);"
-			// 	));
+				FingerprintExecutionCases!(
+					"sem.instruction",
+					"assert (false);",
+					fings),
+				"default: unimplemented; break;"
+			));
 
-			FingerprintExecutionCases!(
-				"sem.instruction",
-				"assert (false);",
-				ALL_FINGERPRINTS),
-			"default: unimplemented; break;"
-		));
-
-		return Request.MOVE;
+			return Request.MOVE;
+		}
 	}
 
 	Request unimplemented() {
@@ -312,7 +346,11 @@ private:
 	}
 
 	bool stop(size_t idx) {
-		auto ip = ips[idx];
+
+		static if (befunge93)
+			alias cip ip;
+		else
+			auto ip = ips[idx];
 
 		Tracer.ipStopped(ip);
 
@@ -320,16 +358,21 @@ private:
 			static if (GOT_TRDS)
 				TRDS.ipStopped(ip);
 
-		ips.removeAt(idx);
-
-		if (ips.length > 0) {
-			// Not in the below case because quitting handles that
-			++stats.ipStopped;
-			return true;
-		} else
+		static if (befunge93)
 			return false;
+		else {
+			ips.removeAt(idx);
+
+			if (ips.length > 0) {
+				// Not in the below case because quitting handles that
+				++stats.ipStopped;
+				return true;
+			} else
+				return false;
+		}
 	}
 
+	static if (!befunge93)
 	bool executable(bool normalTime, IP ip) {
 		if (ips.length == 1)
 			return true;
