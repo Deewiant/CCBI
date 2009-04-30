@@ -68,15 +68,21 @@ private:
 	mixin (EmitGot!("IMAP", fings));
 	mixin (EmitGot!("TRDS", fings));
 
-	IP[] ips;
-	IP   cip;
-	IP   tip; // traced IP
+	IP cip;
+
+	static if (!befunge93) {
+		IP   tip; // traced IP
+		IP[] ips;
+	} else
+		alias cip tip;
+
 	FungeSpace space;
 
 	// For IPs
-	cell currentID = 0;
-
-	char[][] fungeArgs;
+	static if (!befunge93) {
+		cell currentID = 0;
+		char[][] fungeArgs;
+	}
 
 	// TRDS pretty much forces this to be signed (either that or handle signed
 	// time displacements manually)
@@ -90,7 +96,9 @@ private:
 
 	public this(File source, char[][] args, Flags f) {
 		flags = f;
-		fungeArgs = args;
+
+		static if (!befunge93)
+			fungeArgs = args;
 
 		static if (GOT_TRDS)
 			alias TRDS.initialSpace firstSpace;
@@ -99,7 +107,8 @@ private:
 
 		firstSpace = new FungeSpace(&stats, source);
 
-		ips.length = 1;
+		static if (!befunge93)
+			ips.length = 1;
 		reboot();
 	}
 
@@ -111,8 +120,13 @@ private:
 				space = initialSpace;
 		}
 
-		tip = ips[0] = new IP(
+		IP ip = new IP(
 			space, &stackStats, &stackStackStats, &dequeStats, &semanticStats);
+
+		static if (befunge93)
+			tip = cip    = ip;
+		else
+			tip = ips[0] = ip;
 
 		if (
 			dim >= 2     &&
@@ -120,6 +134,9 @@ private:
 			space[InitCoords!(0,0)] == '#' &&
 			space[InitCoords!(0,1)] == '!'
 		)
+		static if (befunge93)
+			cip.pos.y = 1;
+		else
 			ips[0].pos.y = 1;
 	}
 
@@ -150,7 +167,13 @@ private:
 		if (flags.tracing && !Tracer.doTrace())
 			return false;
 
-		for (auto j = ips.length; j-- > 0;)
+		static if (befunge93) {
+			switch (executeInstruction()) {
+				case Request.STOP: stop(0); return false;
+				case Request.MOVE: cip.move;
+				default:           break;
+			}
+		} else for (auto j = ips.length; j-- > 0;)
 		if (executable(normalTime, ips[j])) {
 
 			cip = ips[j];
@@ -254,7 +277,7 @@ private:
 	}
 
 	static if (!befunge93) {
-		mixin (ConcatMapTuple!(TemplateMixin, MapTuple!(PrefixName, fings))); 
+		mixin (ConcatMapTuple!(TemplateMixin, MapTuple!(PrefixName, fings)));
 		mixin (ConcatMapTuple!(FingerprintCount, fings));
 
 		void loadedFingerprint(cell fingerprint) {
@@ -323,7 +346,11 @@ private:
 	}
 
 	bool stop(size_t idx) {
-		auto ip = ips[idx];
+
+		static if (befunge93)
+			alias cip ip;
+		else
+			auto ip = ips[idx];
 
 		Tracer.ipStopped(ip);
 
@@ -331,16 +358,21 @@ private:
 			static if (GOT_TRDS)
 				TRDS.ipStopped(ip);
 
-		ips.removeAt(idx);
-
-		if (ips.length > 0) {
-			// Not in the below case because quitting handles that
-			++stats.ipStopped;
-			return true;
-		} else
+		static if (befunge93)
 			return false;
+		else {
+			ips.removeAt(idx);
+
+			if (ips.length > 0) {
+				// Not in the below case because quitting handles that
+				++stats.ipStopped;
+				return true;
+			} else
+				return false;
+		}
 	}
 
+	static if (!befunge93)
 	bool executable(bool normalTime, IP ip) {
 		if (ips.length == 1)
 			return true;
