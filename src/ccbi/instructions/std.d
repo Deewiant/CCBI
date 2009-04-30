@@ -373,9 +373,15 @@ void divide() {
 		cell fst = pop,
 		     snd = pop;
 
-		// Note that division by zero = 0
-		// In Befunge-93 it would ask the user what the result should be
-		push(fst ? snd / fst : 0);
+		if (fst)
+			push(snd / fst);
+		else static if (befunge93) {
+			Sout.flush;
+			Serr("CCBI :: division by zero encountered. Input wanted result: ");
+			Serr.flush;
+			reallyInputDecimal();
+		} else
+			push(0);
 	}
 }
 
@@ -385,8 +391,15 @@ void remainder() {
 		cell fst = pop,
 		     snd = pop;
 
-		// ditto above
-		push(fst ? snd % fst : 0);
+		if (fst)
+			push(snd % fst);
+		else static if (befunge93) {
+			Sout.flush;
+			Serr("CCBI :: modulo by zero encountered. Input wanted result: ");
+			Serr.flush;
+			reallyInputDecimal();
+		} else
+			push(0);
 	}
 }
 
@@ -599,6 +612,9 @@ void inputDecimal() {
 
 	Stdout.flush();
 
+	reallyInputDecimal();
+}
+void reallyInputDecimal() {
 	ubyte c;
 
 	try {
