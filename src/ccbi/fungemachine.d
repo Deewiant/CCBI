@@ -97,7 +97,7 @@ private:
 		else
 			alias space firstSpace;
 
-		firstSpace = new FungeSpace(&stats, source);
+		firstSpace = new FungeSpace(&stats, source, befunge93);
 
 		ips.length = 1;
 		reboot();
