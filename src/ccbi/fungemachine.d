@@ -232,7 +232,10 @@ private:
 		return Request.MOVE;
 	}
 
-	mixin (ConcatMapTuple!(TemplateMixin,    ALL_FINGERPRINTS));
+	mixin (
+		ConcatMapTuple!(TemplateMixin,
+			MapTuple!(PrefixName, ALL_FINGERPRINTS)));
+
 	mixin (ConcatMapTuple!(FingerprintCount, ALL_FINGERPRINTS));
 
 	void loadedFingerprint(cell fingerprint) {
