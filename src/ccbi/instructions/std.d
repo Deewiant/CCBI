@@ -35,6 +35,7 @@ mixin (TemplateLookup!(
 	`static assert (false, "No such standard instruction " ~cast(char)c);`,
 
 	WrapForCasing!(
+		 ' ', "noOperation", // Befunge-93 only
 		 '>', "goEast",
 		 '<', "goWest",
 		 '^', "goNorth",
@@ -139,7 +140,6 @@ IP cip() { return this.cip; }
 
 // Direction Changing
 // ------------------
-// Befunge-93
 
 // Go East, Go West, Go North, Go South
 void goEast () { if (cip.mode & cip.HOVER) ++cip.delta.x; else reallyGoEast;  }
@@ -185,7 +185,7 @@ void goAway() {
 	}
 }
 
-// Funge-98
+static if (!befunge93) {
 
 static if (dim >= 2) {
 
@@ -215,16 +215,18 @@ void turnLeft() {
 
 }
 
-// Reverse
-// Returns Request because it is commonly invoked as "return reverse;"
-Request reverse() { cip.reverse; return Request.MOVE; }
-
 // Absolute Vector
 void absoluteVector() { popVector(cip.delta); }
 
+}
+
+// Reverse
+// Returns Request because it is commonly invoked as "return reverse;"
+// Present for Befunge-93 because of the above usage
+Request reverse() { cip.reverse; return Request.MOVE; }
+
 // Flow Control
 // ------------
-// Befunge-93
 
 // Trampoline
 void trampoline() { cip.move(); }
@@ -232,10 +234,10 @@ void trampoline() { cip.move(); }
 // Stop
 Request stop() { return Request.STOP; }
 
-// Funge-98
-
 // No Operation
 void noOperation() {}
+
+static if (!befunge93) {
 
 // Jump Forward
 void jumpForward() {
@@ -317,9 +319,10 @@ Request iterate() {
 	return r;
 }
 
+}
+
 // Decision Making
 // ---------------
-// Befunge-93
 
 // Logical Not
 void logicalNot() { with (cip.stack) push(cast(cell)!pop); }
@@ -339,10 +342,10 @@ void eastWestIf  () { if (cip.stack.pop) goWest();  else goEast();  }
 static if (dim >= 2)
 void northSouthIf() { if (cip.stack.pop) goNorth(); else goSouth(); }
 
+static if (!befunge93) {
+
 static if (dim >= 3)
 void highLowIf   () { if (cip.stack.pop) goHigh();  else goLow();   }
-
-// Funge-98
 
 // Compare
 void compare() {
@@ -355,12 +358,12 @@ void compare() {
 		turnRight();
 }
 
+}
+
 /+++++++ Cell Crunching +++++++/
 
 // Integers
 // --------
-
-// Befunge-93
 
 // Push Zero - Push Niner
 // see template PushNumber
@@ -386,9 +389,15 @@ void divide() {
 		cell fst = pop,
 		     snd = pop;
 
-		// Note that division by zero = 0
-		// In Befunge-93 it would ask the user what the result should be
-		push(fst ? snd / fst : 0);
+		if (fst)
+			push(snd / fst);
+		else static if (befunge93) {
+			Sout.flush;
+			Serr("CCBI :: division by zero encountered. Input wanted result: ");
+			Serr.flush;
+			reallyInputDecimal();
+		} else
+			push(0);
 	}
 }
 
@@ -398,8 +407,15 @@ void remainder() {
 		cell fst = pop,
 		     snd = pop;
 
-		// ditto above
-		push(fst ? snd % fst : 0);
+		if (fst)
+			push(snd % fst);
+		else static if (befunge93) {
+			Sout.flush;
+			Serr("CCBI :: modulo by zero encountered. Input wanted result: ");
+			Serr.flush;
+			reallyInputDecimal();
+		} else
+			push(0);
 	}
 }
 
@@ -409,12 +425,10 @@ void remainder() {
 // Strings
 // -------
 
-// Befunge-93
-
 // Toggle Stringmode
 void toggleStringMode() { cip.mode |= cip.STRING; }
 
-// Funge-98
+static if (!befunge93) {
 
 // Fetch Character
 void fetchCharacter() {
@@ -428,10 +442,10 @@ void storeCharacter() {
 	space[cip.pos] = cip.stack.pop;
 }
 
+}
+
 // Stack Manipulation
 // ------------------
-
-// Befunge-93
 
 // Pop
 void pop() { cip.stack.pop(1); }
@@ -452,14 +466,17 @@ void swap() {
 	}
 }
 
-// Funge-98
+static if (!befunge93) {
 
 // Clear Stack
 void clearStack() { cip.stack.clear(); }
 
+}
+
 // Stack Stack Manipulation
 // ------------------------
-// Funge-98
+
+static if (!befunge93) {
 
 cell[] stdStackStackBuf;
 
@@ -554,11 +571,12 @@ void stackUnderStack() {
 			soss.push(cip.stack.pop);
 }
 
+}
+
 /+++++++ Communications and Storage +++++++/
 
 // Funge-Space Storage
 // -------------------
-// Befunge-93
 
 // Get
 void get() {
@@ -573,7 +591,6 @@ void put() {
 
 // Standard Input/Output
 // ---------------------
-// Befunge-93
 
 // Output Decimal
 void outputDecimal() {
@@ -611,6 +628,9 @@ void inputDecimal() {
 
 	Stdout.flush();
 
+	reallyInputDecimal();
+}
+void reallyInputDecimal() {
 	ubyte c;
 
 	try {
@@ -695,7 +715,8 @@ void inputCharacter() {
 
 // File Input/Output
 // -----------------
-// Funge-98
+
+static if (!befunge93) {
 
 // Input File
 void inputFile() {
@@ -859,18 +880,24 @@ void outputFile() {
 	}
 }
 
+}
+
 // System Execution
 // ----------------
-// Funge-98
+
+static if (!befunge93) {
 
 // Execute
 void execute() {
 	cip.stack.push(cast(cell)system(popStringz()));
 }
 
+}
+
 // System Information Retrieval
 // ----------------------------
-// Funge-98
+
+static if (!befunge93) {
 
 // Get SysInfo
 void getSysInfo() {
@@ -1001,11 +1028,14 @@ void getSysInfo() {
 	}
 }
 
+}
+
 /+++++++ Extension and Customization +++++++/
 
 // Fingerprints
 // ------------
-// Funge-98
+
+static if (!befunge93) {
 
 private bool popFingerprint(out cell fingerprint) {
 	auto n = cip.stack.pop;
@@ -1068,7 +1098,11 @@ void unloadSemantics() {
 	}
 }
 
+}
+
 /+++++++ Concurrent Funge-98 +++++++/
+
+static if (!befunge93) {
 
 // Split IP
 void splitIP() {
@@ -1084,6 +1118,8 @@ void splitIP() {
 		// move past the 't' or forkbomb
 		move();
 	}
+}
+
 }
 
 } /+++++++ That's all, folks +++++++/

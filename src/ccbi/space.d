@@ -130,8 +130,9 @@ template Dimension(cell dim) {
 	}
 }
 
-final class FungeSpace(cell dim) {
+final class FungeSpace(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
+	static assert (!befunge93 || dim == 2);
 
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
@@ -250,7 +251,36 @@ final class FungeSpace(cell dim) {
 		// we never actually use the lowest bit of getEnd
 		int getEnd = 0b111;
 
-		if (binary) foreach (ubyte b; file) {
+		static if (befunge93) {
+			ubyte b = void;
+			bool noRead = false;
+
+			nextRow:
+			for (int r = 0; r < 25; ++r) {
+				for (int c = 0; c < 80; ++c) {
+					if (noRead)
+						noRead = false;
+					else if (!file.read(b))
+						return;
+					loadOne(&pos, b, end, target, &gotCR, &getBeg, getBegInit, &getEnd);
+				}
+				if (pos.x != target.x) while (file.read(b)) switch (b) {
+					case '\r': gotCR = true; break;
+					default:
+						if (gotCR) {
+							noRead = true;
+					case '\n':
+							pos.x = 0;
+							++pos.y;
+							gotCR = false;
+							getBeg = getBegInit;
+							getEnd |= 0b010;
+							continue nextRow;
+						} else
+							break;
+				}
+			}
+		} else if (binary) foreach (ubyte b; file) {
 			if (b != ' ') {
 				if (getBeg && pos.x < beg.x) {
 					beg.x = pos.x;
