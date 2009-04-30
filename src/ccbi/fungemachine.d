@@ -4,6 +4,7 @@
 
 module ccbi.fungemachine;
 
+import tango.core.Tuple;
 import tango.io.Stdout;
 import tango.io.device.File     : File;
 import tango.io.stream.Buffered : BufferedOutput;
@@ -50,16 +51,22 @@ static ~this() {
 	Serr.flush;
 }
 
-final class FungeMachine(cell dim) {
+final class FungeMachine(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
+	static assert (!befunge93 || dim == 2);
 private:
-	alias .IP        !(dim, ALL_FINGERPRINTS) IP;
-	alias .FungeSpace!(dim)                   FungeSpace;
-	alias .Dimension !(dim).Coords            InitCoords;
+	static if (befunge93)
+		alias Tuple!() fings;
+	else
+		alias ALL_FINGERPRINTS fings;
 
-	mixin (EmitGot!("IIPC", ALL_FINGERPRINTS));
-	mixin (EmitGot!("IMAP", ALL_FINGERPRINTS));
-	mixin (EmitGot!("TRDS", ALL_FINGERPRINTS));
+	alias .IP        !(dim, fings) IP;
+	alias .FungeSpace!(dim)        FungeSpace;
+	alias .Dimension !(dim).Coords InitCoords;
+
+	mixin (EmitGot!("IIPC", fings));
+	mixin (EmitGot!("IMAP", fings));
+	mixin (EmitGot!("TRDS", fings));
 
 	IP[] ips;
 	IP   cip;
@@ -147,7 +154,6 @@ private:
 		if (executable(normalTime, ips[j])) {
 
 			cip = ips[j];
-			cip.gotoNextInstruction();
 			switch (executeInstruction()) {
 
 				case Request.STOP:
@@ -187,6 +193,9 @@ private:
 	Request executeInstruction() {
 		++stats.executionCount;
 
+		static if (!befunge93)
+			cip.gotoNextInstruction();
+
 		auto c = space[cip.pos];
 
 		if (c == '"')
@@ -194,7 +203,7 @@ private:
 		else if (cip.mode & IP.STRING)
 			cip.stack.push(c);
 		else {
-			if (flags.fingerprintsEnabled) {
+			static if (!befunge93) if (flags.fingerprintsEnabled) {
 				static if (GOT_IMAP) {
 					if (c >= 0 && c < cip.mapping.length) {
 						c = cip.mapping[c];
@@ -226,6 +235,8 @@ private:
 
 		switch (c) mixin (Switch!(
 			Ins!("Std",
+				befunge93 ? " !\"#$%&*+,-./0123456789:<>?@\\^_`gpv|~" :
+
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
 				"!\"#$%&'()*+,-./0123456789:<=>?@\\_`abcdefgijknopqrstuxyz{" ~
 
@@ -242,53 +253,52 @@ private:
 		return Request.MOVE;
 	}
 
-	mixin (
-		ConcatMapTuple!(TemplateMixin,
-			MapTuple!(PrefixName, ALL_FINGERPRINTS)));
+	static if (!befunge93) {
+		mixin (ConcatMapTuple!(TemplateMixin, MapTuple!(PrefixName, fings))); 
+		mixin (ConcatMapTuple!(FingerprintCount, fings));
 
-	mixin (ConcatMapTuple!(FingerprintCount, ALL_FINGERPRINTS));
+		void loadedFingerprint(cell fingerprint) {
+			switch (fingerprint) mixin (Switch!(
+				FingerprintConstructorCases!(fings),
+				"default: break;"
+			));
+		}
+		void unloadedFingerprintIns(cell fingerprint) {
+			switch (fingerprint) mixin (Switch!(
+				FingerprintDestructorCases!(fings),
+				"default: break;"
+			));
+		}
 
-	void loadedFingerprint(cell fingerprint) {
-		switch (fingerprint) mixin (Switch!(
-			FingerprintConstructorCases!(ALL_FINGERPRINTS),
-			"default: break;"
-		));
-	}
-	void unloadedFingerprintIns(cell fingerprint) {
-		switch (fingerprint) mixin (Switch!(
-			FingerprintDestructorCases!(ALL_FINGERPRINTS),
-			"default: break;"
-		));
-	}
+		Request executeSemantics(cell c)
+		in {
+			assert (isSemantics(c));
+		} body {
+			++stats.fingExecutionCount;
 
-	Request executeSemantics(cell c)
-	in {
-		assert (isSemantics(c));
-	} body {
-		++stats.fingExecutionCount;
+			auto stack = cip.semantics[c - 'A'];
+			if (stack.empty)
+				return unimplemented;
 
-		auto stack = cip.semantics[c - 'A'];
-		if (stack.empty)
-			return unimplemented;
+			auto sem = stack.top;
 
-		auto sem = stack.top;
+			switch (sem.fingerprint) mixin (Switch!(
+				// foreach fing, generates the following:
+				// case HexCode!(fing):
+				// 	switch (sem.instruction) mixin (Switch!(
+				// 		mixin (Ins!(fing, Range!('A', 'Z'))),
+				// 		"default: assert (false);"
+				// 	));
 
-		switch (sem.fingerprint) mixin (Switch!(
-			// foreach fing, generates the following:
-			// case HexCode!(fing):
-			// 	switch (sem.instruction) mixin (Switch!(
-			// 		mixin (Ins!(fing, Range!('A', 'Z'))),
-			// 		"default: assert (false);"
-			// 	));
+				FingerprintExecutionCases!(
+					"sem.instruction",
+					"assert (false);",
+					fings),
+				"default: unimplemented; break;"
+			));
 
-			FingerprintExecutionCases!(
-				"sem.instruction",
-				"assert (false);",
-				ALL_FINGERPRINTS),
-			"default: unimplemented; break;"
-		));
-
-		return Request.MOVE;
+			return Request.MOVE;
+		}
 	}
 
 	Request unimplemented() {

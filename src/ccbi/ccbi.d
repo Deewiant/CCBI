@@ -48,6 +48,9 @@ ARGS may be one or more of:
                          An infinite loop will occur if no second line exists,
                          or it is empty.
 
+     --befunge-93        Adhere to the Befunge-93 documentation instead of the
+                         Funge-98 specification.
+
  -m, --mini-funge        If the following argument is 0, don't try to load a
                          Mini-Funge library if an unimplemented fingerprint is
                          requested by '('.
@@ -297,6 +300,7 @@ int main(char[][] args) {
 	args = args[1..$];
 
 	Flags flags;
+	bool befunge93 = false;
 
 	// {{{ parse arguments
 	argLoop: for (size_t i = 0; i < args.length; ++i) {
@@ -332,6 +336,7 @@ int main(char[][] args) {
 			case "-s", "--stats":           useStats            = true;  break;
 			case       "--script":          script              = true;  break;
 			case "-P", "--disable-fprints": fingerprintsEnabled = false; break;
+			case       "--befunge-93":      befunge93           = true;  break;
 
 /+			case "-m", "--mini-funge":
 				auto s = nextArg();
@@ -387,5 +392,8 @@ int main(char[][] args) {
 	}
 
 	// TODO: other dims
-	return (new FungeMachine!(2)(file, fungeArgs, flags)).run;
+	if (befunge93)
+		return (new FungeMachine!(2, true) (file, fungeArgs, flags)).run;
+	else
+		return (new FungeMachine!(2, false)(file, fungeArgs, flags)).run;
 }
