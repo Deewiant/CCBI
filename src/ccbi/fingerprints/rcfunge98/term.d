@@ -22,11 +22,10 @@ mixin (Fingerprint!(
 	"U", "goUp"
 ));
 
-template TERM() {
-
-import tango.core.Exception : IOException;
-
 version (Win32) {
+
+template TERM() {
+	import tango.core.Exception : IOException;
 	import tango.sys.win32.UserGdi;
 
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -35,7 +34,7 @@ version (Win32) {
 	void ctor() {
 		stdout = GetStdHandle(STD_OUTPUT_HANDLE);
 		if (stdout is null)
-			throw new IOException("TERM ctor couldn't get STD_OUTPUT_HANDLE");
+			throw new IOException("TERM :: ctor couldn't get STD_OUTPUT_HANDLE");
 	}
 
 	// straight from http://msdn2.microsoft.com/en-us/library/ms682022.aspx
@@ -132,31 +131,30 @@ version (Win32) {
 			reverse();
 	}
 
+}
 } else version (Posix) {
-	pragma (
-		msg,
-		"Sorry, the TERM fingerprint isn't supported on Posix because I can't "
-		"get term.h functionality to work the way it should. If you think you "
-		"can, feel free to let me know.");
 
-	/+import tango.stdc.config : c_long;
+extern (C) {
+	alias int c_int; // Valid for all D-supported platforms?
+
+	char* tigetstr        (char*);
+	c_int tputs           (char*, c_int, c_int function(c_int));
+	char* tparm           (char*, ...);
+	c_int reset_shell_mode();
+	c_int def_shell_mode  ();
+	c_int setupterm       (char*, c_int, c_int*);
+}
+
+template TERM() {
+	import tango.core.Exception : IOException;
 	import tango.stdc.stdio  : fileno, stdout;
 	import tango.stdc.stringz;
 	import tango.text.convert.Integer : toString;
 
-	pragma (msg, "Assuming the host machine has a terminfo database...");
+	pragma (msg, "TERM :: assuming we have a terminfo database...");
 
-	extern (C) {
-		char* tigetstr        (char*);
-		int   tputs           (char*, int, int function(int));
-		char* tparm           (char*, c_long, c_long, c_long, c_long, c_long, c_long, c_long, c_long, c_long);
-		int   reset_shell_mode();
-		int   def_shell_mode  ();
-		int   setupterm       (char*, int, int*);
-	}
-
-	extern (C) int my_putchar(int x) {
-		Stdout(cast(char)x);
+	extern (C) static int my_putchar(int x) {
+		Sout(cast(char)x);
 		return 0;
 	}
 	void putp(char* s) {
@@ -164,6 +162,8 @@ version (Win32) {
 	}
 
 	char*
+		enter_ca_mode,
+		exit_ca_mode,
 		clear_screen,
 		clear_eol,
 		clear_eos,
@@ -172,32 +172,38 @@ version (Win32) {
 		go_up,
 		go_xy;
 
-	void try_load(out char* s, char* x) {
-		s = tigetstr(x);
-		if (s == cast(char*)-1)
-			throw new IOException("TERM :: couldn't load " ~ fromStringz(x) ~ " from terminfo");
+	char* tryLoad(char* s) {
+		auto res = tigetstr(s);
+		if (res == cast(char*)-1)
+			throw new IOException(
+				"TERM :: couldn't load " ~ fromStringz(s) ~ " from terminfo");
+		return res;
 	}
 	void ctor() {
 		int err = void;
 		setupterm(null, fileno(stdout), &err);
 		if (err != 1)
-			throw new IOException("TERM :: failed to gain access to terminfo (setupterm reported " ~ toString(err) ~ ")");
+			throw new IOException(
+				"TERM :: failed to gain access to terminfo "
+				"(setupterm reported " ~ toString(err) ~ ")");
 
-		try_load(clear_screen, "clear");
-		try_load(clear_eol   , "el");
-		try_load(clear_eos   , "ed");
-		try_load(go_home     , "home");
-		try_load(go_down     , "cud1");
-		try_load(go_up       , "cuu1");
-		try_load(go_xy       , "cup");
+		if (!enter_ca_mode) {
+			clear_screen  = tryLoad("clear");
+			clear_eol     = tryLoad("el");
+			clear_eos     = tryLoad("ed");
+			go_home       = tryLoad("home");
+			go_down       = tryLoad("cud");
+			go_up         = tryLoad("cuu");
+			go_xy         = tryLoad("cup");
+   		enter_ca_mode = tryLoad("smcup");
+		}
 
-   	char* enter_ca_mode;
-   	try_load(enter_ca_mode, "smcup");
    	putp(enter_ca_mode);
 	}
 	void dtor() {
-		char* exit_ca_mode;
-		try_load(exit_ca_mode, "rmcup");
+		if (!exit_ca_mode)
+			exit_ca_mode = tryLoad("rmcup");
+
 		putp(exit_ca_mode);
 		reset_shell_mode();
 	}
@@ -206,18 +212,29 @@ version (Win32) {
 	void clearToEOL () { putp(clear_eol);    }
 	void clearToEOS () { putp(clear_eos);    }
 	void goHome     () { putp(go_home);      }
-	void goDown     () { putp(go_down);      }
-	void goUp       () { putp(go_up);        }
+	void goDown     () {
+		auto n = cip.stack.pop;
+		if (n < 0)
+			goUp(-n);
+		else if (n > 0)
+			goDown(n);
+	}
+	void goUp() {
+		auto n = cip.stack.pop;
+		if (n < 0)
+			goDown(-n);
+		else if (n > 0)
+			goUp(n);
+	}
+	void goDown(cell n) { tryPutp(tparm(go_down, n)); }
+	void goUp  (cell n) { tryPutp(tparm(go_up,   n)); }
 
 	void gotoXY() {
-		auto y = ip.stack.pop,
-		     x = ip.stack.pop;
-		char* s = tparm(go_xy, y, x, 0, 0, 0, 0, 0, 0, 0);
-		if (s)
-			putp(s);
-		else
-			reverse();
-	}+/
-}
+		auto y = cip.stack.pop,
+		     x = cip.stack.pop;
+		tryPutp(tparm(go_xy, y, x));
+	}
 
+	void tryPutp(char* s) { s ? putp(s) : reverse; }
+}
 }

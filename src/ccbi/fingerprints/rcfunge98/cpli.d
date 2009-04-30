@@ -83,6 +83,11 @@ void cplxOut() {
 	with (cip.stack) {
 		cell i = pop,
 		     r = pop;
+
+		static if (GOT_TRDS)
+			if (tick < ioAfter)
+				return;
+
 		Sout(r);
 		if (i > 0) {
 			ubyte b = '+';

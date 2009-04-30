@@ -90,6 +90,12 @@ void fromASCII() {
 void fromInt() { auto c = cip.stack.pop; Union u; u.d = math.rndint(c); pushDbl(u); }
 
 void toInt() { auto u = popDbl; cip.stack.push(cast(cell)math.rndint(u.d)); }
-void print() { auto u = popDbl; Stdout.format("{:f6} ", u.d); }
+void print() {
+	auto u = popDbl;
+	static if (GOT_TRDS)
+		if (tick < ioAfter)
+			return;
+	Stdout.format("{:f6} ", u.d);
+}
 
 }

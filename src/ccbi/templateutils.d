@@ -239,6 +239,13 @@ template ConcatMapTuple(alias F, xs...) {
 		const ConcatMapTuple = F!(xs[0]) ~ ConcatMapTuple!(F, xs[1..$]);
 }
 
+template MapTuple(alias F, xs...) {
+	static if (xs.length == 0)
+		alias Tuple!() MapTuple;
+	else
+		alias Tuple!(F!(xs[0]), MapTuple!(F, xs[1..$])) MapTuple;
+}
+
 // Generate a compile-time lookup table.
 //
 // Usage:
@@ -345,4 +352,12 @@ template TemplateRangedLookup(
 		`template ` ~ tmplName ~ `(` ~ needleType ~ ` ` ~ needle ~ `) {` ~
 			RangedLookup!(tmplName, needle, last, haystack)
 		~ `}`;
+}
+
+// Prefixes a name with _ if it's not a valid D identifier
+template PrefixName(char[] name) {
+	static if (name[0] >= '0' && name[0] <= '9')
+		const PrefixName = "_" ~ name;
+	else
+		const PrefixName = name;
 }
