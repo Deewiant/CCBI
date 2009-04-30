@@ -107,8 +107,7 @@ private:
 		tip = ips[0] = new IP(
 			space, &stackStats, &stackStackStats, &dequeStats, &semanticStats);
 
-		if (
-			dim >= 2     &&
+		static if (dim >= 2) if (
 			flags.script &&
 			space[InitCoords!(0,0)] == '#' &&
 			space[InitCoords!(0,1)] == '!'

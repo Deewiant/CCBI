@@ -397,6 +397,10 @@ int main(char[][] args) {
 		return -1;
 	}
 
-	// TODO: other dims
-	return (new FungeMachine!(2)(file, fungeArgs, flags)).run;
+	switch (dim) {
+		case 1: return (new FungeMachine!(1)(file, fungeArgs, flags)).run;
+		case 2: return (new FungeMachine!(2)(file, fungeArgs, flags)).run;
+		case 3: return (new FungeMachine!(3)(file, fungeArgs, flags)).run;
+		default: assert (false, "Internal error!");
+	}
 }
