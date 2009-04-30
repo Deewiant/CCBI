@@ -319,10 +319,10 @@ final class Deque : Container!(cell) {
 		}
 
 		void allocateArray(size_t length) {
-			int newSize = super.DEFAULT_SIZE;
+			auto newSize = super.DEFAULT_SIZE;
 
 			if (length >= newSize) {
-				static assert (newSize.sizeof == 4,
+				static assert (newSize.sizeof == 4 || newSize.sizeof == 8,
 					"Change size calculation in ccbi.container.Deque.allocateArray");
 
 				newSize = length;
@@ -331,6 +331,9 @@ final class Deque : Container!(cell) {
 				newSize |= (newSize >>>  4);
 				newSize |= (newSize >>>  8);
 				newSize |= (newSize >>> 16);
+
+				static if (newSize.sizeof == 8)
+				newSize |= (newSize >>> 32);
 
 				// oops, overflowed
 				if (++newSize < 0)
