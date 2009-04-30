@@ -130,21 +130,17 @@ template Dimension(cell dim) {
 	}
 }
 
-final class FungeSpace(cell dim) {
+final class FungeSpace(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
+	static assert (!befunge93 || dim == 2);
 
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
 
 	Stats* stats;
-	private bool befunge93;
 
-	this(Stats* stats, InputStream source, bool bef93) {
+	this(Stats* stats, InputStream source) {
 		this.stats = stats;
-
-		befunge93 = bef93;
-		if (bef93)
-			assert (dim == 2);
 
 		load(source, &end, InitCoords!(0), false, false);
 
@@ -255,7 +251,7 @@ final class FungeSpace(cell dim) {
 		// we never actually use the lowest bit of getEnd
 		int getEnd = 0b111;
 
-		if (befunge93) {
+		static if (befunge93) {
 			ubyte b = void;
 			bool noRead = false;
 

@@ -17,7 +17,7 @@ public import ccbi.cell;
        import ccbi.templateutils : EmitGot;
        import ccbi.utils;
 
-final class IP(cell dim, fings...) {
+final class IP(cell dim, bool befunge93, fings...) {
 	alias   .Coords!(dim) Coords;
 	alias Dimension!(dim).Coords InitCoords;
 
@@ -27,7 +27,7 @@ final class IP(cell dim, fings...) {
 	mixin (EmitGot!("TRDS", fings));
 
 	this(
-		FungeSpace!(dim) s,
+		FungeSpace!(dim, befunge93) s,
 		ContainerStats* stackStats,
 		ContainerStats* stackStackStats,
 		ContainerStats* dequeStats,
@@ -128,7 +128,7 @@ final class IP(cell dim, fings...) {
 		);
 	}
 
-	FungeSpace!(dim) space = null;
+	FungeSpace!(dim, befunge93) space;
 
 	Coords
 		pos    = InitCoords!(0),
