@@ -60,55 +60,61 @@ Where an IP parameter is optional, the default is the traced IP unless
 otherwise specified.
 
 (h)elp
-	Show this help text
+   Show this help text
 e(x)plain
-	Explains the meaning of the mode string
+   Explains the meaning of the mode string
 
-i(n)fo [ip]
-	Show the short info displayed after every step
+i(n)fo" ~(befunge93?"":" [ip]")~ "
+   Show the short info displayed after every step"
+~(befunge93?"":"
 (i)ps
-	Show information about each active IP
+   Show information about each active IP
 s(w)itch (ip)
-	Switch tracing to a different IP
+   Switch tracing to a different IP")~ "
 
 (s)tep
-	Step one instruction
+   Step one instruction
 (r)un
-	Continue execution until any IP hits a breakpoint
+   Continue execution until any IP hits a breakpoint
 
-(b)reak (pos) [ip]
-	Toggle a breakpoint, applies to all IPs by default
-(c)break (value) [strmode boolean] [ip]
-	Toggle a cell breakpoint, doesn't apply in stringmode by default, applies to
-	all IPs by default
+(b)reak (pos)" ~(befunge93?"":" [ip]")~ "
+   Toggle a breakpoint" ~(befunge93?"":", applies to all IPs by default")~ "
+(c)break (value) [strmode boolean]" ~(befunge93?"":" [ip]")~ "
+   Toggle a cell breakpoint, doesn't apply in stringmode by default" ~(befunge93?"":", applies to
+   all IPs by default")~ "
 de(l)ay (tick)
-	Toggle a tick breakpoint
-bs, bps [ip]
-	Show a list of all breakpoints affecting IP, or all if not given
+   Toggle a tick breakpoint
+bs, bps" ~(befunge93?"":" [ip]")~ "
+   Show a list of all breakpoints" ~(befunge93?"":" affecting IP, or all if not given")~ "
 
-s(t)ack [ip]
-	Show the stack(s) of an IP
+s(t)ack" ~(befunge93?"":" [ip]")~ "
+   Show the stack" ~(befunge93?"":"(s) of an IP")~ "
 (a)rea (pos) (size)
-	Show an area of Funge-Space
+   Show an area of Funge-Space
 (v)iew (pos)
-	Show the value of a cell in Funge-Space
+   Show the value of a cell in Funge-Space
 (e)dit (pos) (val)
-	Set  the value of a cell in Funge-Space
+   Set  the value of a cell in Funge-Space
 
-(p)osition (pos) [ip]
-	Set the position of the current IP
-(d)elta (vec) [ip]
-	Set the delta of the current IP
+(p)osition (pos)" ~(befunge93?"":" [ip]")~ "
+   Set the position of the " ~(befunge93?"":"current ")~ "IP
+(d)elta (vec)" ~(befunge93?"":" [ip]")~ "
+   Set the delta of the " ~(befunge93?"":"current ")~ "IP"
+~(befunge93?"":"
 (o)ffset (pos) [ip]
-	Set the storage offset of the current IP
-
+   Set the storage offset of the current IP")~
+"
+"~(befunge93?"":"
 (k)ill [ip]
-	Kill an IP
+   Kill an IP")~"
 (q)uit
-	Quit the program"
+   Quit the program"
 	;
 
 	const MODESTRING =
+befunge93 ?
+`The only mode is ", which signifies stringmode.`
+:
 `The complete mode string is "HIQSDT.
 If any of the five characters is a space, that mode is not set.
 
@@ -123,10 +129,11 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 	void printIP(size_t i, IP ip) {
 		Serr("Tracer :: ");
-		if (ips.length > 1)
-			Serr.format("IP {}, with ID {}, ", i, ip.id);
-		else
-			Serr("The IP ");
+		static if (!befunge93)
+			if (ips.length > 1)
+				return Serr.format("IP {}, with ID {}, ", i, ip.id);
+
+		Serr("The IP ");
 	}
 
 	Sout.flush();
@@ -199,7 +206,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			index = i;
 			break;
 		}
-	} else {
+	} else static if (!befunge93) {
 		Serr.formatln(
 			"Switched traced IP to IP {} since the previous IP {} disappeared.",
 			minimalValid, index);
@@ -219,15 +226,21 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			Serr(p)(')');
 		}
 
-		Serr.newline.formatln(
-			"Position: {} -- Delta: {} -- Offset: {}",
-			ip.pos, ip.delta, ip.offset);
-		Serr.formatln("Stack: {} cell(s): {}", ip.stack.size, stackString(ip));
+		Serr.newline.format("Position: {} -- Delta: {}", ip.pos, ip.delta);
 
-		Serr.formatln(
-			"Tick: {} -- IPs: {} -- Index/ID: {}/{} -- Stacks: {} -- Mode: {}"
-			~ NewlineString,
-			tick, ipCount, index, ip.id, ip.stackStack.size, modeString(ip));
+		static if (!befunge93)
+			Serr.format(" -- Offset: {}", ip.offset);
+
+		Serr.newline.formatln(
+			"Stack: {} cell(s): {}", ip.stack.size, stackString(ip));
+
+		static if (befunge93)
+			Serr.formatln("Tick: {} -- Mode: {}" ~ NewlineString, tick, modeString(ip));
+		else
+			Serr.formatln(
+				"Tick: {} -- IPs: {} -- Index/ID: {}/{} -- Stacks: {} -- Mode: {}"
+				~ NewlineString,
+				tick, ipCount, index, ip.id, ip.stackStack.size, modeString(ip));
 
 		ip.pos = p;
 	}
@@ -255,6 +268,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			case "s", "step":                   return true;
 			case "r", "run" : stopNext = false; return true;
 
+		static if (!befunge93) {
 			// k [ip]
 			case "k", "kill":
 				auto idx = index;
@@ -263,18 +277,20 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 				Serr.formatln("Successfully killed IP {}.", idx);
 				return stop(idx);
+		}
 
 			case "q", "quit", ":q": return false;
 
 			// n [ip]
-			case "n", "info":
+			case "n", "info": {
 				auto ip = tip;
 				readIP(ip, args.arg(1), invalidIndices);
 				showInfo(ip);
 				break;
+			}
 
 			// bs [ip]
-			case "bs", "bps":
+			case "bs", "bps": {
 				if (!bps.length && !cbps.length && !tbps.length) {
 					Serr("No breakpoints.").newline;
 					break;
@@ -321,8 +337,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					Serr("Tick ")(time).newline;
 
 				break;
+			}
 
-			case "i", "ips":
+		static if (!befunge93) {
+			case "i", "ips": {
 				Serr.formatln("{} IPs, in reverse order of execution:", ipCount);
 				foreach (i, ip; ips) {
 					static if (GOT_TRDS)
@@ -349,9 +367,11 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					printCell(space[ip.pos], "", NewlineString~NewlineString, " ");
 				}
 				break;
+			}
+		}
 
 			// b (pos) [ip]
-			case "b", "bp", "break":
+			case "b", "bp", "break": {
 				if (args.length-1 < dim) {
 					Serr("No position given.").newline;
 					break;
@@ -384,9 +404,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					Serr("global breakpoint");
 				Serr.formatln(" at {}.", pos);
 				break;
+			}
 
 			// c (val) [strings] [ip]
-			case "c", "cbp", "cbreak":
+			case "c", "cbp", "cbreak": {
 				if (args.length < 2) {
 					Serr("No value given.").newline;
 					break;
@@ -426,9 +447,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 				printCell(val, " for cell value ", "." ~ NewlineString);
 				break;
+			}
 
 			// l (tick)
-			case "l", "tbp", "delay":
+			case "l", "tbp", "delay": {
 				if (args.length < 2) {
 					Serr("No tick given.").newline;
 					break;
@@ -448,18 +470,23 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						"Tracer :: set a tick breakpoint for tick {}.", tb);
 				}
 				break;
+			}
 
 			// t [ip]
-			case "t", "stack":
+			case "t", "stack": {
 				auto ip = tip;
 				readIP(ip, args.arg(1), invalidIndices);
 
-				Serr(ip.stackStack.size)(" stack(s):").newline;
+				void printStack(Container!(cell) st, size_t i) {
+					Serr(" Stack ");
+					static if (befunge93)
+						Serr("has");
+					else
+						Serr.format("{,2:},", i);
 
-				size_t i = 1;
-				foreach (st; &ip.stackStack.topToBottom) {
 					auto n = st.size;
-					Serr.format(" Stack {,2:}, {,4:} element(s):", i++, n)(" [");
+					Serr.format("{,4:} element(s):", i, n)(" [");
+
 					auto j = n-1;
 					foreach (c; &st.bottomToTop) {
 						Serr(c);
@@ -471,11 +498,22 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						Serr(displayCell(c));
 					Serr('"').newline;
 				}
+
+				static if (befunge93)
+					printStack(ip.stack, 0);
+				else {
+					Serr(ip.stackStack.size)(" stack(s):").newline;
+
+					size_t i = 1;
+					foreach (st; &ip.stackStack.topToBottom)
+						printStack(st, i++);
+				}
 				Serr.newline;
 				break;
+			}
 
 			// a (pos) (size)
-			case "a", "area":
+			case "a", "area": {
 				if (args.length-1 < dim) {
 					Serr("No position given.").newline;
 					break;
@@ -507,9 +545,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 				space.binaryPut(Serr, posE, end);
 				break;
+			}
 
 			// v (pos)
-			case "v", "view":
+			case "v", "view": {
 				if (args.length-1 < dim) {
 					Serr("No position given.").newline;
 					break;
@@ -524,9 +563,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				Serr.format("Cell {}: value ", pos);
 				printCell(c, "", NewlineString);
 				break;
+			}
 
 			// e (pos) (val)
-			case "e", "edit":
+			case "e", "edit": {
 				if (args.length-1 < dim) {
 					Serr("No position given.").newline;
 					break;
@@ -548,9 +588,11 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				Serr.format("Set cell {} to ", pos);
 				printCell(val, "", NewlineString);
 				break;
+			}
 
+		static if (!befunge93) {
 			// w (ip)
-			case "w", "switch":
+			case "w", "switch": {
 				if (args.length-1 < 1) {
 					Serr("No IP given.").newline;
 					break;
@@ -563,6 +605,8 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				tip = ips[index = idx];
 				Serr.formatln("Traced IP switched to IP {}.", idx);
 				break;
+			}
+		}
 
 			// p (pos) [ip]
 			case "p", "position":
@@ -582,6 +626,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					function(IP ip, Coords c) { ip.delta = c; });
 				break;
 
+		static if (!befunge93) {
 			// o (pos) [ip]
 			case "o", "offset":
 				ipSetVector(
@@ -590,6 +635,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					"Set offset of IP {} to {}.",
 					function(IP ip, Coords c) { ip.offset = c; });
 				break;
+		}
 
 			default:
 				Serr.formatln(
@@ -686,6 +732,8 @@ void ipSetVector(
 }
 
 bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
+	static if (befunge93) return false;
+
 	if (!s) return false;
 	try {
 		size_t i;
@@ -700,15 +748,12 @@ bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
 	}
 }
 
-bool readIP(inout IP ip, char[] s, bool[size_t] invalidIndices) {
-	if (!s) return false;
+void readIP(inout IP ip, char[] s, bool[size_t] invalidIndices) {
+	if (!s) return;
 
 	size_t idx;
-	if (readIpIndex(idx, s, invalidIndices)) {
+	if (readIpIndex(idx, s, invalidIndices))
 		ip = ips[idx];
-		return true;
-	} else
-		return false;
 }
 
 bool readCoords(inout Coords c, char[][] args) {

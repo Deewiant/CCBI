@@ -33,25 +33,30 @@ final class IP(cell dim, bool befunge93, fings...) {
 		ContainerStats* dequeStats,
 		ContainerStats* semanticStats)
 	{
-		id = 0;
+		static if (!befunge93)
+			id = 0;
 		static if (GOT_IIPC)
 			parentID = 0;
 
-		stackStack = new typeof(stackStack)(stackStackStats, 1u);
-		stack      = new Stack!(cell)(stackStats);
-		stackStack.push(stack);
+		stack = new Stack!(cell)(stackStats);
+
+		static if (!befunge93) {
+			stackStack = new typeof(stackStack)(stackStackStats, 1u);
+			stackStack.push(stack);
+		}
 
 		static if (GOT_IMAP)
 			foreach (j, inout i; mapping)
 				i = cast(cell)j;
 
-		foreach (inout sem; semantics)
-			sem = new typeof(sem)(semanticStats);
+		static if (!befunge93)
+			foreach (inout sem; semantics)
+				sem = new typeof(sem)(semanticStats);
 
 		space = s;
 	}
 
-	this(IP o) {
+	static if (!befunge93) this(IP o) {
 		shallowCopy(this, o);
 
 		static if (GOT_IIPC)
@@ -133,17 +138,23 @@ final class IP(cell dim, bool befunge93, fings...) {
 	Coords
 		pos    = InitCoords!(0),
 		delta  = InitCoords!(1),
-		offset = InitCoords!(0),
 		breakPt;
 
-	cell id = void;
+	static if (!befunge93)
+		Coords offset = InitCoords!(0);
+
+	static if (!befunge93)
+		cell id = void;
 
 	static if (GOT_IIPC)
 		cell parentID = void;
 
-	Container!(cell)      stack;
-	Stack!(typeof(stack)) stackStack;
-	Stack!(Semantics)[26] semantics;
+	Container!(cell) stack;
+
+	static if (!befunge93) {
+		Stack!(typeof(stack)) stackStack;
+		Stack!(Semantics)[26] semantics;
+	}
 
 	static if (GOT_IMAP)
 		cell[256] mapping = void;

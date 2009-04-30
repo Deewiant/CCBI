@@ -73,7 +73,8 @@ void popVector(out Coords c) {
 }
 void popOffsetVector(out Coords c) {
 	popVector(c);
-	c += cip.offset;
+	static if (!befunge93)
+		c += cip.offset;
 }
 Coords popVector() {
 	Coords c;
@@ -99,7 +100,8 @@ void pushVector(Coords c) {
 	}
 }
 void pushOffsetVector(Coords c) {
-	c -= cip.offset;
+	static if (!befunge93)
+		c -= cip.offset;
 	pushVector(c);
 }
 
