@@ -10,10 +10,11 @@
 // The core functionality, main loop, etc.
 module ccbi.ccbi;
 
-import tango.core.Exception : ArgEx = IllegalArgumentException;
+import tango.core.Exception    : ArgEx = IllegalArgumentException;
+import tango.io.device.File    : File;
+import tango.io.device.FileMap : FileMap;
 import tango.io.Stdout;
-import tango.io.device.File : File;
-import tango.text.Ascii     : toLower;
+import tango.text.Ascii        : toLower;
 
 import ccbi.flags;
 import ccbi.globals : VERSION_STRING;
@@ -395,8 +396,8 @@ int main(char[][] args) {
 	auto fungeArgs = args[filePos..$];
 	// }}}
 
-	File file;
-	try file = new typeof(file)(fungeArgs[0]);
+	FileMap file;
+	try file = new typeof(file)(fungeArgs[0], File.ReadExisting);
 	catch {
 		Stderr("Couldn't open file '")(fungeArgs[0])("' for reading.").newline;
 		return -1;
