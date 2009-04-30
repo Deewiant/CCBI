@@ -107,9 +107,10 @@ mixin (TemplateLookup!(
 
 template StdInstructions() {
 
-import tango.io.device.File : File;
+import tango.io.device.File     : File;
+import tango.io.device.FileMap  : FileMap;
 import tango.io.stream.Buffered : BufferedOutput;
-import tango.text.Util  : join, splitLines;
+import tango.text.Util          : join, splitLines;
 import tango.time.Clock;
 
 import tango.stdc.stdlib : system;
@@ -731,8 +732,8 @@ void inputFile() {
 		// the size of the rectangle where the file is eventually put
 		vb;
 
-	File file;
-	try file = new typeof(file)(filename);
+	FileMap file;
+	try file = new typeof(file)(filename, File.ReadExisting);
 	catch {
 		return reverse();
 	}

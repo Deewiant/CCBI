@@ -5,9 +5,10 @@
 // Funge-Space and the Coords struct.
 module ccbi.space;
 
-import tango.io.model.IConduit;
-import tango.io.stream.Typed;
-import tango.text.convert.Integer;
+import tango.io.device.Array      : Array;
+import tango.io.model.IConduit    : OutputStream;
+import tango.io.stream.Typed      : TypedOutput;
+import tango.text.convert.Integer : format;
 
 public import ccbi.cell;
        import ccbi.templateutils;
@@ -139,7 +140,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 	Stats* stats;
 
-	this(Stats* stats, InputStream source) {
+	this(Stats* stats, Array source) {
 		this.stats = stats;
 
 		load(source, &end, InitCoords!(0), false, false);
@@ -222,9 +223,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 	private cell[Coords] space;
 
-	// Takes ownership of the InputStream, closing it.
+	// Takes ownership of the Array, detaching it.
 	void load(
-		InputStream fc,
+		Array arr,
 		Coords* end, Coords target,
 		bool binary, bool getAllBeg
 	) in {
@@ -236,14 +237,15 @@ final class FungeSpace(cell dim, bool befunge93) {
 			static if (dim >= 3) assert (beg.z <= end.z);
 		}
 	} body {
-		scope file = new TypedInput!(ubyte)(fc);
-		scope (exit) { file.close; fc.close; }
+		scope (exit) arr.detach;
+
+		auto input = cast(ubyte[])arr.slice;
 
 		auto pos = target;
 		bool gotCR = false;
 
 		// Since we start with a delta of (1,0,0) we can assume beg.y = beg.z = 0
-		// when first loading the file.
+		// when first loading.
 		// (If that's not the case, we never execute any instructions!)
 		int getBegInit = getAllBeg ? 0b111 : 0b001;
 		int getBeg = getBegInit;
@@ -251,24 +253,22 @@ final class FungeSpace(cell dim, bool befunge93) {
 		// we never actually use the lowest bit of getEnd
 		int getEnd = 0b111;
 
-		static if (befunge93) {
-			ubyte b = void;
-			bool noRead = false;
+		size_t i = -1;
 
+		static if (befunge93) {
 			nextRow:
 			for (int r = 0; r < 25; ++r) {
 				for (int c = 0; c < 80; ++c) {
-					if (noRead)
-						noRead = false;
-					else if (!file.read(b))
+					if (++i >= input.length)
 						return;
-					loadOne(&pos, b, end, target, &gotCR, &getBeg, getBegInit, &getEnd);
+
+					loadOne(&pos, input[i], end, target, &gotCR, &getBeg, getBegInit, &getEnd);
 				}
-				if (pos.x != target.x) while (file.read(b)) switch (b) {
+				if (pos.x != target.x) while (++i < input.length) switch (input[i]) {
 					case '\r': gotCR = true; break;
 					default:
 						if (gotCR) {
-							noRead = true;
+							--i;
 					case '\n':
 							pos.x = 0;
 							++pos.y;
@@ -280,7 +280,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 							break;
 				}
 			}
-		} else if (binary) foreach (ubyte b; file) {
+		} else if (binary) foreach (b; input) {
 			if (b != ' ') {
 				if (getBeg && pos.x < beg.x) {
 					beg.x = pos.x;
@@ -291,7 +291,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				space[pos] = cast(cell)b;
 			}
 			++pos.x;
-		} else foreach (ubyte b; file)
+		} else foreach (b; input)
 			loadOne(&pos, b, end, target, &gotCR, &getBeg, getBegInit, &getEnd);
 	}
 

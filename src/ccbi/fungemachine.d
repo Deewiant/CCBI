@@ -6,7 +6,7 @@ module ccbi.fungemachine;
 
 import tango.core.Tuple;
 import tango.io.Stdout;
-import tango.io.device.File     : File;
+import tango.io.device.Array    : Array;
 import tango.io.stream.Buffered : BufferedOutput;
 import tango.io.stream.Format;
 import tango.io.stream.Typed;
@@ -94,7 +94,7 @@ private:
 	Stats stats;
 	ContainerStats stackStats, stackStackStats, dequeStats, semanticStats;
 
-	public this(File source, char[][] args, Flags f) {
+	public this(Array source, char[][] args, Flags f) {
 		flags = f;
 
 		static if (!befunge93)
