@@ -141,6 +141,9 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	bool atBreak = false;
 	size_t breaker = void;
 
+	static if (befunge93)
+		IP[1] ips = [cip];
+
 	foreach (pos, ipSet; bps)
 	foreach (i, ip; ips)
 	if (
@@ -298,8 +301,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 				IP ip = null;
 				size_t idx;
-				if (readIpIndex(idx, args.arg(1), invalidIndices))
-					ip = ips[idx];
+
+				static if (!befunge93)
+					if (readIpIndex(idx, args.arg(1), invalidIndices))
+						ip = ips[idx];
 
 				Serr("Breakpoints");
 				if (ip)
@@ -314,7 +319,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						Serr(' ');
 						if (i is null)
 							Serr("(all)");
-						else
+						else static if (!befunge93)
 							Serr(ips.findIndex(i));
 					}
 					Serr.newline;
@@ -327,7 +332,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						Serr(' ');
 						if (i is null)
 							Serr("(all)");
-						else
+						else static if (!befunge93)
 							Serr(ips.findIndex(i));
 						Serr(stringsAlso ? ",1" : ",0");
 					}
@@ -383,8 +388,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 				size_t idx;
 				IP ip = null;
-				if (readIpIndex(idx, args.arg(dim+1), invalidIndices))
-					ip = ips[idx];
+
+				static if (!befunge93)
+					if (readIpIndex(idx, args.arg(dim+1), invalidIndices))
+						ip = ips[idx];
 
 				if (pos in bps && ip in bps[pos]) {
 
@@ -422,8 +429,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 				size_t idx;
 				IP ip = null;
-				if (readIpIndex(idx, args.arg(3), invalidIndices))
-					ip = ips[idx];
+
+				static if (!befunge93)
+					if (readIpIndex(idx, args.arg(3), invalidIndices))
+						ip = ips[idx];
 
 				if (val in cbps && ip in cbps[val]) {
 
@@ -727,33 +736,42 @@ void ipSetVector(
 	auto idx = defaultIndex;
 	readIpIndex(idx, args.arg(1+dim), invalidIndices);
 
-	f(ips[idx], vec);
+	static if (befunge93)
+		f(tip, vec);
+	else
+		f(ips[idx], vec);
 	Serr.formatln(successMsg, idx, pos);
 }
 
 bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
-	static if (befunge93) return false;
-
-	if (!s) return false;
-	try {
-		size_t i;
-		if (!read(i, s) || i >= ips.length || i in invalidIndices)
-			throw new Object;
-		idx = i;
-		return true;
-
-	} catch {
-		Serr('\'')(s)("' is not a valid IP index.").newline;
+	static if (befunge93)
 		return false;
+	else {
+		if (!s) return false;
+		try {
+			size_t i;
+			if (!read(i, s) || i >= ips.length || i in invalidIndices)
+				throw new Object;
+			idx = i;
+			return true;
+
+		} catch {
+			Serr('\'')(s)("' is not a valid IP index.").newline;
+			return false;
+		}
 	}
 }
 
 void readIP(inout IP ip, char[] s, bool[size_t] invalidIndices) {
-	if (!s) return;
+	static if (befunge93)
+		return;
+	else {
+		if (!s) return;
 
-	size_t idx;
-	if (readIpIndex(idx, s, invalidIndices))
-		ip = ips[idx];
+		size_t idx;
+		if (readIpIndex(idx, s, invalidIndices))
+			ip = ips[idx];
+	}
 }
 
 bool readCoords(inout Coords c, char[][] args) {
