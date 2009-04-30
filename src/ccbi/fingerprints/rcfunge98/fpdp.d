@@ -95,7 +95,7 @@ void print() {
 	static if (GOT_TRDS)
 		if (tick < ioAfter)
 			return;
-	Stdout.format("{:f6} ", u.d);
+	Sout.format("{:f6} ", u.d);
 }
 
 }
