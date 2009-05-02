@@ -349,6 +349,7 @@ static if (dim >= 3)
 void highLowIf   () { if (cip.stack.pop) goHigh();  else goLow();   }
 
 // Compare
+static if (dim >= 2)
 void compare() {
 	cell b = cip.stack.pop,
 	     a = cip.stack.pop;
