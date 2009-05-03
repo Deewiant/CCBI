@@ -793,13 +793,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 
 		auto getBeg = initialGetBeg;
-		Coords pos = target;
+		auto pos = target;
+		auto lastNonSpace = end;
 
 		static if (dim >= 2) {
 			bool gotCR = false;
 
 			void newLine() {
-				end.x = max(pos.x, end.x);
+				end.x = max(lastNonSpace.x, end.x);
 
 				pos.x = target.x;
 				++pos.y;
@@ -825,8 +826,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 						newLine();
 
 				static if (dim >= 3) {
-					end.x = max(pos.x, end.x);
-					end.y = max(pos.y, end.y);
+					end.x = max(lastNonSpace.x, end.x);
+					end.y = max(lastNonSpace.y, end.y);
 
 					pos.x = target.x;
 					pos.y = target.y;
@@ -840,28 +841,32 @@ final class FungeSpace(cell dim, bool befunge93) {
 					if (gotCR)
 						newLine();
 
-				if (b != ' ' && getBeg) {
-					static if (dim >= 3)
-					if (getBeg & 0b100 && pos.z < beg.z) {
-						beg.z = pos.z;
-						getBeg &= ~0b100;
-					}
-					static if (dim >= 2)
-					if (getBeg & 0b010 && pos.y < beg.y) {
-						beg.y = pos.y;
-						getBeg &= ~0b010;
-					}
-					if (getBeg & 0b001 && pos.x < beg.x) {
-						beg.x = pos.x;
-						getBeg &= ~0b001;
+				if (b != ' ') {
+					lastNonSpace = pos;
+
+					if (getBeg) {
+						static if (dim >= 3)
+						if (getBeg & 0b100 && pos.z < beg.z) {
+							beg.z = pos.z;
+							getBeg &= ~0b100;
+						}
+						static if (dim >= 2)
+						if (getBeg & 0b010 && pos.y < beg.y) {
+							beg.y = pos.y;
+							getBeg &= ~0b010;
+						}
+						if (getBeg & 0b001 && pos.x < beg.x) {
+							beg.x = pos.x;
+							getBeg &= ~0b001;
+						}
 					}
 				}
 				++pos.x;
 				break;
 		}
-		                     end.x = max(pos.x, end.x);
-		static if (dim >= 2) end.y = max(pos.y, end.y);
-		static if (dim >= 3) end.z = max(pos.z, end.z);
+		                     end.x = max(lastNonSpace.x, end.x);
+		static if (dim >= 2) end.y = max(lastNonSpace.y, end.y);
+		static if (dim >= 3) end.z = max(lastNonSpace.z, end.z);
 
 		return AABB(beg, end);
 	}
