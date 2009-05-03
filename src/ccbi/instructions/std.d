@@ -615,11 +615,11 @@ void outputCharacter() {
 		if (tick < ioAfter)
 			return;
 
+	Cout.write(c);
+
 	// TODO: maybe make this optional?
 	if (c == '\n')
-		Sout.newline;
-	else
-		Cout.write(c);
+		Sout.flush;
 }
 
 // Input Decimal
