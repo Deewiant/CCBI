@@ -194,8 +194,7 @@ private struct AABB(cell dim) {
 		// If alloc hasn't been called, might not be caught
 		assert (data !is null);
 		assert (getIdx(p) < data.length);
-	}
-	body {
+	} body {
 		return data[getIdx(p)];
 	}
 	cell opIndexAssign(cell val, Coords p)
@@ -232,262 +231,6 @@ private struct AABB(cell dim) {
 			return true;
 
 		return false;
-	}
-
-	AABB getOverlapWith(AABB b)
-	in {
-		assert (this.overlaps(b));
-	} body {
-		Coords beg, end;
-		beg.x = max(this.beg.x, b.beg.x);
-		end.x = min(this.end.x, b.end.x);
-		static if (dim >= 2) {
-			beg.y = max(this.beg.y, b.beg.y);
-			end.y = min(this.end.y, b.end.y);
-		}
-		static if (dim >= 3) {
-			beg.z = max(this.beg.z, b.beg.z);
-			end.z = min(this.end.z, b.end.z);
-		}
-		return AABB(beg, end);
-	}
-
-	AABB fuseWith(AABB b)
-	in {
-		assert (!this.overlaps(b));
-	} body {
-		// This check suffices: they can't be the same or we'd have an overlap or
-		// zero-area box.
-		if (this.beg.x < b.end.x)
-			return AABB(this.beg, b.end);
-		else
-			return AABB(b.beg, this.end);
-	}
-
-	AABB[] decomposeByOverlapWith(AABB b)
-	in {
-		assert (this.overlaps(b));
-	} body {
-		auto overlap = this.getOverlapWith(b);
-
-		AABB[Power!(size_t, 3, dim)] subs;
-
-		// {{{ fill subs in a fairly random order
-		subs[0] = AABB(b.beg, overlap.beg);
-		subs[1] = overlap;
-		subs[2] = AABB(overlap.end, b.end);
-
-		static if (dim >= 2) {
-			// What we've got now:
-			//
-			// y
-			// |  b.beg +---+--+---+
-			// |        | A | h| i |
-			// |        +---+--+---+
-			// |        | e | B| d |
-			// |        +---+--+---+
-			// |        | f | g| C |
-			// |        +---+--+---+ b.end
-			// |
-			// +---------------x
-			//
-			// subs[0] = A
-			// subs[1] = B
-			// subs[2] = C
-
-			Coords c, d;
-
-			static if (dim >= 3) {
-				c.z = b.beg.z;
-				d.z = overlap.beg.z;
-			}
-
-			c.x = overlap.end.x;
-			d.x = b.end.x;
-			c.y = overlap.beg.y;
-			d.y = overlap.end.y;
-			subs[3] = AABB(c, d); // d (east)
-
-			c.x = b.beg.x;
-			d.x = overlap.beg.x;
-			subs[4] = AABB(c, d); // e (west)
-
-			c.y = overlap.end.y;
-			d.y = b.end.y;
-			subs[5] = AABB(c, d); // f (southwest)
-
-			c.x = overlap.beg.x;
-			d.x = overlap.end.x;
-			subs[6] = AABB(c, d); // g (south)
-
-			c.y = b.beg.y;
-			d.y = overlap.beg.y;
-			subs[7] = AABB(c, d); // h (north)
-
-			c.x = overlap.end.x;
-			d.x = b.end.x;
-			subs[8] = AABB(c, d); // i (northeast)
-		}
-		static if (dim >= 3) {
-			// What we've got now:
-			//
-			//                +---+--+---+
-			//               / r / s/ t /|
-			//              +---+--+---+t+
-			//             / j /k / l /|/|
-			//            +---+--+---+l+w+
-			// y         / A / D/ F /|/|/|
-			// |  b.beg +---+--+---+F+n+Z+ b.end
-			// |        | A | F| G |/|/|/
-			// |        +---+--+---+G+q+
-			// |    z   | C | i| B |/|/
-			// |   /    +---+--+---+h+
-			// |  /     | D | E| h |/
-			// | /      +---+--+---+
-			// |/
-			// +---------------x
-			//
-			// subs[0] = A
-			// subs[1] = centre, invisible in above
-			// subs[2] = Z
-			// subs[3] = B
-			// subs[4] = C
-			// subs[5] = D
-			// subs[6] = E
-			// subs[7] = F
-			// subs[8] = G
-			//
-			// b is the whole cube, overlap is the centre
-			// c and d are beg and end of G.
-
-			c.y = overlap.end.y;
-			d.y = b.end.y;
-			subs[9]  = AABB(c, d); // h (southeast)
-
-			d.x = overlap.beg.x;
-			d.y = overlap.beg.y;
-			subs[10] = AABB(d, c); // i (middle)
-
-			d.z = overlap.end.z;
-			c.z = b.end.z;
-			subs[11] = AABB(d, c); // v (rear middle)
-
-			d.y = b.beg.y;
-			c.y = overlap.beg.y;
-			subs[12] = AABB(d, c); // s (rear north)
-
-			d.y = overlap.end.y;
-			c.y = b.end.y;
-			subs[13] = AABB(d, c); // y (rear south)
-
-			d.x = b.beg.x;
-			c.x = overlap.beg.x;
-			subs[14] = AABB(d, c); // x (rear southwest)
-
-			d.y = overlap.beg.y;
-			c.y = overlap.end.y;
-			subs[15] = AABB(d, c); // u (rear west)
-
-			d.y = b.beg.y;
-			c.y = overlap.beg.y;
-			subs[16] = AABB(d, c); // r (rear northwest)
-
-			d.x = overlap.end.x;
-			c.x = b.end.x;
-			subs[17] = AABB(d, c); // t (rear northeast)
-
-			d.y = overlap.beg.y;
-			c.y = overlap.end.y;
-			subs[18] = AABB(d, c); // w (rear east)
-
-			d.z = overlap.beg.z;
-			c.z = overlap.end.z;
-			subs[19] = AABB(d, c); // n (mid east)
-
-			d.y = overlap.end.y;
-			c.y = b.end.y;
-			subs[20] = AABB(d, c); // q (mid southeast)
-
-			d.x = overlap.beg.x;
-			c.x = overlap.end.x;
-			subs[21] = AABB(d, c); // p (mid south)
-
-			d.x = b.beg.x;
-			c.x = overlap.beg.x;
-			subs[22] = AABB(d, c); // o (mid southwest)
-
-			d.y = overlap.beg.y;
-			c.y = overlap.end.y;
-			subs[23] = AABB(d, c); // m (mid west)
-
-			d.y = b.beg.y;
-			c.y = overlap.beg.y;
-			subs[24] = AABB(d, c); // j (mid northwest)
-
-			d.x = overlap.beg.x;
-			c.x = overlap.end.x;
-			subs[25] = AABB(d, c); // k (mid north)
-
-			d.x = overlap.end.x;
-			c.x = b.end.x;
-			subs[26] = AABB(d, c); // l (mid northeast)
-		}
-		// }}}
-
-		AABB*[Power!(size_t, 3, dim)] maybeNonEmpties;
-
-		size_t i = 0;
-		foreach (aabb; subs) {
-			                     if (aabb.beg.x == aabb.end.x) continue;
-			static if (dim >= 2) if (aabb.beg.y == aabb.end.y) continue;
-			static if (dim >= 3) if (aabb.beg.z == aabb.end.z) continue;
-			maybeNonEmpties[i++] = &aabb;
-		}
-		auto nonEmpties = maybeNonEmpties[0..i];
-
-		size_t joins = 0;
-		for (size_t j = 0; j < nonEmpties.length; ++j) {
-			auto b1 = nonEmpties[j];
-			if (!b1)
-				continue;
-
-			retry:
-			for (size_t k = 0; k < nonEmpties.length; ++k) {
-				auto b2 = nonEmpties[k];
-				if (!b2)
-					continue;
-
-				bool join = false;
-
-				if (b1.beg.x == b2.beg.x && b1.end.x == b2.end.x)
-					join = true;
-				else {
-					static if (dim >= 2)
-					if (b1.beg.y == b2.beg.y && b1.end.y == b2.end.y)
-						join = true;
-					else {
-						static if (dim >= 3)
-						if (b1.beg.z == b2.beg.z && b1.end.z == b2.end.z)
-							join = true;
-					}
-				}
-
-				if (join) {
-					*b1 = b1.fuseWith(*b2);
-					nonEmpties[k] = null;
-					++joins;
-					goto retry;
-				}
-			}
-		}
-
-		auto finals = new AABB[nonEmpties.length - joins];
-		i = 0;
-		foreach (aabb; nonEmpties) if (aabb)
-			finals[i++] = *aabb;
-
-		assert (i == finals.length);
-		return finals;
 	}
 }
 
@@ -565,11 +308,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 			if (aabb.contains(c))
 				return aabb[c] = v;
 
-		// New box time
-		auto aabbs = placeBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD));
-		assert (aabbs.length == 1, "FIXME too many boxes");
+		foreach (aabb; placeBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD)))
+			if (aabb.contains(c))
+				return aabb[c] = v;
 
-		return aabbs[0][c] = v;
+		assert (false, "Cell in no box");
 	}
 
 	// TODO: shrink bounds sometimes, as well
@@ -584,30 +327,57 @@ final class FungeSpace(cell dim, bool befunge93) {
 			else if (c.z < beg.z) beg.z = c.z; }
 	}
 
-	AABB[] placeBox(AABB aabb) {
+	AABB[] placeBox(AABB aabb)
+	out (aabbs) {
+		size_t prev = boxen.length;
 
-		AABB* overlapsWith = null;
-		foreach (b; boxen) if (aabb.overlaps(b)) {
-			overlapsWith = &b;
-			break;
+		// Everything in the return value should be in the same relative order as
+		// in boxen (and should be contained in boxen)
+		foreach_reverse (box1; aabbs) {
+			size_t boxenIdx = boxen.length;
+
+			foreach (j, box2; boxen) if (box1 == box2) {
+				boxenIdx = j;
+				break;
+			}
+
+			assert (boxenIdx < prev);
+			prev = boxenIdx;
 		}
+	} body {
+		auto overlapsWith = new AABB[boxen.length];
 
-		if (auto old = overlapsWith) {
-			if (old.contains(aabb))
-				aabb = *old;
+		size_t j = 0;
+		for (size_t i = 0; i < boxen.length; ++i)
+			if (aabb.overlaps(boxen[i]))
+				overlapsWith[j++] = boxen[i];
 
-			else if (resizing(*old, aabb)) {
-				// old.resizeToContain(aabb);
-				aabb = *old;
+		if (j) {
+			overlapsWith.length = j;
+			auto old = overlapsWith[0];
+
+			if (overlapsWith.length == 1 && old.contains(aabb))
+				aabb = old;
+			else if (auto resized = resizing(overlapsWith, aabb)) {
+				// resized.resizeToContain(aabb);
+				aabb = *resized;
 				assert (false, "FIXME");
 
-			} else if (decomposing(*old, aabb)) {
-				auto aabbs = aabb.decomposeByOverlapWith(*old);
-				assert (false, "FIXME"); // FIXME
-				return aabbs;
-			} else
-				goto justAlloc;
-		} else justAlloc: {
+			} else if (decomposing(overlapsWith, aabb)) {
+				assert (false, "FIXME");
+				// FIXME
+				// We can have an arbitrary number of overlaps, so this is
+				// more tricky than it seemed
+				//auto aabbs = aabb.decomposeByOverlapWith(*old);
+				//return aabbs;
+			} else {
+				aabb.alloc;
+				boxen ~= aabb;
+
+				overlapsWith ~= aabb;
+				return overlapsWith;
+			}
+		} else {
 			aabb.alloc;
 			boxen ~= aabb;
 		}
@@ -704,16 +474,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 			static if (dim >= 3) end.z = max(end.z, aabb.end.z);
 
 			auto aabbs = placeBox(aabb);
-			aabb = aabbs[0];
-
-			assert (aabbs.length == 1, "FIXME too many boxes");
 
 			auto pos = target;
 
 			if (binary) foreach (b; input) {
-				if (b != ' ')
-					// FIXME: what if we've got multiple boxes
-					aabb[pos] = cast(cell)b;
+				if (b != ' ') foreach (box; aabbs) if (box.contains(pos)) {
+					box[pos] = cast(cell)b;
+					break;
+				}
 				++pos.x;
 			} else {
 				static if (dim >= 2) {
@@ -751,8 +519,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 							if (gotCR)
 								newLine();
 
-						// FIXME: what if we've got multiple boxes
-						aabb[pos] = cast(cell)b;
+						foreach (box; aabbs) if (box.contains(pos)) {
+							box[pos] = cast(cell)b;
+							break;
+						}
 						++pos.x;
 						break;
 				}
@@ -874,17 +644,19 @@ final class FungeSpace(cell dim, bool befunge93) {
 	// TODO: Resize when:
 	//   a) old aabb is fully contained within new
 	//   b) boxes can be joined (as in AABB.decomposeByOverlapWith)
-	bool resizing(AABB old, AABB b)
+	AABB* resizing(AABB[] overlaps, AABB b)
 	in {
-		assert (old.overlaps(b));
+		foreach (old; overlaps)
+			assert (old.overlaps(b));
 	} body {
-		return false;
+		return null;
 	}
 
 	// TODO: Decompose when we would waste too much space іn a new AABB
-	bool decomposing(AABB old, AABB b)
+	bool decomposing(AABB[] overlaps, AABB b)
 	in {
-		assert (old.overlaps(b));
+		foreach (old; overlaps)
+			assert (old.overlaps(b));
 	} body {
 		return false;
 	}
