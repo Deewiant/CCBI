@@ -198,9 +198,6 @@ private:
 
 				default: break;
 			}
-
-			Sout.flush;
-			Serr.flush;
 		}
 		if (normalTime) {
 			++tick;
