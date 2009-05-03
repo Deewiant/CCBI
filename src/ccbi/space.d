@@ -499,6 +499,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
 
+	private const NEWBOX_PAD = 8;
+
 	Stats* stats;
 
 	// These are array indices, starting from 0. Thus the in-use map size is
@@ -563,8 +565,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 			if (aabb.contains(c))
 				return aabb[c] = v;
 
-		// FIXME: alloc new aabb
-		assert (0, "FIXME");
+		// New box time
+		auto aabbs = placeBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD));
+		assert (aabbs.length == 1, "FIXME too many boxes");
+
+		return aabbs[0][c] = v;
 	}
 
 	// TODO: shrink bounds sometimes, as well
@@ -577,6 +582,39 @@ final class FungeSpace(cell dim, bool befunge93) {
 		static if (dim >= 3) {
 		     	  if (c.z > end.z) end.z = c.z;
 			else if (c.z < beg.z) beg.z = c.z; }
+	}
+
+	AABB[] placeBox(AABB aabb) {
+
+		AABB* overlapsWith = null;
+		foreach (b; boxen) if (aabb.overlaps(b)) {
+			overlapsWith = &b;
+			break;
+		}
+
+		if (auto old = overlapsWith) {
+			if (old.contains(aabb))
+				aabb = *old;
+
+			else if (resizing(*old, aabb)) {
+				// old.resizeToContain(aabb);
+				aabb = *old;
+				assert (false, "FIXME");
+
+			} else if (decomposing(*old, aabb)) {
+				auto aabbs = aabb.decomposeByOverlapWith(*old);
+				assert (false, "FIXME"); // FIXME
+				return aabbs;
+			} else
+				goto justAlloc;
+		} else justAlloc: {
+			aabb.alloc;
+			boxen ~= aabb;
+		}
+
+		static AABB[1] one;
+		one[0] = aabb;
+		return one;
 	}
 
 	// Takes ownership of the Array, detaching it.
@@ -658,43 +696,17 @@ final class FungeSpace(cell dim, bool befunge93) {
 			if (aabb.end.x < aabb.beg.x)
 				return;
 
-			AABB[] aabbs = null;
-
-			AABB* overlapsWith = null;
-			foreach (b; boxen) if (aabb.overlaps(b)) {
-				overlapsWith = &b;
-				break;
-			}
-
-			if (overlapsWith) {
-				auto old = overlapsWith;
-
-				if (old.contains(aabb))
-					aabb = *old;
-				else {
-					if (resizing(*old, aabb)) {
-						// old.resizeToContain(aabb);
-						aabb = *old;
-
-					} else if (decomposing(*old, aabb)) {
-						aabbs = aabb.decomposeByOverlapWith(*old);
-						assert (false, "FIXME"); // FIXME
-					} else {
-						aabb.alloc;
-						boxen ~= aabb;
-					}
-				}
-			} else {
-				aabb.alloc;
-				boxen ~= aabb;
-			}
-
 			                     beg.x = min(beg.x, aabb.beg.x);
 			static if (dim >= 2) beg.y = min(beg.y, aabb.beg.y);
 			static if (dim >= 3) beg.z = min(beg.z, aabb.beg.z);
 			                     end.x = max(end.x, aabb.end.x);
 			static if (dim >= 2) end.y = max(end.y, aabb.end.y);
 			static if (dim >= 3) end.z = max(end.z, aabb.end.z);
+
+			auto aabbs = placeBox(aabb);
+			aabb = aabbs[0];
+
+			assert (aabbs.length == 1, "FIXME too many boxes");
 
 			auto pos = target;
 
