@@ -416,50 +416,56 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 		static if (befunge93) {
 			assert (target == 0);
+			assert (end is &this.end);
 
-			auto aabb = AABB(InitCoords!(0,0), InitCoords!(79,24));
+			beg  = InitCoords!( 0, 0);
+			*end = InitCoords!(79,24);
+
+			auto aabb = AABB(beg, *end);
 			aabb.alloc;
 			boxen ~= aabb;
 
-			// loading can be fairly straightforward copying...
-			// befunge93 doesn't even need the bounds, just set them to
-			// (80,25).
-			// FIXME
-			assert (0, "FIXME");
-
-			/+
-			size_t i = -1;
+			bool gotCR = false;
 			auto pos = target;
 
-			nextRow:
-			for (int r = 0; r < 25; ++r) {
-				for (int c = 0; c < 80; ++c) {
-					if (++i >= input.length)
-						return;
-
-					loadOne(
-						input[i], &pos, aabb,
-						end, target,
-						&gotCR, &getBeg, getBegInit, &getEnd);
-				}
-				if (pos.x != target.x)
-				while (++i < input.length) switch (input[i]) {
-					case '\r': gotCR = true; break;
-					default:
-						if (gotCR) {
-							--i;
-					case '\n':
-							pos.x = 0;
-							++pos.y;
-							gotCR = false;
-							getBeg = getBegInit;
-							getEnd |= 0b010;
-							continue nextRow;
-						} else
-							break;
-				}
+			bool newLine() {
+				gotCR = false;
+				pos.x = 0;
+				++pos.y;
+				return pos.y >= 25;
 			}
-			+/
+
+			loop: for (size_t i = 0; i < input.length; ++i) switch (input[i]) {
+				case '\r': gotCR = true; break;
+				case '\n':
+					if (newLine())
+						break loop;
+					break;
+				default:
+					if (gotCR && newLine())
+						break loop;
+
+					if (input[i] != ' ')
+						aabb[pos] = cast(cell)input[i];
+
+					if (++pos.x >= 80) {
+						skipRest: for (++i; i < input.length; ++i) switch (input[i]) {
+							case '\r': gotCR = true; break;
+							case '\n':
+								if (newLine())
+									break loop;
+								break skipRest;
+							default:
+								if (gotCR) {
+									if (newLine())
+										break loop;
+									break skipRest;
+								}
+								break;
+						}
+					}
+					break;
+			}
 		} else {
 			auto aabb = getAABB(input, binary, target, getBegInit);
 
