@@ -10,6 +10,7 @@ import tango.io.device.Array    : Array;
 import tango.io.stream.Buffered : BufferedOutput;
 import tango.io.stream.Format;
 import tango.io.stream.Typed;
+import tango.stdc.string          : memmove;
 import tango.text.convert.Integer : toString;
 
 import ccbi.container;
@@ -192,6 +193,15 @@ private:
 					TRDS.timeJump(cip);
 					return true;
 			}
+
+				case Request.FORK:
+					if (j < ips.length-2) {
+						// ips[$-1] is new and in the wrong place, position it
+						// immediately after this one
+						auto ip = ips[$-1];
+						memmove(&ips[j+2], &ips[j+1], (ips.length - j) * ip.sizeof);
+						ips[j+1] = ip;
+					}
 
 				case Request.MOVE:
 					cip.move();
