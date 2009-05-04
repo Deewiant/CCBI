@@ -1107,7 +1107,7 @@ void unloadSemantics() {
 static if (!befunge93) {
 
 // Split IP
-void splitIP() {
+Request splitIP() {
 	++stats.ipForked;
 
 	ips ~= new typeof(this.cip)(cip);
@@ -1120,6 +1120,7 @@ void splitIP() {
 		// move past the 't' or forkbomb
 		move();
 	}
+	return Request.FORK;
 }
 
 }

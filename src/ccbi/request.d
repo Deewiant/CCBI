@@ -11,5 +11,6 @@ enum Request {
 	MOVE,
 	STOP,
 	QUIT,
+	FORK,
 	TIMEJUMP
 }
