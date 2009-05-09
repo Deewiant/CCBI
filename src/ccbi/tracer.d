@@ -740,7 +740,7 @@ void ipSetVector(
 		f(tip, vec);
 	else
 		f(ips[idx], vec);
-	Serr.formatln(successMsg, idx, pos);
+	Serr.formatln(successMsg, idx, vec);
 }
 
 bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
