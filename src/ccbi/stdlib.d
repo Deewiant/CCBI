@@ -5,14 +5,13 @@
 // Stuff that could/should be in the standard library.
 module ccbi.stdlib;
 
-import tango.core.Exception         : IOException, PlatformException;
-import tango.core.Traits            : isUnsignedIntegerType;
-import tango.io.Console             : Cin;
-import tango.io.Stdout              : Stdout, Stderr;
-import tango.io.device.Conduit      : OutputFilter;
-import tango.io.device.File         : File;
-import tango.io.model.IFile         : FileConst;
-import tango.math.Math              : min;
+import tango.core.Exception    : IOException, PlatformException;
+import tango.core.Traits       : isUnsignedIntegerType;
+import tango.io.Stdout         : Stdout, Stderr;
+import tango.io.device.Conduit : OutputFilter;
+import tango.io.model.IFile    : FileConst;
+import tango.io.stream.Typed   : TypedInput;
+import tango.math.Math         : min;
 import tango.sys.Common;
 
 public alias FileConst.NewlineString NewlineString;
@@ -86,8 +85,8 @@ version (Win32) {
 			arr[i++] = val;
 		}
 		arr.length = envSize = i;
-		envChanged = false; 
-		arr.sort; 
+		envChanged = false;
+		arr.sort;
 		return (.env = arr);
 	}
 } else version (Posix) {
@@ -109,30 +108,26 @@ version (Win32) {
 				arr.length = 2 * arr.length;
 			arr[i++] = (*p)[0..j];
 		}
-		arr.length = envSize = i; 
-		envChanged = false; 
-		arr.sort; 
+		arr.length = envSize = i;
+		envChanged = false;
+		arr.sort;
 		return (.env = arr);
 	}
 }
 
-char[] buffer;
-size_t pos = size_t.max;
+TypedInput!(ubyte) Sin;
+private uint_fast16_t unget;
 
-char cget() {
-	if (pos >= buffer.length) {
-		if (!Cin.readln(buffer, true))
-			throw new IOException("No more input available.");
-		pos = 0;
-	}
-
-	return buffer[pos++];
+ubyte cget() {
+	ubyte c;
+	if (unget != unget.max) {
+		c = cast(ubyte)unget;
+		unget = unget.max;
+	} else if (!Sin.read(c))
+		throw new IOException("No more input available.");
+	return c;
 }
-
-void cunget()
-in   { assert (pos > 0); }
-out  { assert (pos < buffer.length); }
-body { --pos; }
+void cunget(ubyte c) { unget = c; }
 
 T[] stripr(T)(T[] s) {
 	size_t i = s.length;

@@ -642,7 +642,7 @@ void reallyInputDecimal() {
 		return reverse();
 	}
 
-	cunget();
+	cunget(c);
 
 	cell n = 0;
 	auto s = new typeof(c)[80];
@@ -676,13 +676,7 @@ void reallyInputDecimal() {
 			}
 			n = tmp;
 		}
-
-		// put back eaten char if it wasn't line break
-		if (c == '\r') {
-			if (cget() != '\n')
-				cunget();
-		} else if (c != '\n')
-			cunget();
+		cunget(c);
 	} catch {
 		return reverse();
 	}
@@ -704,9 +698,9 @@ void inputCharacter() {
 		c = cget();
 
 		if (c == '\r') {
+			if ((c = cget()) != '\n')
+				cunget(c);
 			c = '\n';
-			if (cget() != '\n')
-				cunget();
 		}
 	} catch {
 		return reverse();

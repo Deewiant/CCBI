@@ -82,6 +82,7 @@ void outputBase() {
 	Cout.write(b);
 }
 
+// TODO: unify this with std.inputDecimal()
 void inputBase() {
 	auto base = cip.stack.pop;
 
@@ -111,7 +112,7 @@ void inputBase() {
 		return reverse();
 	}
 
-	cunget();
+	cunget(c);
 
 	cell n = 0;
 	auto s = new char[80];
@@ -141,13 +142,7 @@ void inputBase() {
 
 			n = tmp;
 		}
-
-		// put back eaten char if it wasn't line break
-		if (c == '\r') {
-			if (cget() != '\n')
-				cunget();
-		} else if (c != '\n')
-			cunget();
+		cunget(c);
 	} catch {
 		return reverse();
 	}
