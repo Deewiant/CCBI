@@ -76,6 +76,10 @@ s(w)itch (ip)
    Step one instruction
 (r)un
    Continue execution until any IP hits a breakpoint
+stdin [<] text
+   Set the standard input stream of the program to read from the given text. If
+   the \"<\" was given, treat it as a file name instead, redirecting the stream
+   to read from that file.
 
 (b)reak (pos)" ~(befunge93?"":" [ip]")~ "
    Toggle a breakpoint" ~(befunge93?"":", applies to all IPs by default")~ "
@@ -289,6 +293,28 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				auto ip = tip;
 				readIP(ip, args.arg(1), invalidIndices);
 				showInfo(ip);
+				break;
+			}
+
+			case "stdin": {
+				if (
+					args.length-1 == 0
+					|| (args.arg(1) == "<" && args.length-1 == 1)
+				) {
+					Serr("No text given.").newline;
+					break;
+				}
+				if (args.arg(1) == "<") try {
+					auto name = args[2];
+					Sin = new typeof(Sin)(new File(name));
+					Serr("Successfully set stdin to file '")(name)("'.").newline;
+				} catch {
+					Serr("Couldn't open file '")(args[2])("' for reading.").newline;
+				} else {
+					auto str = args[1];
+					Sin = new typeof(Sin)(new Array(str));
+					Serr("Successfully set stdin to string '")(str)("'.").newline;
+				}
 				break;
 			}
 
