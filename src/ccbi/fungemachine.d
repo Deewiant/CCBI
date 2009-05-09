@@ -5,11 +5,12 @@
 module ccbi.fungemachine;
 
 import tango.core.Tuple;
+import tango.io.Console           : Cin;
 import tango.io.Stdout;
-import tango.io.device.Array    : Array;
-import tango.io.stream.Buffered : BufferedOutput;
+import tango.io.device.Array      : Array;
+import tango.io.stream.Buffered   : BufferedOutput;
 import tango.io.stream.Format;
-import tango.io.stream.Typed;
+import tango.io.stream.Typed      : TypedOutput;
 import tango.stdc.string          : memmove;
 import tango.text.convert.Integer : toString;
 
@@ -42,6 +43,8 @@ static this() {
 		Stdout.layout, new BufferedOutput(new RawCoutFilter!(false), 32*1024));
 	Serr = new typeof(Serr)(
 		Stderr.layout, new BufferedOutput(new RawCoutFilter!(true ), 32*1024));
+
+	Sin = new typeof(Sin)(Cin.stream);
 
 	Cout = new typeof(Cout)(Sout.stream);
 }
