@@ -648,38 +648,35 @@ void reallyInputDecimal() {
 	auto s = new typeof(c)[80];
 	size_t j;
 
-	try {
-		reading: for (;;) {
-			c = cget();
+	reading: for (;;) {
+		try c = cget();
+		catch { return cip.stack.push(n); }
 
-			if (c < '0' || c > '9')
-				break;
+		if (c < '0' || c > '9')
+			break;
 
-			// overflow: can't read more chars
-			if (n > n.max / 10)
-				break;
+		// overflow: can't read more chars
+		if (n > n.max / 10)
+			break;
 
-			if (j == s.length)
-				s.length = 2 * s.length;
+		if (j == s.length)
+			s.length = 2 * s.length;
 
-			s[j++] = c;
+		s[j++] = c;
 
-			cell tmp = 0;
-			foreach (i, ch; s[0..j]) {
-				auto add = ipow(10, j-i-1) * (ch - '0');
+		cell tmp = 0;
+		foreach (i, ch; s[0..j]) {
+			auto add = ipow(10, j-i-1) * (ch - '0');
 
-				// overflow: can't add add
-				if (tmp > tmp.max - add)
-					break reading;
+			// overflow: can't add add
+			if (tmp > tmp.max - add)
+				break reading;
 
-				tmp += add;
-			}
-			n = tmp;
+			tmp += add;
 		}
-		cunget(c);
-	} catch {
-		return reverse();
+		n = tmp;
 	}
+	cunget(c);
 
 	cip.stack.push(n);
 }

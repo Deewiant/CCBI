@@ -118,34 +118,31 @@ void inputBase() {
 	auto s = new char[80];
 	size_t j;
 
-	try {
-		for (;;) {
-			c = toLower(cget());
+	for (;;) {
+		try c = toLower(cget());
+		catch { return cip.stack.push(n); }
 
-			if (!digits.contains(c))
-				break;
+		if (!digits.contains(c))
+			break;
 
-			if (j == s.length)
-				s.length = 2 * s.length;
+		if (j == s.length)
+			s.length = 2 * s.length;
 
-			s[j++] = c;
+		s[j++] = c;
 
-			cell tmp = 0;
+		cell tmp = 0;
 
-			// value of characters read so far, in base
-			foreach_reverse (i, ch; s[0..j])
-				tmp += ipow(base, j-i-1) * (ch < 'a' ? ch - '0' : ch - 'a' + 10);
+		// value of characters read so far, in base
+		foreach_reverse (i, ch; s[0..j])
+			tmp += ipow(base, j-i-1) * (ch < 'a' ? ch - '0' : ch - 'a' + 10);
 
-			// oops, overflow, stop here
-			if (tmp < 0)
-				break;
+		// oops, overflow, stop here
+		if (tmp < 0)
+			break;
 
-			n = tmp;
-		}
-		cunget(c);
-	} catch {
-		return reverse();
+		n = tmp;
 	}
+	cunget(c);
 
 	cip.stack.push(n);
 }
