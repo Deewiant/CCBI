@@ -166,8 +166,8 @@ Request jump() {
 		else
 			cip.pos += cip.tardisPos;
 	} else
-		// We do want to move the IP off the J now in any case.
-		// I'm not at all aware why but not doing so causes problems.
+		// We do want to move the IP off the J now in any case, since we return
+		// either Request.NONE or Request.TIMEJUMP, neither of which move the IP.
 		cip.pos = cip.tardisReturnPos;
 
 	if (cip.mode & IP.DELTA_SET)
