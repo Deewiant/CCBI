@@ -322,13 +322,13 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 	// TODO: shrink bounds sometimes, as well
 	void growBegEnd(Coords c) {
-		     	  if (c.x > end.x) end.x = c.x;
+			     if (c.x > end.x) end.x = c.x;
 			else if (c.x < beg.x) beg.x = c.x;
 		static if (dim >= 2) {
-		     	  if (c.y > end.y) end.y = c.y;
+			     if (c.y > end.y) end.y = c.y;
 			else if (c.y < beg.y) beg.y = c.y; }
 		static if (dim >= 3) {
-		     	  if (c.z > end.z) end.z = c.z;
+			     if (c.z > end.z) end.z = c.z;
 			else if (c.z < beg.z) beg.z = c.z; }
 	}
 
