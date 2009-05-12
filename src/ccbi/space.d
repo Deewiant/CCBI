@@ -151,23 +151,29 @@ private struct AABB(cell dim) {
 		static if (dim >= 2) assert (b.y <= e.y);
 		static if (dim >= 3) assert (b.z <= e.z);
 	} body {
+		auto aabb = unsafe(b, e);
+		aabb.finalize;
+		return aabb;
+	}
+	static typeof(*this) unsafe(Coords b, Coords e) {
 		AABB aabb;
 		with (aabb) {
 			beg = b;
 			end = e;
-
-			size = e.x - b.x + 1;
-
-			static if (dim >= 2) {
-				width = size;
-				size *= e.y - b.y + 1;
-			}
-			static if (dim >= 3) {
-				area = size;
-				size *= e.z - b.z + 1;
-			}
 		}
 		return aabb;
+	}
+	void finalize() {
+		size = end.x - beg.x + 1;
+
+		static if (dim >= 2) {
+			width = size;
+			size *= end.y - beg.y + 1;
+		}
+		static if (dim >= 3) {
+			area = size;
+			size *= end.z - beg.z + 1;
+		}
 	}
 
 	void alloc() {
@@ -462,6 +468,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			if (aabb.end.x < aabb.beg.x)
 				return;
 
+			aabb.finalize;
+
 			                     beg.x = min(beg.x, aabb.beg.x);
 			static if (dim >= 2) beg.y = min(beg.y, aabb.beg.y);
 			static if (dim >= 3) beg.z = min(beg.z, aabb.beg.z);
@@ -551,7 +559,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				end.x += i;
 			}
 
-			return AABB(beg, end);
+			return AABB.unsafe(beg, end);
 		}
 
 		ubyte getBeg = 0b111;
@@ -630,7 +638,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		static if (dim >= 2) end.y = max(lastNonSpace.y, end.y);
 		static if (dim >= 3) end.z = max(lastNonSpace.z, end.z);
 
-		return AABB(beg, end);
+		return AABB.unsafe(beg, end);
 	}
 
 	// TODO: Resize when:
