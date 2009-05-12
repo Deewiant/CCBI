@@ -202,7 +202,8 @@ private:
 						// ips[$-1] is new and in the wrong place, position it
 						// immediately after this one
 						auto ip = ips[$-1];
-						memmove(&ips[j+2], &ips[j+1], (ips.length - j) * ip.sizeof);
+						memmove(
+							&ips[j+2], &ips[j+1], (ips.length - (j+1)) * ip.sizeof);
 						ips[j+1] = ip;
 					}
 
