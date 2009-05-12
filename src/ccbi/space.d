@@ -278,7 +278,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		shallowCopy(this, other);
 
 		// deep copy space
-		foreach (aabb; boxen)
+		boxen = other.boxen.dup;
+		foreach (i, ref aabb; boxen)
 			aabb.data = aabb.data.dup;
 	}
 
