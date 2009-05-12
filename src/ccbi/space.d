@@ -65,7 +65,7 @@ struct Coords(cell dim) {
 					Coords co = *this;
 					                     co.x "~T[1]~"= c;
 					static if (dim >= 2) co.y "~T[1]~"= c;
-					static if (dim >= 3) co.y "~T[1]~"= c;
+					static if (dim >= 3) co.z "~T[1]~"= c;
 					return co;
 				}
 				void op" ~T[0]~ "Assign(cell c) {
