@@ -249,14 +249,12 @@ final class FungeSpace(cell dim, bool befunge93) {
 	// These are array indices, starting from 0. Thus the in-use map size is
 	// (end.x - beg.x + 1) * (end.y - beg.y + 1) * (end.z - beg.z + 1).
 	//
-	// beg.y and beg.z must start at 0, otherwise the program is just an
-	// infinite loop.
-	//
-	// beg.x has to be found out, though: initialize so that it's doable with
-	// less-than checks.
+	// Initialize so that min/max give what we want. end can't be negative
+	// initially so 0 is fine, and beg.y and beg.z must be zero or nothing is
+	// ever executed, so 0 is fine there as well.
 	Coords
 		beg = InitCoords!(cell.max),
-		end = void;
+		end = InitCoords!(0);
 
 	private AABB[] boxen;
 
@@ -406,14 +404,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 		auto input = cast(ubyte[])arr.slice;
 
-		// Since we start with a delta of (1,0,0) we can assume beg.y = beg.z = 0
-		// when first loading.
-		// (If that's not the case, we never execute any instructions!)
-		ubyte getBegInit = getAllBeg ? 0b111 : 0b001;
-
-		     static if (dim == 1) getBegInit &= 0b001;
-		else static if (dim == 2) getBegInit &= 0b011;
-
 		static if (befunge93) {
 			assert (target == 0);
 			assert (end is &this.end);
@@ -467,7 +457,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					break;
 			}
 		} else {
-			auto aabb = getAABB(input, binary, target, getBegInit);
+			auto aabb = getAABB(input, binary, target);
 
 			if (aabb.end.x < aabb.beg.x)
 				return;
@@ -539,17 +529,13 @@ final class FungeSpace(cell dim, bool befunge93) {
 	// If nothing would be loaded, end.x < beg.x in the return value
 	//
 	// target: where input is being loaded to
-	// initialGetBeg: bit mask of what beg coordinates we're interested in
-	//                (0b001 (x) for initial load, 0b111 otherwise)
 	AABB getAABB(
 		ubyte[] input,
 		bool binary,
-		Coords target,
-		ubyte initialGetBeg)
+		Coords target)
 	{
-		Coords beg, end;
-
-		beg = end = target;
+		auto beg = InitCoords!(cell.max,cell.max,cell.max);
+		auto end = target;
 
 		if (binary) {
 			size_t i = 0;
@@ -568,7 +554,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 			return AABB(beg, end);
 		}
 
-		auto getBeg = initialGetBeg;
+		ubyte getBeg = 0b111;
 		auto pos = target;
 		auto lastNonSpace = end;
 
@@ -581,7 +567,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				pos.x = target.x;
 				++pos.y;
 				gotCR = false;
-				getBeg = initialGetBeg & 0b001;
+				getBeg = 0b001;
 			}
 		}
 
@@ -608,7 +594,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					pos.x = target.x;
 					pos.y = target.y;
 					++pos.z;
-					getBeg = initialGetBeg & 0b011;
+					getBeg = 0b011;
 				}
 				break;
 
