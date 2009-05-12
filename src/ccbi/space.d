@@ -39,8 +39,8 @@ struct Coords(cell dim) {
 		Coords!(3) c;
 		static if (dim >= 3) { c.z = z; } else c.z = val;
 		static if (dim >= 2) { c.y = y; } else c.y = val;
-	                       	  c.x = x;
-	   return c;
+		                       c.x = x;
+		return c;
 	}
 
 	int opEquals(cell c) {
@@ -120,7 +120,7 @@ struct Coords(cell dim) {
 
 template Dimension(cell dim) {
 	template Coords(cell x, cell y, cell z) {
-	     	  static if (dim == 1) const Coords = .Coords!(dim)(x);
+		     static if (dim == 1) const Coords = .Coords!(dim)(x);
 		else static if (dim == 2) const Coords = .Coords!(dim)(x,y);
 		else static if (dim == 3) const Coords = .Coords!(dim)(x,y,z);
 	}
@@ -397,7 +397,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		assert (end !is null);
 	} out {
 		if (boxen.length > 0) {
-		                     	assert (beg.x <= end.x);
+			                     assert (beg.x <= end.x);
 			static if (dim >= 2) assert (beg.y <= end.y);
 			static if (dim >= 3) assert (beg.z <= end.z);
 		}
