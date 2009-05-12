@@ -183,7 +183,10 @@ private struct AABB(cell dim) {
 
 		return true;
 	}
-	bool contains(AABB b) {
+	bool contains(AABB b)
+	out(result) {
+		assert (!result || this.overlaps(b));
+	} body {
 		return contains(b.beg) && contains(b.end);
 	}
 
@@ -219,18 +222,15 @@ private struct AABB(cell dim) {
 	}
 
 	bool overlaps(AABB b) {
-		if (beg.x <= b.end.x && b.beg.x <= end.x)
-			return true;
+		bool over = beg.x <= b.end.x && b.beg.x <= end.x;
 
 		static if (dim >= 2)
-		if (beg.y <= b.end.y && b.beg.y <= end.y)
-			return true;
+			over = over && beg.y <= b.end.y && b.beg.y <= end.y;
 
 		static if (dim >= 3)
-		if (beg.z <= b.end.z && b.beg.z <= end.z)
-			return true;
+			over = over && beg.z <= b.end.z && b.beg.z <= end.z;
 
-		return false;
+		return over;
 	}
 }
 
