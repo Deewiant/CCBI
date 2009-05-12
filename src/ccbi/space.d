@@ -135,8 +135,9 @@ template Dimension(cell dim) {
 private struct AABB(cell dim) {
 	alias .Coords!(dim) Coords;
 
+	typedef cell initcell = ' ';
 	union {
-		cell[] data;
+		initcell[] data;
 		size_t size;
 	}
 	Coords beg, end;
@@ -172,8 +173,7 @@ private struct AABB(cell dim) {
 	void alloc() {
 		auto size = size;
 		data = null;
-		typedef cell initcell = ' ';
-		data = cast(cell[])new initcell[size];
+		data = new typeof(data)(size);
 	}
 
 	bool contains(Coords p) {
@@ -195,7 +195,7 @@ private struct AABB(cell dim) {
 		assert (data !is null);
 		assert (getIdx(p) < data.length);
 	} body {
-		return data[getIdx(p)];
+		return cast(cell)data[getIdx(p)];
 	}
 	cell opIndexAssign(cell val, Coords p)
 	in {
@@ -205,7 +205,7 @@ private struct AABB(cell dim) {
 		assert (data !is null);
 		assert (getIdx(p) < data.length);
 	} body {
-		return data[getIdx(p)] = val;
+		return cast(cell)(data[getIdx(p)] = cast(initcell)val);
 	}
 	private size_t getIdx(Coords p) {
 		p -= beg;
