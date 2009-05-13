@@ -28,7 +28,7 @@ void popN() {
 		return reverse();
 
 	while (n--) {
-		space[c] = cip.stack.pop;
+		state.space[c] = cip.stack.pop;
 		c += d;
 	}
 }
@@ -45,7 +45,7 @@ void pushN() {
 	cip.stack.push(0);
 
 	while (n--) {
-		cip.stack.push(space[c]);
+		cip.stack.push(state.space[c]);
 		c += d;
 	}
 }

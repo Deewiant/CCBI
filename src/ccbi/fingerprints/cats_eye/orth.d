@@ -42,7 +42,7 @@ void orthoGet() {
 			static if (dim >= 2) y = pop;
 			static if (dim >= 3) z = pop;
 		}
-		push(space[c]);
+		push(state.space[c]);
 	}
 }
 
@@ -55,14 +55,14 @@ void orthoPut() {
 			static if (dim >= 2) y = pop;
 			static if (dim >= 3) z = pop;
 		}
-		space[c] = pop;
+		state.space[c] = pop;
 	}
 }
 
 // output string
 void outputString() {
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return popString();
 
 	Sout(popString());

@@ -41,7 +41,7 @@ import tango.text.Util            : repeat;
 
 void output(char[] fmt)() {
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return cip.stack.pop(1);
 
 	Sout(intToString(cip.stack.pop, fmt));
@@ -57,7 +57,7 @@ void outputBase() {
 		return reverse();
 
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return;
 
 	const DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -90,7 +90,7 @@ void inputBase() {
 		return reverse();
 
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 
 	Sout.flush();

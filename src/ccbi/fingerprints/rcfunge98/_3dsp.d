@@ -154,7 +154,7 @@ void copy() {
 
 		for (cell y = 0; y < 4; ++y, ++t.y, ++s.y) {
 			for (cell x = 0; x < 4; ++x, ++t.x, ++s.x)
-				space[t] = space[s];
+				state.space[t] = state.space[s];
 			t.x -= 4;
 			s.x -= 4;
 		}
@@ -169,7 +169,7 @@ static if (dim >= 2) void writeMatrix(Coords c, float[] m) {
 		for (cell x = 0; x < 4; ++x, ++c.x) {
 			Union u = void;
 			u.f = m[4*y + x];
-			space[c] = u.c;
+			state.space[c] = u.c;
 		}
 		c.x -= 4;
 	}
@@ -258,7 +258,7 @@ static if (dim >= 2) void readMatrix(float[] m, Coords c) {
 	for (cell y = 0; y < 4; ++y, ++c.y) {
 		for (cell x = 0; x < 4; ++x, ++c.x) {
 			Union u = void;
-			u.c = space[c];
+			u.c = state.space[c];
 			m[y*4 + x] = u.f;
 		}
 		c.x -= 4;
@@ -348,7 +348,7 @@ void mulMatrix() {
 			for (cell x = 0; x < 4; ++x, ++tc.x) {
 				Union u = void;
 				u.f = r[y*4 + x];
-				space[tc] = u.c;
+				state.space[tc] = u.c;
 			}
 			tc.x -= 4;
 		}

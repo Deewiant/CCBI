@@ -64,18 +64,18 @@ void ctor() { buf = new char[80]; }
 void get() {
 	Coords c = popOffsetVector();
 
-	static if (dim >= 3) if (c.z > space.end.z) return reverse;
-	static if (dim >= 2) if (c.y > space.end.y) return reverse;
+	static if (dim >= 3) if (c.z > state.space.end.z) return reverse;
+	static if (dim >= 2) if (c.y > state.space.end.y) return reverse;
 
 	size_t i = 0;
 	do {
 		if (i == buf.length)
 			buf.length = buf.length * 2;
 
-		if (c.x > space.end.x)
+		if (c.x > state.space.end.x)
 			return reverse();
 
-		buf[i] = space[c];
+		buf[i] = state.space[c];
 		++c.x;
 
 	} while (buf[i++] != 0);
@@ -85,7 +85,7 @@ void get() {
 
 void input() {
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 
 	Sout.flush;
@@ -143,7 +143,7 @@ void put() {
 	auto s = popStringWithZero();
 
 	foreach (ch; s) {
-		space[c] = cast(cell)ch;
+		state.space[c] = cast(cell)ch;
 		++c.x;
 	}
 }

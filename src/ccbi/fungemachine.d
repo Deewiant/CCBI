@@ -17,6 +17,7 @@ import tango.text.convert.Integer : toString;
 import ccbi.container;
 import ccbi.fingerprint;
 import ccbi.flags;
+import ccbi.fungestate;
 import ccbi.ip;
 import ccbi.request;
 import ccbi.space;
@@ -73,24 +74,15 @@ private:
 	mixin (EmitGot!("TRDS", fings));
 
 	IP cip;
+	FungeState!(dim, befunge93, fings) state;
 
-	static if (!befunge93) {
-		IP   tip; // traced IP
-		IP[] ips;
-	} else
+	static if (!befunge93)
+		IP tip; // traced IP
+	else
 		alias cip tip;
 
-	FungeSpace space;
-
-	// For IPs
-	static if (!befunge93) {
-		cell currentID = 0;
+	static if (!befunge93)
 		char[][] fungeArgs;
-	}
-
-	// TRDS pretty much forces this to be signed (either that or handle signed
-	// time displacements manually)
-	long tick = 0;
 
 	int returnVal;
 
@@ -104,44 +96,29 @@ private:
 		static if (!befunge93)
 			fungeArgs = args;
 
-		static if (GOT_TRDS)
-			alias TRDS.initialSpace firstSpace;
-		else
-			alias space firstSpace;
+		state.space = new FungeSpace(&stats, source);
 
-		firstSpace = new FungeSpace(&stats, source);
-
-		static if (!befunge93)
-			ips.length = 1;
-		reboot();
-	}
-
-	void reboot() {
-		static if (GOT_TRDS) {
-			if (flags.fingerprintsEnabled)
-				space = new typeof(space)(initialSpace);
-			else
-				space = initialSpace;
-		}
-
-		IP ip = new IP(
-			space, &stackStats, &stackStackStats, &dequeStats, &semanticStats);
+		auto ip = new IP(
+			state.space,
+			&stackStats, &stackStackStats, &dequeStats, &semanticStats);
 
 		static if (befunge93)
-			tip = cip    = ip;
-		else
-			tip = ips[0] = ip;
+			tip = cip = ip;
+		else {
+			state.startIdx = state.ips.length = 1;
+			tip = state.ips[0] = ip;
+		}
 
 		static if (dim >= 2)
 		if (
 			flags.script &&
-			space[InitCoords!(0,0)] == '#' &&
-			space[InitCoords!(0,1)] == '!'
+			state.space[InitCoords!(0,0)] == '#' &&
+			state.space[InitCoords!(0,1)] == '!'
 		)
 		static if (befunge93)
 			cip.pos.y = 1;
 		else
-			ips[0].pos.y = 1;
+			state.ips[0].pos.y = 1;
 	}
 
 	public int run() {
@@ -177,34 +154,37 @@ private:
 				case Request.MOVE: cip.move;
 				default:           break;
 			}
-		} else for (auto j = ips.length; j-- > 0;)
-		if (executable(normalTime, ips[j])) {
+		} else for (auto j = state.startIdx; j-- > 0;)
+		if (executable(normalTime, state.ips[j])) {
 
-			cip = ips[j];
+			static if (GOT_TRDS)
+				TRDS.cipIdx = j;
+
+			cip = state.ips[j];
 			switch (executeInstruction()) {
 
 				case Request.STOP:
 					if (!stop(j)) {
 				case Request.QUIT:
-						stats.ipStopped += ips.length;
+						stats.ipStopped += state.ips.length;
 						return false;
 					}
 					break;
 
 			static if (GOT_TRDS) {
 				case Request.TIMEJUMP:
-					TRDS.timeJump(cip);
 					return true;
 			}
 
 				case Request.FORK:
-					if (j < ips.length-2) {
+					if (j < state.ips.length-2) {
 						// ips[$-1] is new and in the wrong place, position it
 						// immediately after this one
-						auto ip = ips[$-1];
+						auto ip = state.ips[$-1];
 						memmove(
-							&ips[j+2], &ips[j+1], (ips.length - (j+1)) * ip.sizeof);
-						ips[j+1] = ip;
+							&state.ips[j+2], &state.ips[j+1],
+							(state.ips.length - (j+1)) * ip.sizeof);
+						state.ips[j+1] = ip;
 					}
 
 				case Request.MOVE:
@@ -213,11 +193,15 @@ private:
 				default: break;
 			}
 		}
-		if (normalTime) {
-			++tick;
+		static if (!befunge93)
+			state.startIdx = state.ips.length;
 
+		if (normalTime) {
 			static if (GOT_TRDS)
-				TRDS.newTick();
+				if (flags.fingerprintsEnabled)
+					TRDS.newTick();
+
+			++state.tick;
 		}
 		return true;
 	}
@@ -230,7 +214,7 @@ private:
 		static if (!befunge93)
 			cip.gotoNextInstruction();
 
-		auto c = space[cip.pos];
+		auto c = state.space[cip.pos];
 
 		if (c == '"')
 			cip.mode ^= IP.STRING;
@@ -344,7 +328,7 @@ private:
 //			if (inMini)
 //				miniUnimplemented();
 /+			else +/ {
-				auto i = space[cip.pos];
+				auto i = state.space[cip.pos];
 				warn(
 					"Unimplemented instruction '{}' ({1:d}) (0x{1:x})"
 					" encountered at {}.",
@@ -361,7 +345,7 @@ private:
 		static if (befunge93)
 			alias cip ip;
 		else
-			auto ip = ips[idx];
+			auto ip = state.ips[idx];
 
 		Tracer.ipStopped(ip);
 
@@ -372,9 +356,9 @@ private:
 		static if (befunge93)
 			return false;
 		else {
-			ips.removeAt(idx);
+			state.ips.removeAt(idx);
 
-			if (ips.length > 0) {
+			if (state.ips.length > 0) {
 				// Not in the below case because quitting handles that
 				++stats.ipStopped;
 				return true;
@@ -385,7 +369,7 @@ private:
 
 	static if (!befunge93)
 	bool executable(bool normalTime, IP ip) {
-		if (ips.length == 1)
+		if (state.ips.length == 1)
 			return true;
 
 		static if (GOT_TRDS || GOT_IIPC) {
@@ -425,7 +409,7 @@ private:
 
 		auto wasWere = stats.ipDormant == 1 ? "Was" : "Were";
 
-		ss ~= Stat("Spent",                         tick+1,                    "tick");
+		ss ~= Stat("Spent",                         state.tick+1,              "tick");
 		ss ~= Stat("Encountered",                   stats.executionCount,      "instruction");
 		ss ~= Stat("Executed",                      stats.stdExecutionCount,   "standard instruction");
 		ss ~= Stat("Executed",                      stats.fingExecutionCount,  "fingerprint instruction");

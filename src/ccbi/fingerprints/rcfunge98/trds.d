@@ -29,56 +29,76 @@ mixin (Fingerprint!(
 
 template TRDS() {
 
-static assert (is(typeof(tick) == typeof(cip.tardisTick)));
+static assert (is(typeof(state.tick) == typeof(cip.tardisTick)));
 
-// {{{ data
+// {{{ data and ctor
 
 struct StoppedIPData {
 	typeof(cip.id) id;
-	typeof(tick) jumpedAt, jumpedTo;
+	typeof(state.tick) jumpedAt, jumpedTo;
 }
 StoppedIPData[] stoppedIPdata;
 IP[] travellers;
-IP timeStopper = null;
 
-// Keep a copy of the original space so we don't have to reload from file when
-// rebooting
-FungeSpace initialSpace;
+// The state of the world when TRDS is first loaded: the earliest point of time
+// we allow ourselves to jump back to.
+//
+// Doing a copy of the Funge-Space when the file is loaded just in case TRDS is
+// ever needed (what we used to do) leads to poor performance for no good
+// reason. It does allow jumping back to tick 0 but loading TRDS immediately
+// allows you to jump back that far which is just as useful...
+typeof(state) earlyState = void;
+cell loadedTick = -1;
+
+// If we have multiple threads running when TRDS is loaded, remember the
+// correct one to execute when we jump back, since some of them may already
+// have been executed.
+//
+// Set externally by FungeMachine.
+size_t cipIdx = void;
 
 // When rerunning time to jump point, don't output (since that isn't
 // "happening")
-typeof(tick) ioAfter = 0;
+typeof(state.tick) ioAfter = 0;
+
+void ctor() {
+	if (loadedTick < 0) {
+		loadedTick = cast(cell)state.tick;
+		earlyState = state.deepCopy;
+
+		// Start executing from the next IP after cip instead of ips.length
+		earlyState.startIdx = cipIdx;
+	}
+}
 
 // }}}
 // {{{ FungeMachine callbacks
 
 bool isNormalTime() {
-	return timeStopper is null;
+	return state.timeStopper >= state.ips.length;
 }
 bool executable(bool normalTime, IP ip) {
-	return (normalTime || timeStopper is ip) && tick >= ip.jumpedTo;
+	return (normalTime || state.ips[state.timeStopper] is ip)
+	    && state.tick >= ip.jumpedTo;
 }
 
 void newTick() {
-	if (flags.fingerprintsEnabled) {
-		// If an IP is jumping to the future and it is the only one alive,
-		// just jump.
-		if (ips[0].jumpedTo > tick && ips.length == 1)
-			tick = ips[0].jumpedTo;
+	// If an IP is jumping to the future and it is the only one alive,
+	// just jump.
+	if (state.ips[0].jumpedTo > state.tick && state.ips.length == 1)
+		state.tick = state.ips[0].jumpedTo;
 
-		// Must be appended: preserves correct execution order
-		for (size_t i = 0; i < travellers.length; ++i)
-			if (tick == travellers[i].jumpedTo) {
-				++stats.travellerArrived;
-				ips ~= new IP(travellers[i]);
-			}
+	// Must be appended: preserves correct execution order
+	foreach (ip; travellers) if (state.tick == ip.jumpedTo) {
+		++stats.travellerArrived;
+		state.ips ~= new IP(ip);
 	}
 }
 
 void ipStopped(IP ip) {
 	// Resume time if the time stopper dies
-	if (ip is timeStopper)
-		timeStopper = null;
+	if (!isNormalTime() && ip is state.ips[state.timeStopper])
+		state.timeStopper = size_t.max;
 
 	// Store data of stopped IPs which have jumped
 	// See jump() for the reason
@@ -96,69 +116,13 @@ void ipStopped(IP ip) {
 	}
 }
 
-void timeJump(IP ip) {
-	// nothing special if jumping to the future, just don't trace it
-	if (tick > 0) {
-		++stats.ipTravelledToFuture;
-
-		if (ip.jumpedTo >= ip.jumpedAt)
-			ip.mode &= ~IP.FROM_FUTURE;
-
-		// TODO: move this to Tracer
-		if (ip is tip)
-			tip = null;
-		return;
-	}
-
-	++stats.ipTravelledToPast;
-
-	// add ip to travellers unless it's already there
-	bool found = false;
-	foreach (traveller; travellers)
-	if (traveller.id == ip.id && traveller.jumpedAt == ip.jumpedAt) {
-		found = true;
-		break;
-	}
-	if (!found) {
-		ip.mode |= IP.FROM_FUTURE;
-		travellers ~= new IP(ip);
-	}
-
-	/+
-	Whenever we jump back in time, history from the jump target forward is
-	forgotten. Thus if there are travellers that jumped to a time later than
-	the jump target, forget about them as well.
-
-	Example:
-	- IP 1 travels from time 300 to 200.
-	- We rerun from time 0 to 200, then place the IP. It does some stuff,
-	  then teleports and jumps back to 300.
-
-	- IP 2 travels from time 400 to 100.
-	- We rerun from time 0 to 100, then place the IP. It does some stuff,
-	  then teleports and jumps back to 400.
-
-	- At time 300, IP 1 travels again to 200.
-	- We rerun from time 0 to 200. But at time 100, we need to place IP 2
-	  again. So we do. (Hence the whole travellers array.)
-	- IP 2 does its stuff, and teleports and freezes itself until 400.
-
-	- Come time 200, we would place IP 1 again if we hadn't done the
-	  following, and removed it back when we placed IP 2 for the second time.
-	+/
-	for (size_t i = 0; i < travellers.length; ++i)
-		if (ip.jumpedTo < travellers[i].jumpedTo)
-			travellers.removeAt(i--);
-
-	reboot();
-}
 // }}}
 // {{{ instructions
 
 Request jump() {
 	cip.tardisReturnPos   = cip.pos + cip.delta;
 	cip.tardisReturnDelta = cip.delta;
-	cip.tardisReturnTick  = tick;
+	cip.tardisReturnTick  = state.tick;
 
 	if (cip.mode & IP.SPACE_SET) {
 		if (cip.mode & IP.ABS_SPACE)
@@ -175,15 +139,16 @@ Request jump() {
 
 	if (cip.mode & IP.TIME_SET) {
 
+		static assert (typeof(cip.jumpedTo).min < 0);
+
 		cip.jumpedTo = cip.tardisTick;
 		if (!(cip.mode & IP.ABS_TIME))
-			cip.jumpedTo += tick;
+			cip.jumpedTo += state.tick;
 
-		static assert (typeof(cip.jumpedTo).min < 0);
-		if (cip.jumpedTo < 1)
-			cip.jumpedTo = 1;
+		if (cip.jumpedTo < loadedTick)
+			cip.jumpedTo = loadedTick;
 
-		if (cip.jumpedTo < tick) {
+		if (cip.jumpedTo < state.tick) {
 			// jump into the past
 
 			// if another IP with the same ID as cip exists, and it jumped at this
@@ -194,8 +159,10 @@ Request jump() {
 			 + 	jump and thus we would enter an infinite loop, jumping again
 			 + 	and again from the same time to the same time
 			 +/
-			foreach (ip; ips)
-			if (cip.id == ip.id && cip !is ip && ip.jumpedAt == tick)
+			// NOTE a slight HACKINESS: relies on ip.jumpedAt not being set on
+			// jumps to the future
+			foreach (ip; state.ips)
+			if (cip.id == ip.id && cip !is ip && ip.jumpedAt == state.tick)
 				return Request.STOP;
 
 			// ditto for an IP which has been stopped, but had the same ID
@@ -261,40 +228,97 @@ Request jump() {
 			+/
 
 			outer: foreach (inout dat; stoppedIPdata)
-			if (cip.id == dat.id && dat.jumpedAt == tick) {
+			if (cip.id == dat.id && dat.jumpedAt == state.tick) {
 				foreach (traveller; travellers)
 				if (
-					traveller.jumpedAt > tick &&
+					traveller.jumpedAt > state.tick &&
 					traveller.jumpedTo <= dat.jumpedTo &&
-					dat.jumpedTo != typeof(tick).max
+					dat.jumpedTo != typeof(state.tick).max
 				) {
 					// HACK: see above comment
-					dat.jumpedTo = typeof(tick).max;
+					dat.jumpedTo = typeof(state.tick).max;
 					break outer;
 				}
 
 				return Request.STOP;
 			}
 
-			ips[0]       = cip;
-			ips.length   = 1;
-			currentID    = 0;
-			cip.jumpedAt = tick;
-			tick         = 0;
-			ioAfter      = cip.jumpedTo;
-			resume();
+			// See HACKINESS above
+			cip.jumpedAt = state.tick;
 		}
 
+		timeJump(cip);
 		return Request.TIMEJUMP;
 	}
 	return Request.NONE;
 }
+void timeJump(IP ip) {
+	// Nothing special if jumping to the future, just don't trace it.
+	// Be careful not to compare against ip.jumpedAt: see HACKINESS above
+	if (ip.jumpedTo >= state.tick) {
+		++stats.ipTravelledToFuture;
 
-void stop  () { ++stats.timeStopped; timeStopper = cip;  }
-void resume() {                      timeStopper = null; }
+		ip.mode &= ~IP.FROM_FUTURE;
 
-void now() { cip.stack.push(cast(cell)tick); }
-void max() { cip.stack.push(             0); }
+		// TODO: move this to Tracer
+		if (ip is tip)
+			tip = null;
+		return;
+	}
+
+	++stats.ipTravelledToPast;
+
+	ioAfter = ip.jumpedTo;
+
+	// add ip to travellers unless it's already there
+	bool found = false;
+	foreach (traveller; travellers)
+	if (traveller.id == ip.id && traveller.jumpedAt == ip.jumpedAt) {
+		found = true;
+		break;
+	}
+	if (!found) {
+		ip.mode |= IP.FROM_FUTURE;
+		travellers ~= new IP(ip);
+	}
+
+	/+
+	Whenever we jump back in time, history from the jump target forward is
+	forgotten. Thus if there are travellers that jumped to a time later than
+	the jump target, forget about them as well.
+
+	Example:
+	- IP 1 travels from time 300 to 200.
+	- We rerun from time 0 to 200, then place the IP. It does some stuff,
+	  then teleports and jumps back to 300.
+
+	- IP 2 travels from time 400 to 100.
+	- We rerun from time 0 to 100, then place the IP. It does some stuff,
+	  then teleports and jumps back to 400.
+
+	- At time 300, IP 1 travels again to 200.
+	- We rerun from time 0 to 200. But at time 100, we need to place IP 2
+	  again. So we do. (Hence the whole travellers array.)
+	- IP 2 does its stuff, and teleports and freezes itself until 400.
+
+	- Come time 200, we would place IP 1 again if we hadn't done the
+	  following, and removed it back when we placed IP 2 for the second time.
+	+/
+	for (size_t i = 0; i < travellers.length; ++i)
+		if (ip.jumpedTo < travellers[i].jumpedTo)
+			travellers.removeAt(i--);
+
+	state = earlyState.deepCopy;
+
+	// TODO: move to Tracer
+	tip = null;
+}
+
+void stop  () { ++stats.timeStopped; state.timeStopper = cipIdx;     }
+void resume() {                      state.timeStopper = size_t.max; }
+
+void now() { assert (state.tick >= 0); cip.stack.push(cast(cell)state.tick); }
+void max() { assert (loadedTick >= 0); cip.stack.push(          loadedTick); }
 
 void reset() {
 	cip.mode &=

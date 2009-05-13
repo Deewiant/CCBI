@@ -193,7 +193,7 @@ static if (dim >= 2) {
 // Turn Right
 void turnRight() {
 	if (cip.mode & cip.SWITCH)
-		space[cip.pos] = '[';
+		state.space[cip.pos] = '[';
 
 	// x = cos(90) x - sin(90) y = -y
 	// y = sin(90) x + cos(90) y =  x
@@ -205,7 +205,7 @@ void turnRight() {
 // Turn Left
 void turnLeft() {
 	if (cip.mode & cip.SWITCH)
-		space[cip.pos] = ']';
+		state.space[cip.pos] = ']';
 
 	// x = cos(-90) x - sin(-90) y =  y
 	// y = sin(-90) x + cos(-90) y = -x
@@ -273,11 +273,11 @@ Request iterate() {
 
 	auto r = Request.MOVE;
 
-	auto i = space[cip.pos];
+	auto i = state.space[cip.pos];
 
 	if (i == ' ' || i == ';') {
 		cip.gotoNextInstruction();
-		i = space[cip.pos];
+		i = state.space[cip.pos];
 	}
 
 	// negative argument is undefined by spec, just ignore it
@@ -435,13 +435,13 @@ static if (!befunge93) {
 // Fetch Character
 void fetchCharacter() {
 	cip.move();
-	cip.stack.push(space[cip.pos]);
+	cip.stack.push(state.space[cip.pos]);
 }
 
 // Store Character
 void storeCharacter() {
 	cip.move();
-	space[cip.pos] = cip.stack.pop;
+	state.space[cip.pos] = cip.stack.pop;
 }
 
 }
@@ -487,7 +487,7 @@ Request beginBlock() {
 	alias stdStackStackBuf buf;
 
 	if (cip.mode & cip.SWITCH)
-		space[cip.pos] = '}';
+		state.space[cip.pos] = '}';
 
 	try cip.stackStack.push(cip.newStack());
 	catch {
@@ -526,7 +526,7 @@ void endBlock() {
 	alias stdStackStackBuf buf;
 
 	if (cip.mode & cip.SWITCH)
-		space[cip.pos] = '{';
+		state.space[cip.pos] = '{';
 
 	if (cip.stackStack.size == 1)
 		return reverse();
@@ -582,13 +582,13 @@ void stackUnderStack() {
 
 // Get
 void get() {
-	cip.stack.push(space[popOffsetVector()]);
+	cip.stack.push(state.space[popOffsetVector()]);
 }
 
 // Put
 void put() {
 	auto c = popOffsetVector();
-	space[c] = cip.stack.pop;
+	state.space[c] = cip.stack.pop;
 }
 
 // Standard Input/Output
@@ -599,7 +599,7 @@ void outputDecimal() {
 	auto n = cip.stack.pop;
 
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return;
 
 	Sout(n);
@@ -612,7 +612,7 @@ void outputCharacter() {
 	auto c = cast(ubyte)cip.stack.pop;
 
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return;
 
 	Cout.write(c);
@@ -625,7 +625,7 @@ void outputCharacter() {
 // Input Decimal
 void inputDecimal() {
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 
 	Sout.flush();
@@ -684,7 +684,7 @@ void reallyInputDecimal() {
 // Input Character
 void inputCharacter() {
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return cip.stack.push('T');
 
 	Sout.flush();
@@ -730,7 +730,7 @@ void inputFile() {
 		return reverse();
 	}
 
-	space.load(file, &vb, va, binary, true);
+	state.space.load(file, &vb, va, binary, true);
 
 	vb -= va;
 	++vb;
@@ -751,7 +751,7 @@ void outputFile() {
 		vb = popVector();
 
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return;
 
 	static if (dim >= 3) if (vb.z < 0) return reverse;
@@ -780,9 +780,9 @@ void outputFile() {
 		// treat as linear text file, meaning...
 
 		// ...don't bother writing stuff that is only whitespace...
-		static if (dim >= 3) if (max.z > space.end.z) max.z = space.end.z;
-		static if (dim >= 2) if (max.y > space.end.y) max.y = space.end.y;
-		                     if (max.x > space.end.x) max.x = space.end.x;
+		static if (dim >= 3) if (max.z > state.space.end.z) max.z = state.space.end.z;
+		static if (dim >= 2) if (max.y > state.space.end.y) max.y = state.space.end.y;
+		                     if (max.x > state.space.end.x) max.x = state.space.end.x;
 
 		auto arraySize = max; arraySize -= vaE;
 
@@ -801,7 +801,7 @@ void outputFile() {
 
 				for (cell x = vaE.x; x < max.x; ++x) {
 					c.x = x;
-					row[x - vaE.x] = space[c];
+					row[x - vaE.x] = state.space[c];
 				}
 			}
 		}
@@ -869,7 +869,7 @@ void outputFile() {
 	} else {
 		// no flag: write everything in a block of size vb, including spaces
 		// put form feeds and line breaks only between rects/lines
-		space.binaryPut(file, vaE, max);
+		state.space.binaryPut(file, vaE, max);
 	}
 }
 
@@ -951,10 +951,10 @@ void getSysInfo() {
 
 		// the rest
 
-		auto relEnd = space.end; relEnd -= space.beg;
+		auto relEnd = state.space.end; relEnd -= state.space.beg;
 
 		pushVector(relEnd);
-		pushVector(space.beg);
+		pushVector(state.space.beg);
 		pushVector(cip.offset);
 		pushVector(cip.delta);
 		pushVector(cip.pos);
@@ -1050,9 +1050,9 @@ private bool popFingerprint(out cell fingerprint) {
 }
 
 // Load Semantics
-void loadSemantics() {
+Request loadSemantics() {
 	if (cip.mode & cip.SWITCH)
-		space[cip.pos] = ')';
+		state.space[cip.pos] = ')';
 
 	cell fingerprint;
 	if (!popFingerprint(fingerprint))
@@ -1069,13 +1069,17 @@ void loadSemantics() {
 
 	cip.stack.push(fingerprint, 1);
 
+	// Call the constructor when we've already moved instead of before: TRDS
+	// appreciates it
+	cip.move;
 	loadedFingerprint(fingerprint);
+	return Request.NONE;
 }
 
 // Unload Semantics
 void unloadSemantics() {
 	if (cip.mode & cip.SWITCH)
-		space[cip.pos] = '(';
+		state.space[cip.pos] = '(';
 
 	cell fingerprint;
 	if (!popFingerprint(fingerprint))
@@ -1101,10 +1105,13 @@ static if (!befunge93) {
 Request splitIP() {
 	++stats.ipForked;
 
-	ips ~= new typeof(this.cip)(cip);
+	state.ips ~= new typeof(this.cip)(cip);
 
-	with (ips[$-1]) {
-		id = ++currentID;
+	with (state.ips[$-1]) {
+		id = ++state.currentID;
+
+		static if (GOT_IIPC)
+			parentID = cip.id;
 
 		reverse();
 

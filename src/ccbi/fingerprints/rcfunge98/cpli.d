@@ -85,7 +85,7 @@ void cplxOut() {
 		     r = pop;
 
 		static if (GOT_TRDS)
-			if (tick < ioAfter)
+			if (state.tick < ioAfter)
 				return;
 
 		Sout(r);

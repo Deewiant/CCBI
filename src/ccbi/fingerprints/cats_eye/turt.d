@@ -30,12 +30,11 @@ mixin (Fingerprint!(
 	"U", "queryBounds"
 ));
 
+const TURT_FILE_INIT = "CCBI_TURT.svg";
 
 import tango.io.device.File;
 import tango.math.Math : PI, cos, sin, round = rndint, abs;
 import tango.text.convert.Integer : format;
-
-const TURT_FILE_INIT = "CCBI_TURT.svg";
 
 // {{{ turtle coordinates
 
@@ -241,13 +240,13 @@ struct Drawing {
 
 template TURT() {
 
-char[] filename = TURT_FILE_INIT;
-Turtle turt;
-
 import tango.math.Math : PI, round = rndint;
 import tango.text.convert.Integer : format;
 import tango.text.xml.Document;
 import tango.text.xml.DocPrinter;
+
+char[] filename = TURT_FILE_INIT;
+Turtle turt;
 
 // {{{ helpers
 
@@ -397,7 +396,7 @@ void printDrawing() {
 	tryAddPoint();
 
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return;
 
 	File file;

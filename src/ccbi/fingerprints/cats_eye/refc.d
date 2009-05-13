@@ -19,21 +19,19 @@ mixin (Fingerprint!(
 
 template REFC() {
 
-Coords[] references;
-
 // Reference
 void reference() {
-	references ~= popVector();
-	cip.stack.push(cast(cell)(references.length - 1));
+	state.references ~= popVector();
+	cip.stack.push(cast(cell)(state.references.length - 1));
 }
 
 // Dereference
 void dereference() {
 	auto idx = cip.stack.pop;
-	if (idx >= references.length)
+	if (idx >= state.references.length)
 		return reverse();
 
-	pushVector(references[idx]);
+	pushVector(state.references[idx]);
 }
 
 }

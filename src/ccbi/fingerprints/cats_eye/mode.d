@@ -22,7 +22,7 @@ mixin (Fingerprint!(
 template MODE() {
 
 void ctor() {
-	foreach (inout ip; ips) {
+	foreach (inout ip; state.ips) {
 		foreach (inout s; ip.stackStack) {
 			auto st = cast(Stack!(cell))s;
 			if (st)
@@ -35,11 +35,11 @@ void ctor() {
 void dtor() {
 	// Leaving modes on after unloading is bad practice IMHO, but it could
 	// happen...
-	foreach (ip; ips)
+	foreach (ip; state.ips)
 	if (ip.stack.mode & (INVERT_MODE | QUEUE_MODE))
 		return;
 
-	foreach (inout ip; ips) {
+	foreach (inout ip; state.ips) {
 		foreach (inout s; ip.stackStack) {
 			assert (cast(Deque)s);
 			s = new Stack!(cell)(&stackStats, cast(Deque)s);

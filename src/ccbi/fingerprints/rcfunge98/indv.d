@@ -39,37 +39,37 @@ Coords getIndirect() {
 	Coords c = popOffsetVector();
 
 	Coords c2;
-	static if (dim >= 3) { c2.z = space[c]; ++c.x; }
-	static if (dim >= 2) { c2.y = space[c]; ++c.x; }
-	                       c2.x = space[c];
+	static if (dim >= 3) { c2.z = state.space[c]; ++c.x; }
+	static if (dim >= 2) { c2.y = state.space[c]; ++c.x; }
+	                       c2.x = state.space[c];
 
 	return c2;
 }
 
 void getNum() {
-	cip.stack.push(space[getIndirect()]);
+	cip.stack.push(state.space[getIndirect()]);
 }
 
 void putNum() {
 	Coords c = getIndirect();
-	space[c] = cip.stack.pop;
+	state.space[c] = cip.stack.pop;
 }
 
 void getVec() {
 	Coords c = getIndirect();
 
 	c.x += dim-1;
-	static if (dim >= 3) { cip.stack.push(space[c]); --c.x; }
-	static if (dim >= 2) { cip.stack.push(space[c]); --c.x; }
-	                       cip.stack.push(space[c]);
+	static if (dim >= 3) { cip.stack.push(state.space[c]); --c.x; }
+	static if (dim >= 2) { cip.stack.push(state.space[c]); --c.x; }
+	                       cip.stack.push(state.space[c]);
 }
 
 void putVec() {
 	Coords c = getIndirect();
 
-	                              space[c] = cip.stack.pop;
-	static if (dim >= 2) { ++c.x; space[c] = cip.stack.pop; }
-	static if (dim >= 3) { ++c.x; space[c] = cip.stack.pop; }
+	                              state.space[c] = cip.stack.pop;
+	static if (dim >= 2) { ++c.x; state.space[c] = cip.stack.pop; }
+	static if (dim >= 3) { ++c.x; state.space[c] = cip.stack.pop; }
 }
 
 }

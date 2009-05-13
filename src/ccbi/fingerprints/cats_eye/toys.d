@@ -71,7 +71,7 @@ void bracelet() {
 	for (auto z = 0; z < de.z; ++z) {
 		for (auto y = 0; y < de.y; ++y) {
 			for (auto x = 0; x < de.x; ++x, ++t.x, ++o.x)
-				space[t] = space[o];
+				state.space[t] = state.space[o];
 
 			t.x -= de.x;
 			o.x -= de.x;
@@ -110,7 +110,7 @@ void scissors() {
 			for (auto x = de.x; x--;) {
 				--t.x;
 				--o.x;
-				space[t] = space[o];
+				state.space[t] = state.space[o];
 			}
 
 			t.x += de.x;
@@ -128,8 +128,8 @@ void kittycat() {
 	for (auto z = 0; z < de.z; ++z) {
 		for (auto y = 0; y < de.y; ++y) {
 			for (auto x = 0; x < de.x; ++x, ++t.x, ++o.x) {
-				space[t] = space[o];
-				space[o] = ' ';
+				state.space[t] = state.space[o];
+				state.space[o] = ' ';
 			}
 
 			t.x -= de.x;
@@ -169,8 +169,8 @@ void dixiecup() {
 			for (auto x = de.x; x--;) {
 				--t.x;
 				--o.x;
-				space[t] = space[o];
-				space[o] = ' ';
+				state.space[t] = state.space[o];
+				state.space[o] = ' ';
 			}
 
 			t.x += de.x;
@@ -195,16 +195,16 @@ void chicane() {
 		for (c.z = a.z; c.z < b.z; ++c.z)
 			for (c.y = a.y; c.y < b.y; ++c.y)
 				for (c.x = a.x; c.x < b.x; ++c.x)
-					space[c] = val;
+					state.space[c] = val;
 
 	} else static if (dim == 2) {
 		for (c.y = a.y; c.y < b.y; ++c.y)
 			for (c.x = a.x; c.x < b.x; ++c.x)
-				space[c] = val;
+				state.space[c] = val;
 
 	} else
 		for (c.x = a.x; c.x < b.x; ++c.x)
-			space[c] = val;
+			state.space[c] = val;
 }
 
 void fishhook() {
@@ -217,16 +217,16 @@ void fishhook() {
 		Coords c2 = c;
 
 		if (n < 0) {
-			c.y = space.beg.y;
+			c.y = state.space.beg.y;
 			c2.y = c.y + n;
-			for (auto oldEnd = space.end.y; c.y <= oldEnd; ++c.y, ++c2.y)
-				space[c2] = space[c];
+			for (auto oldEnd = state.space.end.y; c.y <= oldEnd; ++c.y, ++c2.y)
+				state.space[c2] = state.space[c];
 
 		} else if (n > 0) {
-			c.y = space.end.y;
+			c.y = state.space.end.y;
 			c2.y = c.y + n;
-			for (auto oldBeg = space.beg.y; c.y >= oldBeg; --c.y, --c2.y)
-				space[c2] = space[c];
+			for (auto oldBeg = state.space.beg.y; c.y >= oldBeg; --c.y, --c2.y)
+				state.space[c2] = state.space[c];
 		}
 	}
 }
@@ -241,16 +241,16 @@ void boulder() {
 		Coords c2 = c;
 
 		if (n < 0) {
-			c.x = space.beg.x;
+			c.x = state.space.beg.x;
 			c2.x = c.x + n;
-			for (auto oldEnd = space.end.x; c.x <= oldEnd; ++c.x, ++c2.x)
-				space[c2] = space[c];
+			for (auto oldEnd = state.space.end.x; c.x <= oldEnd; ++c.x, ++c2.x)
+				state.space[c2] = state.space[c];
 
 		} else if (n > 0) {
-			c.x = space.end.x;
+			c.x = state.space.end.x;
 			c2.x = c.x + n;
-			for (auto oldBeg = space.beg.x; c.x >= oldBeg; --c.x, --c2.x)
-				space[c2] = space[c];
+			for (auto oldBeg = state.space.beg.x; c.x >= oldBeg; --c.x, --c2.x)
+				state.space[c2] = state.space[c];
 		}
 	}
 }
@@ -263,7 +263,7 @@ void corner() {
 
 		Std.turnLeft();
 		cip.move();
-		cip.stack.push(space[cip.pos]);
+		cip.stack.push(state.space[cip.pos]);
 
 		cip.pos   = p;
 		cip.delta = d;
@@ -279,7 +279,7 @@ void canOpener() {
 
 		Std.turnRight();
 		cip.move();
-		cip.stack.push(space[cip.pos]);
+		cip.stack.push(state.space[cip.pos]);
 
 		cip.pos   = p;
 		cip.delta = d;
@@ -353,7 +353,7 @@ void calipers() {
 
 			for (c.y = t.y; c.y < t.y + j; ++c.y)
 			for (c.x = t.x; c.x < t.x + i; ++c.x)
-				space[c] = pop;
+				state.space[c] = pop;
 		}
 	} else reverse;
 }
@@ -372,13 +372,13 @@ void counterclockwise() {
 
 			for (c.y = o.y + j; c.y-- > o.y;)
 			for (c.x = o.x + i; c.x-- > o.x;)
-				push(space[c]);
+				push(state.space[c]);
 		}
 	} else reverse;
 }
 
 void necklace() {
-	with (cip) space[pos - delta] = stack.pop;
+	with (cip) state.space[pos - delta] = stack.pop;
 }
 
 void barstool() {
@@ -392,15 +392,15 @@ void barstool() {
 
 void tumbler() {
 	switch (rand_up_to!(2*dim)()) {
-		case 0: space[cip.pos] = '<'; goWest (); break;
-		case 1: space[cip.pos] = '>'; goEast (); break;
+		case 0: state.space[cip.pos] = '<'; goWest (); break;
+		case 1: state.space[cip.pos] = '>'; goEast (); break;
 	static if (dim >= 2) {
-		case 2: space[cip.pos] = 'v'; goSouth(); break;
-		case 3: space[cip.pos] = '^'; goNorth(); break;
+		case 2: state.space[cip.pos] = 'v'; goSouth(); break;
+		case 3: state.space[cip.pos] = '^'; goNorth(); break;
 	}
 	static if (dim >= 3) {
-		case 4: space[cip.pos] = 'l'; goLow  (); break;
-		case 5: space[cip.pos] = 'h'; goHigh (); break;
+		case 4: state.space[cip.pos] = 'l'; goLow  (); break;
+		case 5: state.space[cip.pos] = 'h'; goHigh (); break;
 	}
 		default: assert (false);
 	}
@@ -412,7 +412,7 @@ void televisionAntenna() {
 
 	auto
 		v = cip.stack.pop,
-		x = space[c];
+		x = state.space[c];
 
 	if (x < v) {
 		cip.stack.push(v);

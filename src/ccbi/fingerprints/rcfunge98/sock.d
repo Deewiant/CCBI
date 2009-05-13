@@ -189,7 +189,7 @@ void receive() {
 		push(cast(cell)got);
 
 		for (typeof(got) i = 0; i < got; ++i, ++c.x)
-			space[c] = cast(cell)buffer[i];
+			state.space[c] = cast(cell)buffer[i];
 	}
 }
 
@@ -207,7 +207,7 @@ void send() {
 			buffer.length = len;
 
 		for (typeof(len) i = 0; i < len; ++i, ++c.x)
-			buffer[i] = space[c];
+			buffer[i] = state.space[c];
 
 		auto sent = sockets[s].send(buffer[0..len]);
 

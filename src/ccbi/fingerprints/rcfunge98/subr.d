@@ -23,21 +23,18 @@ mixin (Fingerprint!(
 template SUBR() {
 
 void ctor() {
-	if (!callStack.length)
-		callStack.length = 8;
+	if (!state.callStack.length)
+		state.callStack.length = 8;
 }
-
-cell[] callStack;
-size_t cs;
 
 void push(cell n) {
-	if (cs == callStack.length)
-		callStack.length = callStack.length * 2;
+	if (state.cs == state.callStack.length)
+		state.callStack.length = state.callStack.length * 2;
 
-	callStack[cs++] = n;
+	state.callStack[state.cs++] = n;
 }
 
-cell pop() { return callStack[--cs]; }
+cell pop() { return state.callStack[--state.cs]; }
 
 void absolute() { cip.mode &= ~IP.SUBR_RELATIVE; }
 void relative() { cip.mode |=  IP.SUBR_RELATIVE; }
