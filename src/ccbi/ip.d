@@ -59,9 +59,6 @@ final class IP(cell dim, bool befunge93, fings...) {
 	static if (!befunge93) this(IP o) {
 		shallowCopy(this, o);
 
-		static if (GOT_IIPC)
-			parentID = o.id;
-
 		// deep copy stack stack
 		stackStack = new typeof(stackStack)(o.stackStack);
 

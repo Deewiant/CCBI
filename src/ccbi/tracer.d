@@ -28,9 +28,9 @@ alias .Coords!(dim) Coords;
 
 bool stopNext = true;
 
-byte[IP][Coords      ]  bps; //      breakpoints
-bool[IP][cell        ] cbps; // cell breakpoints
-byte    [typeof(tick)] tbps; // tick breakpoints
+byte[IP][Coords            ]  bps; //      breakpoints
+bool[IP][cell              ] cbps; // cell breakpoints
+byte    [typeof(state.tick)] tbps; // tick breakpoints
 
 void ipStopped(IP ip) {
 	if (ip is tip)
@@ -134,7 +134,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	void printIP(size_t i, IP ip) {
 		Serr("Tracer :: ");
 		static if (!befunge93)
-			if (ips.length > 1)
+			if (state.ips.length > 1)
 				return Serr.format("IP {}, with ID {}, ", i, ip.id);
 
 		Serr("The IP ");
@@ -146,7 +146,9 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	size_t breaker = void;
 
 	static if (befunge93)
-		IP[1] ips = [cip];
+		auto ips = [cip];
+	else
+		auto ips = state.ips;
 
 	foreach (pos, ipSet; bps)
 	foreach (i, ip; ips)
@@ -169,7 +171,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 		if (
 			(stringsAlso || !(ip.mode & ip.STRING)) &&
-			space[ip.pos] == val
+			state.space[ip.pos] == val
 		) {
 			atBreak = true;
 
@@ -179,7 +181,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	}
 
 	foreach (bp, ignored; tbps)
-	if (tick == bp) {
+	if (state.tick == bp) {
 		atBreak = true;
 
 		Serr.formatln("Tracer :: hit the tick breakpoint at {}.", bp);
@@ -197,7 +199,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	auto minimalValid = size_t.max;
 
 	foreach (i, ip; ips) {
-		static if (GOT_TRDS) if (tick < ip.jumpedTo) {
+		static if (GOT_TRDS) if (state.tick < ip.jumpedTo) {
 			--ipCount;
 			invalidIndices[i] = true;
 			continue;
@@ -226,10 +228,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 		auto p = ip.pos;
 		ip.gotoNextInstruction();
 
-		printCell(space[ip.pos], NewlineString ~ "Instruction: ");
+		printCell(state.space[ip.pos], NewlineString ~ "Instruction: ");
 
 		if (ip.pos != p) {
-			printCell(space[p], " (via marker: ", " at ");
+			printCell(state.space[p], " (via marker: ", " at ");
 			Serr(p)(')');
 		}
 
@@ -242,12 +244,14 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			"Stack: {} cell(s): {}", ip.stack.size, stackString(ip));
 
 		static if (befunge93)
-			Serr.formatln("Tick: {} -- Mode: {}" ~ NewlineString, tick, modeString(ip));
+			Serr.formatln(
+				"Tick: {} -- Mode: {}"~NewlineString, state.tick, modeString(ip));
 		else
 			Serr.formatln(
 				"Tick: {} -- IPs: {} -- Index/ID: {}/{} -- Stacks: {} -- Mode: {}"
 				~ NewlineString,
-				tick, ipCount, index, ip.id, ip.stackStack.size, modeString(ip));
+				state.tick, ipCount, index, ip.id,
+				ip.stackStack.size, modeString(ip));
 
 		ip.pos = p;
 	}
@@ -375,7 +379,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				Serr.formatln("{} IPs, in reverse order of execution:", ipCount);
 				foreach (i, ip; ips) {
 					static if (GOT_TRDS)
-						if (tick < ip.jumpedTo)
+						if (state.tick < ip.jumpedTo)
 							continue;
 
 					char[] str = "[".dup;
@@ -395,7 +399,8 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						ip.id, modeString(ip),
 						ip.stackStack.size, str
 					);
-					printCell(space[ip.pos], "", NewlineString~NewlineString, " ");
+					printCell(
+						state.space[ip.pos], "", NewlineString~NewlineString, " ");
 				}
 				break;
 			}
@@ -491,7 +496,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					break;
 				}
 
-				typeof(tick) tb;
+				typeof(state.tick) tb;
 				if (!read(tb, args[1]))
 					break;
 
@@ -578,7 +583,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				auto posE = pos.extend(0);
 				auto end = posE; end += size.extend(1);
 
-				space.binaryPut(Serr, posE, end);
+				state.space.binaryPut(Serr, posE, end);
 				break;
 			}
 
@@ -593,7 +598,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				if (!readCoords(pos, args[1..1+dim]))
 					break;
 
-				auto c = space[pos];
+				auto c = state.space[pos];
 
 				Serr.format("Cell {}: value ", pos);
 				printCell(c, "", NewlineString);
@@ -618,7 +623,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				if (!readCell(val, args[1+dim]))
 					break;
 
-				space[pos] = val;
+				state.space[pos] = val;
 
 				Serr.format("Set cell {} to ", pos);
 				printCell(val, "", NewlineString);
@@ -765,7 +770,7 @@ void ipSetVector(
 	static if (befunge93)
 		f(tip, vec);
 	else
-		f(ips[idx], vec);
+		f(state.ips[idx], vec);
 	Serr.formatln(successMsg, idx, vec);
 }
 
@@ -776,7 +781,7 @@ bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
 		if (!s) return false;
 
 		size_t i;
-		if (!read(i, s) || i >= ips.length || i in invalidIndices) {
+		if (!read(i, s) || i >= state.ips.length || i in invalidIndices) {
 			Serr('\'')(s)("' is not a valid IP index.").newline;
 			return false;
 		}
@@ -793,7 +798,7 @@ void readIP(inout IP ip, char[] s, bool[size_t] invalidIndices) {
 
 		size_t idx;
 		if (readIpIndex(idx, s, invalidIndices))
-			ip = ips[idx];
+			ip = state.ips[idx];
 	}
 }
 

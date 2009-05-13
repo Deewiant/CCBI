@@ -93,7 +93,7 @@ void toInt() { auto u = popDbl; cip.stack.push(cast(cell)math.rndint(u.d)); }
 void print() {
 	auto u = popDbl;
 	static if (GOT_TRDS)
-		if (tick < ioAfter)
+		if (state.tick < ioAfter)
 			return;
 	Sout.format("{:f6} ", u.d);
 }

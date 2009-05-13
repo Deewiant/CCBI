@@ -30,7 +30,7 @@ import c = tango.stdc.stdio;
 
 struct FileHandle {
 	c.FILE* handle;
-	Coords buf; // IO buffer in Funge-Space
+	Coords buf; // IO buffer in Funge-state.space
 }
 
 FileHandle[] handles;
@@ -219,7 +219,7 @@ void fread() {
 
 	Coords pos = handles[h].buf;
 	foreach (b; buf) {
-		space[pos] = cast(cell)b;
+		state.space[pos] = cast(cell)b;
 		++pos.x;
 	}
 }
@@ -239,7 +239,7 @@ void fwrite() {
 
 	Coords pos = handles[h].buf;
 	foreach (inout b; buf) {
-		b = cast(ubyte)space[pos];
+		b = cast(ubyte)state.space[pos];
 		++pos.x;
 	}
 

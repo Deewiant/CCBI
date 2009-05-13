@@ -34,25 +34,22 @@ import tango.time.Clock;
 import tango.time.WallClock;
 import tango.time.chrono.Gregorian;
 
-bool utc = false;
-void useGMT()   { utc = true;  }
-void useLocal() { utc = false; }
+void useGMT()   { state.utc = true;  }
+void useLocal() { state.utc = false; }
 
 template TimeFunc(char[] internal_f, char[] f, char[] offset = "0") {
 	const TimeFunc =
 		"void " ~ internal_f ~ "() {"
 		"	cip.stack.push(cast(cell)("
-		"		(utc ? Clock.now : WallClock.now).time." ~f~ " + " ~offset~ "));"
-		"}"
-	;
+		"		(state.utc ? Clock.now : WallClock.now).time." ~f~ " + " ~offset~ "));"
+		"}";
 }
 template DateFunc(char[] internal_f, char[] f, char[] offset = "0") {
 	const DateFunc =
 		"void " ~ internal_f ~ "() {"
 		"	cip.stack.push(cast(cell)(Gregorian.generic."
-		"		" ~f~ "(utc ? Clock.now : WallClock.now) + " ~offset~ "));"
-		"}"
-	;
+		"		" ~f~ "(state.utc ? Clock.now : WallClock.now) + " ~offset~ "));"
+		"}";
 }
 
 mixin (DateFunc!("day",       "getDayOfMonth"));

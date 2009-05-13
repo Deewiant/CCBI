@@ -34,7 +34,7 @@ bool executable(IP ip) {
 
 IP findIP(cell id) {
 	// We could use a binary search if it weren't for TRDS
-	foreach (ip; ips)
+	foreach (ip; state.ips)
 		if (ip.id == id)
 			return ip;
 	return null;
