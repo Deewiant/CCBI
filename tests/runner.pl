@@ -1,7 +1,16 @@
 #!/usr/bin/env perl
 
+use Switch;
+
 my $cmd = "bin/ccbi";
 foreach $i (0 .. $#ARGV) {
+	if (@ARGV[$i] =~ /\.(.)98\.t$/) {
+		switch ($1) {
+			case 'u' { $cmd = "$cmd -d1" }
+			case 'b' { $cmd = "$cmd -d2" }
+			case 't' { $cmd = "$cmd -d3" }
+		}
+	}
 	$cmd = "$cmd \"@ARGV[$i]\"";
 }
 
