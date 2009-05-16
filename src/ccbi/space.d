@@ -243,6 +243,7 @@ private struct AABB(cell dim) {
 
 		return over;
 	}
+	// TODO: cleanup
 	bool getOverlapWith(AABB box, ref AABB overlap)
 	in {
 		// Allows us to make some assumptions
@@ -345,13 +346,127 @@ private struct AABB(cell dim) {
 
 			if (intersected)
 				overlap = AABB(overBeg, overEnd);
-
 			return intersected;
 
 		} else static if (dim == 3) {
-			// FIXME
-			// Sutherland-Hodgman
-			assert (0, "NOT DONE: 3D overlap finding");
+			auto
+				overBeg = Coords(cell.max, cell.max, cell.max),
+				overEnd = Coords(cell.min, cell.min, cell.min);
+
+			void addPoint(Coords p) {
+				     if (p.x < overBeg.x) overBeg.x = p.x;
+				else if (p.x > overEnd.x) overEnd.x = p.x;
+				     if (p.y < overBeg.y) overBeg.y = p.y;
+				else if (p.y > overEnd.y) overEnd.y = p.y;
+				     if (p.z < overBeg.z) overBeg.z = p.z;
+				else if (p.z > overEnd.z) overEnd.z = p.z;
+			}
+
+			bool intersected = false;
+
+			void tryIntersect(Coords p1, Coords p2) {
+				static byte intersect1D(
+					cell b, cell e, cell compareBeg, cell compareEnd)
+				{
+					if (e >= compareBeg) {
+						if (e <= compareEnd) {
+							// e is in box: we know b isn't since !this.contains(box)
+							return 0;
+						} else if (b <= compareEnd) {
+							// e is past the box and b isn't
+							return b <= compareBeg ? 2 : 1;
+						}
+					}
+					return -1;
+				}
+				cell b, e;
+
+				// p1-p2 is axis-aligned: x, y, or z?
+				if (p1.x != p2.x) {
+					// x
+					assert (p1.y == p2.y);
+					assert (p1.z == p2.z);
+
+					if (p1.y < box.beg.y || p1.y > box.end.y) return;
+					if (p1.z < box.beg.z || p1.z > box.end.z) return;
+
+					if (p1.x < p2.x) { b = p1.x; e = p2.x; }
+					else             { b = p2.x; e = p1.x; }
+
+					switch (intersect1D(b, e, box.beg.x, box.end.x)) {
+						case 2: addPoint(Coords(box.beg.x, p1.y, p1.z));
+						case 1: addPoint(Coords(box.end.x, p1.y, p1.z)); break;
+						case 0: addPoint(Coords(box.beg.x, p1.y, p1.z)); break;
+						default: break;
+					}
+				} else if (p1.y != p2.y) {
+					// y
+					assert (p1.x == p2.x);
+					assert (p1.z == p2.z);
+
+					if (p1.x < box.beg.x || p1.x > box.end.x) return;
+					if (p1.z < box.beg.z || p1.z > box.end.z) return;
+
+					if (p1.y < p2.y) { b = p1.y; e = p2.y; }
+					else             { b = p2.y; e = p1.y; }
+
+					switch (intersect1D(b, e, box.beg.y, box.end.y)) {
+						case 2: addPoint(Coords(p1.x, box.beg.y, p1.z));
+						case 1: addPoint(Coords(p1.x, box.end.y, p1.z)); break;
+						case 0: addPoint(Coords(p1.x, box.beg.y, p1.z)); break;
+						default: break;
+					}
+				} else {
+					// z
+					assert (p1.x == p2.x);
+					assert (p1.y == p2.y);
+
+					if (p1.x < box.beg.x || p1.x > box.end.x) return;
+					if (p1.y < box.beg.y || p1.y > box.end.y) return;
+
+					if (p1.z < p2.z) { b = p1.z; e = p2.z; }
+					else             { b = p2.z; e = p1.z; }
+
+					switch (intersect1D(b, e, box.beg.z, box.end.z)) {
+						case 2: addPoint(Coords(p1.x, p1.y, box.beg.z));
+						case 1: addPoint(Coords(p1.x, p1.y, box.end.z)); break;
+						case 0: addPoint(Coords(p1.x, p1.y, box.beg.z)); break;
+						default: break;
+					}
+				}
+
+				intersected = true;
+			}
+
+			// Sutherland-Hodgman, sort of: I can't figure out the proper
+			// generalization (sources say it's trivial, of course) so just do
+			// this less efficient thing
+
+			Coords[2][12] edges;
+			edges[ 0][0] = beg;         edges[ 0][1] = Coords(end.x,beg.y,beg.z);
+			edges[ 1][0] = beg;         edges[ 1][1] = Coords(beg.x,end.y,beg.z);
+			edges[ 2][0] = beg;         edges[ 2][1] = Coords(beg.x,beg.y,end.z);
+			edges[ 3][0] = end;         edges[ 3][1] = Coords(beg.x,end.y,end.z);
+			edges[ 4][0] = end;         edges[ 4][1] = Coords(end.x,beg.y,end.z);
+			edges[ 5][0] = end;         edges[ 5][1] = Coords(end.x,end.y,beg.z);
+			edges[ 6][0] = edges[0][1]; edges[ 6][1] = edges[4][1];
+			edges[ 7][0] = edges[0][1]; edges[ 7][1] = edges[5][1];
+			edges[ 8][0] = edges[2][1]; edges[ 8][1] = edges[4][1];
+			edges[ 9][0] = edges[2][1]; edges[ 9][1] = edges[3][1];
+			edges[10][0] = edges[1][1]; edges[10][1] = edges[5][1];
+			edges[11][0] = edges[1][1]; edges[11][1] = edges[3][1];
+
+			foreach (edge; edges) {
+				bool a = false, b = false;
+				if (box.contains(edge[0])) { addPoint(edge[0]); a = true; }
+				if (box.contains(edge[1])) { addPoint(edge[1]); b = true; }
+				if (!a || !b)
+					tryIntersect(edge[0], edge[1]);
+			}
+
+			if (intersected)
+				overlap = AABB(overBeg, overEnd);
+			return intersected;
 		}
 	}
 
