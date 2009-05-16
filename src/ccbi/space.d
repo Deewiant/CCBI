@@ -258,8 +258,14 @@ private struct AABB(cell dim) {
 			assert (!this.overlaps(box));
 	} body {
 		static if (dim == 1) {
-			// FIXME
-			assert (0, "NOT DONE: 1D overlap finding");
+			if (this.overlaps(box)) {
+				overlap = AABB(
+					Coords(max(beg.x, box.beg.x)),
+					Coords(min(end.x, box.end.x)));
+				return true;
+			} else
+				return false;
+
 		} else static if (dim == 2) {
 			auto
 				overBeg = Coords(cell.max, cell.max),
