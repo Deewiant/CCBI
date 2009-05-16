@@ -482,7 +482,6 @@ private struct AABB(cell dim) {
 
 			for (auto i = oldEnd, j = oldLength; i > iend;) {
 				i -= this.area;
-				j -=  old.area;
 
 				auto kend = i + (sameBeg ? old.width : 0);
 
@@ -496,6 +495,8 @@ private struct AABB(cell dim) {
 						data[k..k+old.width] = data[l..l+old.width];
 					data[l..l+old.width] = ' ';
 				}
+
+				j -= old.area;
 			}
 		}
 	}
