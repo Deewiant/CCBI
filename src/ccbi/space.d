@@ -316,16 +316,21 @@ private struct AABB(cell dim) {
 			auto ne = Coords(end.x, beg.y);
 			auto sw = Coords(beg.x, end.y);
 			auto prev = sw;
+			auto prevContained = box.contains(prev);
 
 			foreach (pt; [beg, ne, end, sw]) {
 				if (box.contains(pt)) {
-					if (!box.contains(prev))
+					if (!prevContained)
 						intersect(prev, pt);
 
 					addPoint(pt);
+					prevContained = true;
 
-				} else if (box.contains(prev))
-					intersect(pt, prev);
+				} else {
+					if (prevContained)
+						intersect(pt, prev);
+					prevContained = false;
+				}
 
 				prev = pt;
 			}
