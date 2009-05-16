@@ -248,6 +248,13 @@ private struct AABB(cell dim) {
 		// Allows us to make some assumptions
 		assert (!this.contains(box));
 		assert (!box.contains(*this));
+	} out (result) {
+		if (result) {
+			assert (this.overlaps(box));
+			assert (this.contains(overlap));
+			assert ( box.contains(overlap));
+		} else
+			assert (!this.overlaps(box));
 	} body {
 		static if (dim == 1) {
 			// FIXME
@@ -307,11 +314,12 @@ private struct AABB(cell dim) {
 						case 2: addPoint(Coords(box.beg.x, p1.y));
 						case 1: addPoint(Coords(box.end.x, p1.y)); break;
 						case 0: addPoint(Coords(box.beg.x, p1.y)); break;
+						default: break;
 					}
 				}
 			}
 
-			// Sutherland-Hodgman
+			// Sutherland-Hodgman (sort of?)
 
 			auto ne = Coords(end.x, beg.y);
 			auto sw = Coords(beg.x, end.y);
