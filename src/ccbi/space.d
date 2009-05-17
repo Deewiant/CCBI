@@ -281,9 +281,7 @@ private struct AABB(cell dim) {
 
 			bool intersected = false;
 
-			void intersect(Coords p1, Coords p2) {
-				intersected = true;
-
+			void tryIntersect(Coords p1, Coords p2) {
 				static byte intersect1D(
 					cell b, cell e, cell compareBeg, cell compareEnd)
 				{
@@ -301,32 +299,36 @@ private struct AABB(cell dim) {
 				cell b, e;
 
 				// p1-p2 is axis-aligned: x or y?
-				if (p1.x == p2.x) {
-					// y
-					if (p1.y < p2.y) { b = p1.y; e = p2.y; }
-					else             { b = p2.y; e = p1.y; }
-
-					switch (intersect1D(b, e, box.beg.y, box.end.y)) {
-						case 2: addPoint(Coords(p1.x, box.beg.y));
-						case 1: addPoint(Coords(p1.x, box.end.y)); break;
-						case 0: addPoint(Coords(p1.x, box.beg.y)); break;
-						default: break;
-					}
-				} else {
+				if (p1.x != p2.x) {
 					// x
 					if (p1.x < p2.x) { b = p1.x; e = p2.x; }
 					else             { b = p2.x; e = p1.x; }
+
+					if (p1.y < box.beg.y || p1.y > box.end.y) return;
 
 					switch (intersect1D(b, e, box.beg.x, box.end.x)) {
 						case 2: addPoint(Coords(box.beg.x, p1.y));
 						case 1: addPoint(Coords(box.end.x, p1.y)); break;
 						case 0: addPoint(Coords(box.beg.x, p1.y)); break;
-						default: break;
+						default: return;
+					}
+				} else {
+					// y
+					if (p1.y < p2.y) { b = p1.y; e = p2.y; }
+					else             { b = p2.y; e = p1.y; }
+
+					if (p1.x < box.beg.x || p1.x > box.end.x) return;
+
+					switch (intersect1D(b, e, box.beg.y, box.end.y)) {
+						case 2: addPoint(Coords(p1.x, box.beg.y));
+						case 1: addPoint(Coords(p1.x, box.end.y)); break;
+						case 0: addPoint(Coords(p1.x, box.beg.y)); break;
+						default: return;
 					}
 				}
-			}
 
-			// Sutherland-Hodgman (sort of?)
+				intersected = true;
+			}
 
 			auto ne = Coords(end.x, beg.y);
 			auto sw = Coords(beg.x, end.y);
@@ -334,20 +336,14 @@ private struct AABB(cell dim) {
 			auto prevContained = box.contains(prev);
 
 			foreach (pt; [beg, ne, end, sw]) {
-				if (box.contains(pt)) {
-					if (!prevContained)
-						intersect(prev, pt);
-
+				bool contained = box.contains(pt);
+				if (contained)
 					addPoint(pt);
-					prevContained = true;
-
-				} else {
-					if (prevContained)
-						intersect(pt, prev);
-					prevContained = false;
-				}
+				if (!prevContained || !contained)
+					tryIntersect(prev, pt);
 
 				prev = pt;
+				prevContained = contained;
 			}
 
 			if (intersected)
@@ -403,7 +399,7 @@ private struct AABB(cell dim) {
 						case 2: addPoint(Coords(box.beg.x, p1.y, p1.z));
 						case 1: addPoint(Coords(box.end.x, p1.y, p1.z)); break;
 						case 0: addPoint(Coords(box.beg.x, p1.y, p1.z)); break;
-						default: break;
+						default: return;
 					}
 				} else if (p1.y != p2.y) {
 					// y
@@ -420,7 +416,7 @@ private struct AABB(cell dim) {
 						case 2: addPoint(Coords(p1.x, box.beg.y, p1.z));
 						case 1: addPoint(Coords(p1.x, box.end.y, p1.z)); break;
 						case 0: addPoint(Coords(p1.x, box.beg.y, p1.z)); break;
-						default: break;
+						default: return;
 					}
 				} else {
 					// z
@@ -437,16 +433,12 @@ private struct AABB(cell dim) {
 						case 2: addPoint(Coords(p1.x, p1.y, box.beg.z));
 						case 1: addPoint(Coords(p1.x, p1.y, box.end.z)); break;
 						case 0: addPoint(Coords(p1.x, p1.y, box.beg.z)); break;
-						default: break;
+						default: return;
 					}
 				}
 
 				intersected = true;
 			}
-
-			// Sutherland-Hodgman, sort of: I can't figure out the proper
-			// generalization (sources say it's trivial, of course) so just do
-			// this less efficient thing
 
 			Coords[2][12] edges;
 			edges[ 0][0] = beg;         edges[ 0][1] = Coords(end.x,beg.y,beg.z);
