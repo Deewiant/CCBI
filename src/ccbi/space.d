@@ -568,17 +568,15 @@ private struct AABB(cell dim) {
 		auto oldIdx = this.getIdx(old.beg);
 
 		if (canDirectCopy(old)) {
-			bool overlapping = oldIdx < oldLength;
-
-			if (overlapping)
+			if (oldIdx < oldLength) {
 				memmove(&data[oldIdx], data.ptr, oldLength * cell.sizeof);
-			else
+				data[0..oldIdx] = ' ';
+			} else {
 				data[oldIdx..oldIdx + oldLength] = data[0..oldLength];
-			data[0..oldLength] = ' ';
+				data[0..oldLength] = ' ';
+			}
 
 		} else static if (dim == 2) {
-
-			bool overlapping = oldIdx < old.width;
 
 			auto iend = oldIdx + (beg == old.beg ? old.width : 0);
 			auto oldEnd = oldIdx + oldLength / old.width * width;
@@ -587,15 +585,27 @@ private struct AABB(cell dim) {
 				i -= this.width;
 				j -=  old.width;
 
-				if (overlapping)
-					memmove(&data[i], &data[j], old.width * cell.sizeof);
-				else
+				// The original data is always earlier in the array than the
+				// target, so overlapping can only occur from one direction:
+				// i+old.width <= j can't happen
+				assert (i+old.width > j);
+
+				if (j+old.width <= i) {
 					data[i..i+old.width] = data[j..j+old.width];
-				data[j..j+old.width] = ' ';
+					data[j..j+old.width] = ' ';
+				} else if (i != j) {
+					memmove(&data[i], &data[j], old.width * cell.sizeof);
+
+					// When the copies are overlapping, the area to be spaced only
+					// occurs here, at the last iteration
+					//
+					// I can't prove this but it makes some sort of sense and seems
+					// to be that way.
+					if (i <= iend)
+						data[j..i] = ' ';
+				}
 			}
 		} else static if (dim == 3) {
-
-			bool overlapping = oldIdx < old.width;
 
 			auto sameBeg = beg == old.beg;
 			auto iend = oldIdx + (sameBeg && width == old.width ? old.area : 0);
@@ -610,11 +620,17 @@ private struct AABB(cell dim) {
 					k -= this.width;
 					l -=  old.width;
 
-					if (overlapping)
-						memmove(&data[k], &data[l], old.width * cell.sizeof);
-					else
+					assert (k+old.width > l);
+
+					if (l+old.width <= k) {
 						data[k..k+old.width] = data[l..l+old.width];
-					data[l..l+old.width] = ' ';
+						data[l..l+old.width] = ' ';
+					} else if (k != l) {
+						memmove(&data[k], &data[l], old.width * cell.sizeof);
+
+						if (k <= kend)
+							data[l..k] = ' ';
+					}
 				}
 
 				j -= old.area;
