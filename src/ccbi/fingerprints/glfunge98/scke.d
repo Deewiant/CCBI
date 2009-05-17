@@ -48,7 +48,7 @@ void peek() {
 	ss.reset();
 	ss.add(sockets[s]);
 
-	auto n = Socket.select(ss, null, null, TimeSpan.zero);
+	auto n = ss.select(ss, null, null, 0);
 
 	if (n == -1)
 		reverse();
