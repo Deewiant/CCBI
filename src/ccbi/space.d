@@ -1092,7 +1092,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 						aabb[pos] = cast(cell)input[i];
 
 					if (++pos.x >= 80) {
-						skipRest: for (++i; i < input.length; ++i) switch (input[i]) {
+						++i;
+						skipRest: for (; i < input.length; ++i) switch (input[i]) {
 							case '\r': gotCR = true; break;
 							case '\n':
 								if (newLine())
