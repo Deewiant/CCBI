@@ -851,32 +851,40 @@ final class FungeSpace(cell dim, bool befunge93) {
 			alloced = subsumeAll(aabb, contains, disjoint, fusables, overlaps);
 
 		if (overlaps.length) {
-			if (subsumeOverlapping(overlaps, aabb)) {
+			auto beg = aabb.beg, end = aabb.end;
+			size_t food;
+			size_t foodSize = 0;
+			size_t length = 0;
 
-				assert (false, "Subsumption of overlaps wanted but not tested");
-				/+
-				auto beg = aabb.beg, end = aabb.end;
-				size_t food;
-				size_t foodSize = 0;
-				size_t unused_length;
-				minMaxSize!(dim)
-					(boxen, beg, end, food, foodSize, unused_length, overlaps);
+			auto subsumableOverlaps =
+				validMinMaxSize!(dim)(
+					(AABB b, AABB fodder, size_t usedCells) {
+						AABB overlap = void;
+						size_t overSize = 0;
 
-				aabb = AABB(beg, end);
-				aabb.consume(boxen[food]);
+						// If alloced is true, some of these could actually be
+						// contains, but subsumeAll currently only finds overlaps at
+						// the end (that's a TODO)
+						if (
+							!(alloced && aabb.contains(fodder))
+							&& aabb.getOverlapWith(fodder, overlap)
+						)
+							overSize = overlap.size;
 
-				foreach (i; overlaps)
-					if (food != i)
-						aabb.subsume(boxen[i]);
+						return cheaperToAlloc(
+							b.size, usedCells + fodder.data.length - overSize);
+					},
+					boxen, beg, end, food, foodSize, length,
+					overlaps);
 
-				outer: for (size_t i = 0, n = 0; i < boxen.length; ++i) {
-					foreach (j; overlaps) {
-						if (i == j-n) { boxen.removeAt(i--); ++n; }
-						if (boxen.length == 0) break outer;
-					}
-				}
+			if (subsumableOverlaps) {
+				overlaps.length = subsumableOverlaps;
+
+				aabb = consumeSubsume!(dim)(boxen, overlaps, food, beg, end);
 				alloced = true;
-				+/
+
+				// TODO: subsuming these overlaps may have resulted in new
+				// contains/fusables/disjoints/overlaps...
 
 			} else if (decompose(overlaps, aabb))
 				assert (false, "Decomposition wanted but not implemented!");
@@ -946,34 +954,18 @@ final class FungeSpace(cell dim, bool befunge93) {
 		// subsumeDisjoint could return true for D, and we'd be worse off. In
 		// general it seems to be a better idea to subsume fusables than
 		// disjoints.
-		size_t goodDisjoints = 0;
-		for (size_t i = 0; i < disjoint.length; ++i) {
-			auto box = disjoint[i];
-
-			auto
-				tryBeg = beg, tryEnd = end,
-				tryFood = food, tryFoodSize = foodSize,
-				tryLength = length;
-			minMaxSize!(dim)
-				(boxen, tryBeg, tryEnd, tryFood, tryFoodSize, tryLength, box);
-
-			if (subsumeDisjoint(AABB(tryBeg, tryEnd), boxen[box], tryLength)) {
-				disjoint[goodDisjoints] = box;
-
-				// We need to look at the "bad disjoints" below, so make sure there
-				// are no good ones outside the goodDisjoints range
-				if (goodDisjoints != i)
-					disjoint.removeAt(i--);
-
-				++goodDisjoints;
-
-				beg      = tryBeg;
-				end      = tryEnd;
-				food     = tryFood;
-				foodSize = tryFoodSize;
-				length   = tryLength;
-			}
-		}
+		auto goodDisjoints =
+			validMinMaxSize!(dim)(
+				// Currently returns true only when lossage is so small that it's
+				// cheaper to subsume than to create a new box, space-wise.
+				//
+				// Should probably also have some kind of "acceptable number of
+				// wasted cells".
+				(AABB b, AABB fodder, size_t usedCells) {
+					return cheaperToAlloc(b.size, usedCells + fodder.data.length);
+				},
+				boxen, beg, end, food, foodSize, length,
+				disjoint);
 
 		if (goodDisjoints) {
 			// New contains may have resulted, and fusables / bad disjoints may
@@ -1022,83 +1014,12 @@ final class FungeSpace(cell dim, bool befunge93) {
 			return false;
 
 		// TODO: iterate the above process: search for new fusables, then
-		// disjoints, then contains, then fusables, etc, until we find nothing new
+		// disjoints, then contains, then fusables, etc, until we find nothing
+		// new
 
 		auto subsumes = contains ~ disjoint ~ fusables;
 
-		// Consider the following:
-		//
-		// +-----++---+
-		// | A +--| C |
-		// +---|B +*--+
-		//     +----+
-		//
-		// Here, A is the one being placed and C is a fusable. * is a point whose
-		// data is in C but which is contained in both B and C. Since the final
-		// subsumer-box is going to be below all existing boxes, we'll end up
-		// with:
-		//
-		// +----------+
-		// | X +----+ |
-		// +---|B  *|-+
-		//     +----+
-		//
-		// Where X is the final box placed. Note that * is now found in B, not in
-		// X, but its data was in C (now X)! Oops!
-		//
-		// So, we do the following, which in the above case would copy the data
-		// from C to B.
-		//
-		// Caveats:
-		//   1. This assumes that the final box will always be placed
-		//      bottom-most. This does not really matter, it's just extra work if
-		//      it's not; but in any case, if not, the relevant overlapping boxes
-		//      would be those which would end up above the final box.
-		//
-		//   2. This leaves some non-space data in an unaccessible area of a
-		//      below-box. If something ends up assuming that such areas are all
-		//      spaces (at the time of writing, nothing does), this should be
-		//      amended to write spaces onto the below-box.
-		foreach (i; subsumes) {
-			// Check boxes below boxen[i]
-			AABB overlap = void;
-			for (auto j = i+1; j < boxen.length; ++j) {
-
-				if (boxen[i].contains(boxen[j]) || boxen[j].contains(boxen[i]))
-					continue;
-
-				// If they overlap, copy the overlap area to the lower box
-				if (boxen[i].getOverlapWith(boxen[j], overlap))
-					boxen[j].subsumeArea(boxen[i], overlap);
-			}
-		}
-
-		aabb = AABB(beg, end);
-		aabb.consume(boxen[food]);
-
-		// NOTE: strictly speaking this should be a foreach_reverse and subsumes
-		// should be sorted, since we don't want below-boxes to overwrite
-		// top-boxes' data. However, the foreach next to the long comment above
-		// copies the data so that the order is, in fact, irrelevant.
-		//
-		// I think that 'food' would also have to be simply subsumes[$-1] after
-		// sorting, but I haven't thought this completely through so I'm not
-		// sure.
-		//
-		// In debug mode, do exactly the "wrong" thing (subsume top-down), in the
-		// hopes of bug catching.
-		debug subsumes.sort;
-
-		foreach (i; subsumes)
-			if (i != food)
-				aabb.subsume(boxen[i]);
-
-		outer: for (size_t i = 0, n = 0; i < boxen.length; ++i) {
-			foreach (s; subsumes) {
-				if (i == s-n) { boxen.removeAt(i--); ++n; }
-				if (boxen.length == 0) break outer;
-			}
-		}
+		aabb = consumeSubsume!(dim)(boxen, subsumes, food, beg, end);
 
 		// There might be some things that overlap with this aabb but not the
 		// original
@@ -1367,23 +1288,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		return AABB.unsafe(beg, end);
 	}
 
-	// Currently returns true only when lossage is so small that it's cheaper to
-	// subsume than to create a new box, space-wise.
-	//
-	// Should probably also have some kind of "acceptable number of wasted
-	// cells".
-	bool subsumeDisjoint(AABB b, AABB fodder, size_t usedCells) {
-		return
-			cell.sizeof * (b.size - usedCells)
-			< cell.sizeof * fodder.data.length + AABB.sizeof;
-	}
-	// TODO: Eat overlappers if it's worth it
-	bool subsumeOverlapping(size_t[] overlaps, AABB b)
-	in {
-		foreach (i; overlaps)
-			assert (boxen[i].overlaps(b));
-	} body {
-		return false;
+	bool cheaperToAlloc(size_t together, size_t separate) {
+		return cell.sizeof * together < cell.sizeof * separate + AABB.sizeof;
 	}
 
 	// TODO: Decompose when we would waste too much space іn a new AABB
@@ -1470,4 +1376,136 @@ void minMaxSize(cell dim)
 	                       if (box.end.y > end.y) end.y = box.end.y; }
 	static if (dim >= 3) { if (box.beg.z < beg.z) beg.z = box.beg.z;
 	                       if (box.end.z > end.z) end.z = box.end.z; }
+}
+
+// The input delegate takes:
+// - box that subsumes (unallocated)
+// - box to be subsumed (allocated)
+// - number of cells that are currently contained in any box that the subsumer
+//   contains
+size_t validMinMaxSize(cell dim)
+	(bool delegate(AABB!(dim), AABB!(dim), size_t) valid,
+	 AABB!(dim)[] boxen,
+	 ref Coords!(dim) beg, ref Coords!(dim) end,
+	 ref size_t max, ref size_t maxSize,
+	 ref size_t length,
+	 ref size_t[] indices)
+{
+	size_t count = 0;
+	for (size_t i = 0; i < indices.length; ++i) {
+		auto box = indices[i];
+
+		auto
+			tryBeg = beg, tryEnd = end,
+			tryMax = max, tryMaxSize = maxSize,
+			tryLength = length;
+
+		minMaxSize!(dim)
+			(boxen, tryBeg, tryEnd, tryMax, tryMaxSize, tryLength, box);
+
+		if (valid(AABB!(dim)(tryBeg, tryEnd), boxen[box], length)) {
+			indices[count] = box;
+
+			// Remove the valid ones from the invalid range in case the invalids
+			// need to be looked at separately
+			if (count != i)
+				indices.removeAt(i--);
+
+			++count;
+
+			beg     = tryBeg;
+			end     = tryEnd;
+			max     = tryMax;
+			maxSize = tryMaxSize;
+			length  = tryLength;
+		}
+	}
+	return count;
+}
+
+AABB!(dim) consumeSubsume(cell dim)
+	(ref AABB!(dim)[] boxen, size_t[] subsumes, size_t food,
+	 Coords!(dim) beg, Coords!(dim) end)
+{
+	irrelevizeSubsumptionOrder!(dim)(boxen, subsumes);
+
+	auto aabb = AABB!(dim)(beg, end);
+	aabb.consume(boxen[food]);
+
+	// NOTE: strictly speaking this should be a foreach_reverse and subsumes
+	// should be sorted, since we don't want below-boxes to overwrite
+	// top-boxes' data. However, irrelevizeSubsumptionOrder copies the data so
+	// that the order is, in fact, irrelevant.
+	//
+	// I think that 'food' would also have to be simply subsumes[$-1] after
+	// sorting, but I haven't thought this completely through so I'm not
+	// sure.
+	//
+	// In debug mode, do exactly the "wrong" thing (subsume top-down), in the
+	// hopes of bug catching.
+	debug subsumes.sort;
+
+	foreach (i; subsumes)
+		if (i != food)
+			aabb.subsume(boxen[i]);
+
+	outer: for (size_t i = 0, n = 0; i < boxen.length; ++i) {
+		foreach (s; subsumes) {
+			if (i == s-n) { boxen.removeAt(i--); ++n; }
+			if (boxen.length == 0) break outer;
+		}
+	}
+
+	return aabb;
+}
+
+// Consider the following:
+//
+// +-----++---+
+// | A +--| C |
+// +---|B +*--+
+//     +----+
+//
+// Here, A is the one being placed and C is a fusable. * is a point whose
+// data is in C but which is contained in both B and C. Since the final
+// subsumer-box is going to be below all existing boxes, we'll end up
+// with:
+//
+// +----------+
+// | X +----+ |
+// +---|B  *|-+
+//     +----+
+//
+// Where X is the final box placed. Note that * is now found in B, not in
+// X, but its data was in C (now X)! Oops!
+//
+// So, we do the following, which in the above case would copy the data
+// from C to B.
+//
+// Caveats:
+//   1. This assumes that the final box will always be placed
+//      bottom-most. This does not really matter, it's just extra work if
+//      it's not; but in any case, if not, the relevant overlapping boxes
+//      would be those which would end up above the final box.
+//
+//   2. This leaves some non-space data in an unaccessible area of a
+//      below-box. If something ends up assuming that such areas are all
+//      spaces (at the time of writing, nothing does), this should be
+//      amended to write spaces onto the below-box.
+void irrelevizeSubsumptionOrder(cell dim)
+	(AABB!(dim)[] boxen, size_t[] subsumes)
+{
+	foreach (i; subsumes) {
+		// Check boxes below boxen[i]
+		AABB!(dim) overlap = void;
+		for (auto j = i+1; j < boxen.length; ++j) {
+
+			if (boxen[i].contains(boxen[j]) || boxen[j].contains(boxen[i]))
+				continue;
+
+			// If they overlap, copy the overlap area to the lower box
+			if (boxen[i].getOverlapWith(boxen[j], overlap))
+				boxen[j].subsumeArea(boxen[i], overlap);
+		}
+	}
 }
