@@ -8,7 +8,7 @@ import ccbi.fingerprint;
 
 // Both WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 import tango.io.FilePath;
-import tango.io.FileSystem;
+import tango.sys.Environment;
 
 // 0x44495246: DIRF
 // Directory functions extension
@@ -24,20 +24,22 @@ mixin (Fingerprint!(
 
 template DIRF() {
 
-import tango.io.FilePath;
-import tango.io.FileSystem;
+// Selective import is:
+// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2991
+import tango.io.FilePath : FilePath;
+import tango.sys.Environment;
 
 FilePath path;
 
 void ctor() {
-	path = new FilePath(FileSystem.getDirectory());
+	path = new FilePath(Environment.cwd());
 	path.native;
 }
 
 void changeDir() {
 	try {
-		FileSystem.setDirectory(popString());
-		path.set(FileSystem.getDirectory()).native;
+		Environment.cwd = popString();
+		path.set(Environment.cwd()).native;
 	} catch { reverse(); }
 }
 

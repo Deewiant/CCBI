@@ -7,7 +7,7 @@ module ccbi.fingerprints.rcfunge98.sock;
 import ccbi.fingerprint;
 
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.net.Socket;
+import tango.net.device.Berkeley;
 
 // 0x534f434b: SOCK
 // tcp/ip [sic] socket extension
@@ -30,9 +30,9 @@ mixin (Fingerprint!(
 
 template SOCK() {
 
-import tango.net.Socket;
+import tango.net.device.Berkeley;
 
-Socket[] sockets;
+Berkeley*[] sockets;
 
 AddressFamily popFam() {
 	switch (cip.stack.pop) {
@@ -71,7 +71,8 @@ void create() {
 				break;
 			}
 
-			auto sock = new Socket(fam, type, protocol);
+			auto sock = new Berkeley;
+			sock.open(fam, type, protocol);
 
 			if (s == sockets.length)
 				sockets.length = (sockets.length+1) * 2;
@@ -142,7 +143,8 @@ void accept() {
 		return reverse();
 
 	try {
-		auto as = sockets[s].accept();
+		auto as = new Berkeley;
+		sockets[s].accept(*as);
 
 		auto i = sockets.length;
 		foreach (j, sock; sockets)
@@ -183,7 +185,7 @@ void receive() {
 
 		auto got = sockets[s].receive(buffer);
 
-		if (got == Socket.ERROR)
+		if (got == Berkeley.ERROR)
 			return reverse();
 
 		push(cast(cell)got);
@@ -213,7 +215,7 @@ void send() {
 
 		push(cast(cell)sent);
 
-		if (sent == Socket.ERROR)
+		if (sent == Berkeley.ERROR)
 			return reverse();
 	}
 }
@@ -248,12 +250,12 @@ void setOption() {
 	SocketOption o = void;
 
 	switch (t) {
-		case 1: o = SocketOption.SO_DEBUG;     break;
-		case 2: o = SocketOption.SO_REUSEADDR; break;
-		case 3: o = SocketOption.SO_KEEPALIVE; break;
-		case 4: o = SocketOption.SO_DONTROUTE; break;
-		case 5: o = SocketOption.SO_BROADCAST; break;
-		case 6: o = SocketOption.SO_OOBINLINE; break;
+		case 1: o = SocketOption.DEBUG;     break;
+		case 2: o = SocketOption.REUSEADDR; break;
+		case 3: o = SocketOption.KEEPALIVE; break;
+		case 4: o = SocketOption.DONTROUTE; break;
+		case 5: o = SocketOption.BROADCAST; break;
+		case 6: o = SocketOption.OOBINLINE; break;
 		default: return reverse();
 	}
 
