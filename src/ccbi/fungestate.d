@@ -31,9 +31,7 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 		cell currentID = 0;
 	}
 
-	// TRDS pretty much forces this to be signed (either that or handle signed
-	// time displacements manually)
-	long tick = 0;
+	ulong tick = 0;
 
 	static if (GOT_REFC)
 		Coords[] references;
