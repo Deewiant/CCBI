@@ -162,14 +162,15 @@ final class IP(cell dim, bool befunge93, fings...) {
 		HOVER         = 1 << 2, // these two for MODE
 		SWITCH        = 1 << 3,
 		DORMANT       = 1 << 4, // for IIPC
-		ABS_SPACE     = 1 << 5, // the rest for TRDS
+		ABS_SPACE     = 1 << 5, // these for TRDS
 		SPACE_SET     = 1 << 6,
 		ABS_TIME      = 1 << 7,
 		TIME_SET      = 1 << 8,
 		DELTA_SET     = 1 << 9,
-		SUBR_RELATIVE = 1 << 10, // for SUBR
+		NEG_TIME      = 1 << 10, // only applies when not ABS_TIME
+		SUBR_RELATIVE = 1 << 11, // for SUBR
 
-		FROM_FUTURE = 1 << 11 // for tracing TRDS
+		FROM_FUTURE = 1 << 12 // for tracing TRDS
 	}
 
 	ushort mode = 0;
@@ -181,6 +182,6 @@ final class IP(cell dim, bool befunge93, fings...) {
 
 	static if (GOT_TRDS) {
 		Coords tardisPos, tardisReturnPos, tardisDelta, tardisReturnDelta;
-		long tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
+		ulong tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
 	}
 }

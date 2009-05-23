@@ -19,7 +19,7 @@ mixin (Fingerprint!(
 	"G", "now",
 	"I", "returnCoords",
 	"J", "jump",
-	"P", "max",
+	"P", "maxT",
 	"R", "reset",
 	"S", "stop",
 	"T", "absTime",
@@ -29,7 +29,13 @@ mixin (Fingerprint!(
 
 template TRDS() {
 
+import tango.core.Traits : isUnsignedIntegerType;
+import tango.math.Math   : max;
+
 static assert (is(typeof(state.tick) == typeof(cip.tardisTick)));
+static assert (is(typeof(state.tick) == typeof(cip.jumpedTo)));
+static assert (is(typeof(state.tick) == typeof(cip.jumpedAt)));
+static assert (isUnsignedIntegerType!(typeof(state.tick)));
 
 // {{{ data and ctor
 
@@ -47,8 +53,8 @@ IP[] travellers;
 // ever needed (what we used to do) leads to poor performance for no good
 // reason. It does allow jumping back to tick 0 but loading TRDS immediately
 // allows you to jump back that far which is just as useful...
-typeof(state) earlyState = void;
-cell loadedTick = -1;
+typeof(state)      earlyState = void;
+typeof(state.tick) loadedTick = state.tick.max;
 
 // If we have multiple threads running when TRDS is loaded, remember the
 // correct one to execute when we jump back, since some of them may already
@@ -62,8 +68,8 @@ size_t cipIdx = void;
 typeof(state.tick) ioAfter = 0;
 
 void ctor() {
-	if (loadedTick < 0) {
-		loadedTick = cast(cell)state.tick;
+	if (loadedTick == loadedTick.max) {
+		loadedTick = state.tick;
 		earlyState = state.deepCopy;
 
 		// Start executing from the next IP after cip instead of ips.length
@@ -120,6 +126,8 @@ void ipStopped(IP ip) {
 // {{{ instructions
 
 Request jump() {
+	assert (state.tick >= loadedTick);
+
 	cip.tardisReturnPos   = cip.pos + cip.delta;
 	cip.tardisReturnDelta = cip.delta;
 	cip.tardisReturnTick  = state.tick;
@@ -139,14 +147,29 @@ Request jump() {
 
 	if (cip.mode & IP.TIME_SET) {
 
-		static assert (typeof(cip.jumpedTo).min < 0);
-
 		cip.jumpedTo = cip.tardisTick;
-		if (!(cip.mode & IP.ABS_TIME))
-			cip.jumpedTo += state.tick;
 
-		if (cip.jumpedTo < loadedTick)
-			cip.jumpedTo = loadedTick;
+		// If ABS_TIME, tardisTick is already guaranteed to be correctly set with
+		// respect to loadedTick.
+		if (!(cip.mode & IP.ABS_TIME)) {
+			if (cip.mode & IP.NEG_TIME) {
+
+				// Otherwise, if jumpedTo is negative (as determined by our bonus
+				// sign bit of NEG_TIME), check its magnitude to make sure it
+				// doesn't go too far back.
+				//
+				// We want tick - jumpedTo >= loadedTick, so this check is correct.
+				// The vars are unsigned and state.tick >= loadedTick so we won't
+				// underflow lіke this.
+				if (cip.jumpedTo <= state.tick - loadedTick)
+					cip.jumpedTo -= state.tick;
+				else
+					cip.jumpedTo = loadedTick;
+			} else
+				cip.jumpedTo += state.tick;
+		}
+
+		assert (cip.jumpedTo >= loadedTick);
 
 		if (cip.jumpedTo < state.tick) {
 			// jump into the past
@@ -317,15 +340,15 @@ void timeJump(IP ip) {
 void stop  () { ++stats.timeStopped; state.timeStopper = cipIdx;     }
 void resume() {                      state.timeStopper = size_t.max; }
 
-void now() { assert (state.tick >= 0); cip.stack.push(cast(cell)state.tick); }
-void max() { assert (loadedTick >= 0); cip.stack.push(          loadedTick); }
+void now () { cip.stack.push(cast(cell)state.tick); }
+void maxT() { cip.stack.push(cast(cell)loadedTick); }
 
 void reset() {
 	cip.mode &=
 		~(IP.ABS_SPACE | IP.SPACE_SET |
 		  IP.ABS_TIME  | IP.TIME_SET  | IP.DELTA_SET);
 
-	cip.tardisPos  = cip.tardisDelta = InitCoords!(0);
+	cip.tardisPos = cip.tardisDelta = InitCoords!(0);
 	cip.tardisTick = 0;
 }
 
@@ -352,13 +375,21 @@ void relSpace() {
 void absTime() {
 	cip.mode |= IP.ABS_TIME | IP.TIME_SET;
 
-	cip.tardisTick = cip.stack.pop;
+	cip.tardisTick = max(cip.stack.pop, loadedTick);
 }
 void relTime() {
 	cip.mode &= ~IP.ABS_TIME;
 	cip.mode |=  IP.TIME_SET;
 
-	cip.tardisTick = cip.stack.pop;
+	auto t = cip.stack.pop;
+
+	if (t < 0) {
+		cip.mode |=  IP.NEG_TIME;
+		cip.tardisTick = -t;
+	} else {
+		cip.mode &= ~IP.NEG_TIME;
+		cip.tardisTick = t;
+	}
 }
 void vector() {
 	cip.mode |= IP.DELTA_SET;
