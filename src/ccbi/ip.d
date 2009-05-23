@@ -133,9 +133,8 @@ final class IP(cell dim, bool befunge93, fings...) {
 	FungeSpace!(dim, befunge93) space;
 
 	Coords
-		pos    = InitCoords!(0),
-		delta  = InitCoords!(1),
-		breakPt;
+		pos   = InitCoords!(0),
+		delta = InitCoords!(1);
 
 	static if (!befunge93)
 		Coords offset = InitCoords!(0);
@@ -158,19 +157,18 @@ final class IP(cell dim, bool befunge93, fings...) {
 
 	enum : typeof(mode) {
 		STRING        = 1 << 0,
-		BREAK_SET     = 1 << 1,
-		HOVER         = 1 << 2, // these two for MODE
-		SWITCH        = 1 << 3,
-		DORMANT       = 1 << 4, // for IIPC
-		ABS_SPACE     = 1 << 5, // these for TRDS
-		SPACE_SET     = 1 << 6,
-		ABS_TIME      = 1 << 7,
-		TIME_SET      = 1 << 8,
-		DELTA_SET     = 1 << 9,
-		NEG_TIME      = 1 << 10, // only applies when not ABS_TIME
-		SUBR_RELATIVE = 1 << 11, // for SUBR
+		HOVER         = 1 << 1, // these two for MODE
+		SWITCH        = 1 << 2,
+		DORMANT       = 1 << 3, // for IIPC
+		ABS_SPACE     = 1 << 4, // these for TRDS
+		SPACE_SET     = 1 << 5,
+		ABS_TIME      = 1 << 6,
+		TIME_SET      = 1 << 7,
+		DELTA_SET     = 1 << 8,
+		NEG_TIME      = 1 << 9, // only applies when not ABS_TIME
+		SUBR_RELATIVE = 1 << 10, // for SUBR
 
-		FROM_FUTURE = 1 << 12 // for tracing TRDS
+		FROM_FUTURE = 1 << 11 // for tracing TRDS
 	}
 
 	ushort mode = 0;
