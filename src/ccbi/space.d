@@ -893,9 +893,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				// TODO: subsuming these overlaps may have resulted in new
 				// contains/fusables/disjoints/overlaps...
 
-			} else if (decompose(overlaps, aabb))
-				assert (false, "Decomposition wanted but not implemented!");
-			else {
+			} else {
 				if (!alloced)
 					aabb.alloc;
 				boxen ~= aabb;
@@ -1304,15 +1302,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 	bool cheaperToAlloc(size_t together, size_t separate) {
 		return cell.sizeof * together < cell.sizeof * separate + AABB.sizeof;
-	}
-
-	// TODO: Decompose when we would waste too much space іn a new AABB
-	bool decompose(size_t[] overlaps, AABB b)
-	in {
-		foreach (i; overlaps)
-			assert (boxen[i].overlaps(b));
-	} body {
-		return false;
 	}
 
 	// Outputs space in the range [beg,end).
