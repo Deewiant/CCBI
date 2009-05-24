@@ -2,6 +2,8 @@
 
 module ccbi.stats;
 
+import tango.math.Math : max;
+
 struct Stats {
 	ulong
 		executionCount      = 0,
@@ -15,10 +17,23 @@ struct Stats {
 		ipTravelledToPast   = 0,
 		ipTravelledToFuture = 0,
 		travellerArrived    = 0,
-		timeStopped         = 0,
+		timeStopped         = 0;
 
-		spaceLookups        = 0,
-		spaceAssignments    = 0;
+	struct SpaceStats {
+		ulong
+			lookups           = 0,
+			assignments       = 0,
+			boxesIncorporated = 0,
+			boxesPlaced       = 0,
+			maxBoxesLive      = 0,
+			subsumedContains  = 0,
+			subsumedDisjoint  = 0,
+			subsumedFusables  = 0,
+			subsumedOverlaps  = 0;
+	}
+	SpaceStats space;
+
+	void newMax(ref ulong old, ulong n) { old = max(old, n); }
 };
 
 struct ContainerStats {

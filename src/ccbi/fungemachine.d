@@ -391,62 +391,71 @@ private:
 		struct Stat {
 			char[] name;
 			ulong n;
-			char[] fin;
+			char[] unit;
+			char[] fin = "";
 		}
 		Stat[] ss;
 
 		auto wasWere = stats.ipDormant == 1 ? "Was" : "Were";
 
-		ss ~= Stat("Spent",                         state.tick+1,              "tick");
-		ss ~= Stat("Encountered",                   stats.executionCount,      "instruction");
-		ss ~= Stat("Executed",                      stats.stdExecutionCount,   "standard instruction");
-		ss ~= Stat("Executed",                      stats.fingExecutionCount,  "fingerprint instruction");
-		ss ~= Stat("Encountered",                   stats.unimplementedCount,  "unimplemented instruction");
-		ss ~= Stat("Spent in dormancy",             stats.execDormant,         "execution");
+		ss ~= Stat("Spent",                         state.tick+1,                  "tick");
+		ss ~= Stat("Encountered",                   stats.executionCount,          "instruction");
+		ss ~= Stat("Executed",                      stats.stdExecutionCount,       "standard instruction");
+		ss ~= Stat("Executed",                      stats.fingExecutionCount,      "fingerprint instruction");
+		ss ~= Stat("Encountered",                   stats.unimplementedCount,      "unimplemented instruction");
+		ss ~= Stat("Spent in dormancy",             stats.execDormant,             "execution");
 		ss ~= Stat(null);
-		ss ~= Stat("Performed",                     stats.spaceLookups,        "Funge-Space lookup");
-		ss ~= Stat("Performed",                     stats.spaceAssignments,    "Funge-Space assignment");
+		ss ~= Stat("Performed",                     stats.space.lookups,           "Funge-Space lookup");
+		ss ~= Stat("Performed",                     stats.space.assignments,       "Funge-Space assignment");
+		ss ~= Stat("Ended with",                    state.space.boxCount,          "AABB", "live");
+		ss ~= Stat("Had",                           stats.space.maxBoxesLive,      "AABB", "live at maximum");
+		ss ~= Stat("Incorporated",                  stats.space.boxesIncorporated, "AABB");
+		ss ~= Stat("Placed",                        stats.space.boxesPlaced,       "AABB");
+		ss ~= Stat("Subsumed",                      stats.space.subsumedContains,  "contained AABB");
+		ss ~= Stat("Subsumed",                      stats.space.subsumedDisjoint,  "disjoint AABB");
+		ss ~= Stat("Subsumed",                      stats.space.subsumedFusables,  "fusable AABB");
+		ss ~= Stat("Subsumed",                      stats.space.subsumedOverlaps,  "overlapping AABB");
 		ss ~= Stat(null);
-		ss ~= Stat("Pushed onto stack",             stackStats.pushes,         "cell");
-		ss ~= Stat("Popped from stack",             stackStats.pops,           "cell");
-		ss ~= Stat("Cleared from stack",            stackStats.cleared,        "cell");
-		ss ~= Stat("Peeked stack",                  stackStats.peeks,          "time");
-		ss ~= Stat("Cleared stack",                 stackStats.clears,         "time");
-		ss ~= Stat("Underflowed stack during pop",  stackStats.popUnderflows,  "time");
-		ss ~= Stat("Underflowed stack during peek", stackStats.peekUnderflows, "time");
-		ss ~= Stat("Resized stack",                 stackStats.resizes,        "time");
+		ss ~= Stat("Pushed onto stack",             stackStats.pushes,             "cell");
+		ss ~= Stat("Popped from stack",             stackStats.pops,               "cell");
+		ss ~= Stat("Cleared from stack",            stackStats.cleared,            "cell");
+		ss ~= Stat("Peeked stack",                  stackStats.peeks,              "time");
+		ss ~= Stat("Cleared stack",                 stackStats.clears,             "time");
+		ss ~= Stat("Underflowed stack during pop",  stackStats.popUnderflows,      "time");
+		ss ~= Stat("Underflowed stack during peek", stackStats.peekUnderflows,     "time");
+		ss ~= Stat("Resized stack",                 stackStats.resizes,            "time");
 		ss ~= Stat(null);
-		ss ~= Stat("Pushed onto deque",             dequeStats.pushes,         "cell");
-		ss ~= Stat("Popped from deque",             dequeStats.pops,           "cell");
-		ss ~= Stat("Cleared from deque",            dequeStats.cleared,        "cell");
-		ss ~= Stat("Peeked deque",                  dequeStats.peeks,          "time");
-		ss ~= Stat("Cleared deque",                 dequeStats.clears,         "time");
-		ss ~= Stat("Underflowed deque during pop",  dequeStats.popUnderflows,  "time");
-		ss ~= Stat("Underflowed deque during peek", dequeStats.peekUnderflows, "time");
-		ss ~= Stat("Resized deque",                 dequeStats.resizes,        "time");
+		ss ~= Stat("Pushed onto deque",             dequeStats.pushes,             "cell");
+		ss ~= Stat("Popped from deque",             dequeStats.pops,               "cell");
+		ss ~= Stat("Cleared from deque",            dequeStats.cleared,            "cell");
+		ss ~= Stat("Peeked deque",                  dequeStats.peeks,              "time");
+		ss ~= Stat("Cleared deque",                 dequeStats.clears,             "time");
+		ss ~= Stat("Underflowed deque during pop",  dequeStats.popUnderflows,      "time");
+		ss ~= Stat("Underflowed deque during peek", dequeStats.peekUnderflows,     "time");
+		ss ~= Stat("Resized deque",                 dequeStats.resizes,            "time");
 		ss ~= Stat(null);
-		ss ~= Stat("Pushed onto stack stack",       stackStackStats.pushes,    "container");
-		ss ~= Stat("Popped from stack stack",       stackStackStats.pops,      "container");
-		ss ~= Stat("Cleared from stack stack",      stackStackStats.cleared,   "container");
-		ss ~= Stat("Peeked stack stack",            stackStackStats.peeks,     "time");
-		ss ~= Stat("Cleared stack stack",           stackStackStats.clears,    "time");
-		ss ~= Stat("Resized stack stack",           stackStackStats.resizes,   "time");
+		ss ~= Stat("Pushed onto stack stack",       stackStackStats.pushes,        "container");
+		ss ~= Stat("Popped from stack stack",       stackStackStats.pops,          "container");
+		ss ~= Stat("Cleared from stack stack",      stackStackStats.cleared,       "container");
+		ss ~= Stat("Peeked stack stack",            stackStackStats.peeks,         "time");
+		ss ~= Stat("Cleared stack stack",           stackStackStats.clears,        "time");
+		ss ~= Stat("Resized stack stack",           stackStackStats.resizes,       "time");
 		ss ~= Stat(null);
-		ss ~= Stat("Pushed onto semantic stack",    semanticStats.pushes,      "semantic");
-		ss ~= Stat("Popped from semantic stack",    semanticStats.pops,        "semantic");
-		ss ~= Stat("Cleared from semantic stack",   semanticStats.cleared,     "semantic");
-		ss ~= Stat("Peeked semantic stack",         semanticStats.peeks,       "time");
-		ss ~= Stat("Cleared semantic stack",        semanticStats.clears,      "time");
-		ss ~= Stat("Resized semantic stack",        semanticStats.resizes,     "time");
+		ss ~= Stat("Pushed onto semantic stack",    semanticStats.pushes,          "semantic");
+		ss ~= Stat("Popped from semantic stack",    semanticStats.pops,            "semantic");
+		ss ~= Stat("Cleared from semantic stack",   semanticStats.cleared,         "semantic");
+		ss ~= Stat("Peeked semantic stack",         semanticStats.peeks,           "time");
+		ss ~= Stat("Cleared semantic stack",        semanticStats.clears,          "time");
+		ss ~= Stat("Resized semantic stack",        semanticStats.resizes,         "time");
 		ss ~= Stat(null);
-		ss ~= Stat("Forked",                        stats.ipForked,            "IP");
-		ss ~= Stat("Stopped",                       stats.ipStopped,           "IP");
-		ss ~= Stat(wasWere ~ " dormant",            stats.ipDormant,           "IP");
-		ss ~= Stat("Travelled to the past",         stats.ipTravelledToPast,   "IP");
-		ss ~= Stat("Travelled to the future",       stats.ipTravelledToFuture, "IP");
-		ss ~= Stat("Arrived in the past",           stats.travellerArrived,    "IP");
+		ss ~= Stat("Forked",                        stats.ipForked,                "IP");
+		ss ~= Stat("Stopped",                       stats.ipStopped,               "IP");
+		ss ~= Stat(wasWere ~ " dormant",            stats.ipDormant,               "IP");
+		ss ~= Stat("Travelled to the past",         stats.ipTravelledToPast,       "IP");
+		ss ~= Stat("Travelled to the future",       stats.ipTravelledToFuture,     "IP");
+		ss ~= Stat("Arrived in the past",           stats.travellerArrived,        "IP");
 		ss ~= Stat(null);
-		ss ~= Stat("Stopped time",                  stats.timeStopped,         "time");
+		ss ~= Stat("Stopped time",                  stats.timeStopped,             "time");
 
 		char[20] buf;
 		size_t wideName = 0, wideN = 0;
@@ -475,10 +484,12 @@ private:
 			for (auto i = stat.name.length; i <= wideName; ++i)
 				put(' ');
 
-			put.format(fmt, stat.n)(stat.fin);
+			put.format(fmt, stat.n)(stat.unit);
 			if (stat.n != 1)
 				put('s');
 
+			if (stat.fin)
+				put(' ')(stat.fin);
 			put.newline;
 		}
 	}
