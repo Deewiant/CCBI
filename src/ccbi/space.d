@@ -742,6 +742,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			aabb.data = aabb.data.dup;
 	}
 
+	size_t boxCount() { return boxen.length; }
+
 	bool inBounds(Coords c) {
 		static if (dim == 3) return
 			c.x >= beg.x && c.x <= end.x &&
@@ -755,7 +757,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	cell opIndex(Coords c) {
-		++stats.spaceLookups;
+		++stats.space.lookups;
 
 		foreach (aabb; boxen)
 			if (aabb.contains(c))
@@ -763,7 +765,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		return ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
-		++stats.spaceAssignments;
+		++stats.space.assignments;
 
 		if (v != ' ')
 			growBegEnd(c);
@@ -792,9 +794,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	AABB[] placeBox(AABB aabb) {
-		foreach (box; boxen)
-			if (box.contains(aabb))
-				return [box];
+		foreach (box; boxen) if (box.contains(aabb)) {
+			++stats.space.boxesIncorporated;
+			return [box];
+		}
 
 		return reallyPlaceBox(aabb);
 	}
@@ -823,6 +826,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			prev = origIdx;
 		}
 	} body {
+		++stats.space.boxesPlaced;
+
 		auto contains = new size_t[boxen.length];
 		auto fusables = new size_t[boxen.length];
 		auto overlaps = new size_t[boxen.length];
@@ -880,6 +885,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			if (subsumableOverlaps) {
 				overlaps.length = subsumableOverlaps;
 
+				stats.space.subsumedOverlaps += overlaps.length;
+
 				aabb = consumeSubsume!(dim)(boxen, overlaps, food, beg, end);
 				alloced = true;
 
@@ -897,6 +904,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 				foreach (i, b; overlaps)
 					ret[i] = boxen[b];
 				ret[$-1] = aabb;
+
+				stats.newMax(stats.space.maxBoxesLive, boxen.length);
 				return ret;
 			}
 		}
@@ -1016,6 +1025,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 		// TODO: iterate the above process: search for new fusables, then
 		// disjoints, then contains, then fusables, etc, until we find nothing
 		// new
+
+		stats.space.subsumedContains += contains.length;
+		stats.space.subsumedDisjoint += disjoint.length;
+		stats.space.subsumedFusables += fusables.length;
 
 		auto subsumes = contains ~ disjoint ~ fusables;
 
