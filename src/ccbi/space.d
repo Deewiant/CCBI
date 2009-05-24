@@ -707,7 +707,12 @@ final class FungeSpace(cell dim, bool befunge93) {
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
 
-	private const NEWBOX_PAD = 8;
+	private const
+		// Completely arbitrary
+		NEWBOX_PAD = 8,
+
+		// Fairly arbitrary... A box 5 units wide, otherwise of size NEWBOX_PAD.
+		ACCEPTABLE_WASTE = Power!(size_t, NEWBOX_PAD, dim-1) * 5;
 
 	Stats* stats;
 
@@ -963,11 +968,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 		// disjoints.
 		auto goodDisjoints =
 			validMinMaxSize!(dim)(
-				// Currently returns true only when lossage is so small that it's
-				// cheaper to subsume than to create a new box, space-wise.
-				//
-				// Should probably also have some kind of "acceptable number of
-				// wasted cells".
 				(AABB b, AABB fodder, size_t usedCells) {
 					return cheaperToAlloc(b.size, usedCells + fodder.data.length);
 				},
@@ -1301,7 +1301,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	bool cheaperToAlloc(size_t together, size_t separate) {
-		return cell.sizeof * together < cell.sizeof * separate + AABB.sizeof;
+		return
+			together <= ACCEPTABLE_WASTE ||
+			  cell.sizeof * (together - ACCEPTABLE_WASTE)
+			< cell.sizeof * separate + AABB.sizeof;
 	}
 
 	// Outputs space in the range [beg,end).
