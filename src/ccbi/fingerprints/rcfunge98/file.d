@@ -30,7 +30,7 @@ import c = tango.stdc.stdio;
 
 struct FileHandle {
 	c.FILE* handle;
-	Coords buf; // IO buffer in Funge-state.space
+	Coords buf; // IO buffer in Funge-space
 }
 
 FileHandle[] handles;
