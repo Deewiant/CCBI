@@ -836,7 +836,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		auto beg = aabb.beg, end = aabb.end;
 		size_t food = void;
 		size_t foodSize = 0;
-		size_t usedCells = 0;
+		size_t usedCells = aabb.size;
 
 		auto subsumes   = new size_t[boxen.length];
 		auto candidates = new size_t[boxen.length];
