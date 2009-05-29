@@ -68,14 +68,14 @@ void rand() {
 		cip.stack.push(cast(cell) rand_up_to(c));
 }
 void neg    () { cip.stack.push(-cip.stack.pop); }
-void mulpi  () { cip.stack.push(cast(cell)round(math.PI * cip.stack.pop)); }
+void mulpi  () { cip.stack.push(cast(cell)math.rndint(math.PI * cip.stack.pop)); }
 void abs    () { cip.stack.push(cast(cell)math.abs(cast(cell_base)cip.stack.pop)); }
 void sqrt   () {
 	auto r = cast(real)cip.stack.pop;
 	if (r < 0)
 		reverse;
 	else
-		cip.stack.push(cast(cell)round(math.sqrt(r)));
+		cip.stack.push(cast(cell)math.rndint(math.sqrt(r)));
 }
 
 void signbit() { auto n = cip.stack.pop; cip.stack.push(n > 0 ? 1 : (n < 0 ? -1 : 0)); }

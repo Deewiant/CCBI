@@ -32,7 +32,7 @@ mixin (Fingerprint!(
 
 template _3DSP() {
 
-import tango.math.Math : sqrt, sin, cos;
+import tango.math.Math : sqrt, sin, cos, PI;
 
 union Union {
 	float f;
