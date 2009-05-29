@@ -838,6 +838,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		size_t foodSize = 0;
 		size_t usedCells = aabb.size;
 
+		auto eater = AABB.unsafe(aabb.beg, aabb.end);
+
 		auto subsumes   = new size_t[boxen.length];
 		auto candidates = new size_t[boxen.length];
 		foreach (i, ref c; candidates)
@@ -856,10 +858,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 			// F is fusable, D disjoint. If we looked for disjoints before
 			// fusables, we might subsume D, leaving us worse off than if we'd
 			// subsumed F.
-			    subsumeContains(candidates, subsumes, s, beg, end, food, foodSize, usedCells);
-			if (subsumeFusables(candidates, subsumes, s, beg, end, food, foodSize, usedCells)) continue;
-			if (subsumeDisjoint(candidates, subsumes, s, beg, end, food, foodSize, usedCells)) continue;
-			if (subsumeOverlaps(candidates, subsumes, s, beg, end, food, foodSize, usedCells)) continue;
+			    subsumeContains(candidates, subsumes, s, eater, food, foodSize, usedCells);
+			if (subsumeFusables(candidates, subsumes, s, eater, food, foodSize, usedCells)) continue;
+			if (subsumeDisjoint(candidates, subsumes, s, eater, food, foodSize, usedCells)) continue;
+			if (subsumeOverlaps(candidates, subsumes, s, eater, food, foodSize, usedCells)) continue;
 			break;
 		}
 
@@ -868,7 +870,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		size_t os = 0;
 		for (size_t i = 0; i < overlaps.length; ++i) {
 			auto o = overlaps[i];
-			if (AABB(beg, end).overlaps(boxen[o]))
+			if (eater.overlaps(boxen[o]))
 				overlaps[os++] = o;
 		}
 
@@ -883,7 +885,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 			ret = new AABB[1];
 
 		if (s)
-			aabb = consumeSubsume!(dim)(boxen, subsumes[0..s], food, beg, end);
+			aabb = consumeSubsume!(dim)(boxen, subsumes[0..s], food, eater);
 		else
 			aabb.alloc;
 
@@ -893,16 +895,16 @@ final class FungeSpace(cell dim, bool befunge93) {
 		return ret;
 	}
 
-	// Doesn't return bool like the others since it doesn't change beg/end
+	// Doesn't return bool like the others since it doesn't change eater
 	void subsumeContains(
 		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
-		Coords beg, Coords end,
+		AABB eater,
 		ref size_t food, ref size_t foodSize,
 		ref size_t usedCells)
 	{
 		for (size_t i = 0; i < candidates.length; ++i) {
 			auto c = candidates[i];
-			if (AABB(beg, end).contains(boxen[c])) {
+			if (eater.contains(boxen[c])) {
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1715
 				Coords* NULL = null;
 
@@ -916,7 +918,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 	bool subsumeFusables(
 		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
-		ref Coords beg, ref Coords end,
+		ref AABB eater,
 		ref size_t food, ref size_t foodSize,
 		ref size_t usedCells)
 	{
@@ -927,7 +929,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		// Somewhat HACKY to avoid memory allocation: subsumes[start..sLen] are
 		// indices to candidates, not boxen
 		foreach (i, c; candidates)
-			if (AABB(beg, end).canFuseWith(boxen[c]))
+			if (eater.canFuseWith(boxen[c]))
 				subsumes[sLen++] = i;
 
 		// Now grab those that we can actually fuse, preferring those along the
@@ -944,7 +946,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 			size_t j = start;
 			for (size_t i = start; i < sLen; ++i) {
 				auto c = candidates[subsumes[i]];
-				if (AABB(beg, end).onSamePrimaryAxisAs(boxen[c]))
+				if (eater.onSamePrimaryAxisAs(boxen[c]))
 					subsumes[j++] = subsumes[i];
 			}
 
@@ -972,7 +974,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 			foreach (ref s; subsumes[start..sLen]) {
 				auto corrected = s - offset++;
 				s = candidates[corrected];
-				minMaxSize!(dim)(boxen, &beg, &end, food, foodSize, usedCells, s);
+
+				minMaxSize!(dim)(
+					boxen, &eater.beg, &eater.end, food, foodSize, usedCells, s);
 				candidates.removeAt(corrected);
 
 				++stats.space.subsumedFusables;
@@ -982,11 +986,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 	bool subsumeDisjoint(
 		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
-		ref Coords beg, ref Coords end,
+		ref AABB eater,
 		ref size_t food, ref size_t foodSize,
 		ref size_t usedCells)
 	{
-		auto valid = (AABB b, AABB fodder, size_t usedCells) {
+		auto dg = (AABB b, AABB fodder, size_t usedCells) {
 			return cheaperToAlloc(b.size, usedCells + fodder.data.length);
 		};
 
@@ -996,9 +1000,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 			// All fusables have been removed so a sufficient condition for
 			// disjointness is non-overlappingness
-			if (!AABB(beg, end).overlaps(boxen[c])
+			if (!eater.overlaps(boxen[c])
 			 && validMinMaxSize!(dim)(
-			    	valid, boxen, beg, end, food, foodSize, usedCells, c))
+			    	dg, boxen, eater.beg, eater.end, food, foodSize, usedCells, c))
 			{
 				subsumes[sLen++] = c;
 				candidates.removeAt(i--);
@@ -1011,15 +1015,15 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 	bool subsumeOverlaps(
 		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
-		ref Coords beg, ref Coords end,
+		ref AABB eater,
 		ref size_t food, ref size_t foodSize,
 		ref size_t usedCells)
 	{
-		auto valid = (AABB b, AABB fodder, size_t usedCells) {
+		auto dg = (AABB b, AABB fodder, size_t usedCells) {
 			AABB overlap = void;
 			size_t overSize = 0;
 
-			if (AABB(beg, end).getOverlapWith(fodder, overlap))
+			if (eater.getOverlapWith(fodder, overlap))
 				overSize = overlap.size;
 
 			return cheaperToAlloc(
@@ -1030,9 +1034,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 		for (size_t i = 0; i < candidates.length; ++i) {
 			auto c = candidates[i];
 
-			if (AABB(beg, end).overlaps(boxen[c])
+			if (eater.overlaps(boxen[c])
 			 && validMinMaxSize!(dim)(
-			    	valid, boxen, beg, end, food, foodSize, usedCells, c))
+			    	dg, boxen, eater.beg, eater.end, food, foodSize, usedCells, c))
 			{
 				subsumes[sLen++] = c;
 				candidates.removeAt(i--);
@@ -1417,12 +1421,11 @@ size_t validMinMaxSize(cell dim)
 }
 
 AABB!(dim) consumeSubsume(cell dim)
-	(ref AABB!(dim)[] boxen, size_t[] subsumes, size_t food,
-	 Coords!(dim) beg, Coords!(dim) end)
+	(ref AABB!(dim)[] boxen, size_t[] subsumes, size_t food, AABB!(dim) aabb)
 {
 	irrelevizeSubsumptionOrder!(dim)(boxen, subsumes);
 
-	auto aabb = AABB!(dim)(beg, end);
+	aabb.finalize;
 	aabb.consume(boxen[food]);
 
 	// NOTE: strictly speaking this should be a foreach_reverse and subsumes
