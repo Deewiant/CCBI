@@ -1374,12 +1374,12 @@ void minMaxSize(cell dim)
 		max = i;
 	}
 	if (beg) {
-	                     	if (box.beg.x < beg.x) beg.x = box.beg.x;
+		                     if (box.beg.x < beg.x) beg.x = box.beg.x;
 		static if (dim >= 2) if (box.beg.y < beg.y) beg.y = box.beg.y;
 		static if (dim >= 3) if (box.beg.z < beg.z) beg.z = box.beg.z;
 	}
 	if (end) {
-	                     	if (box.end.x > end.x) end.x = box.end.x;
+		                     if (box.end.x > end.x) end.x = box.end.x;
 		static if (dim >= 2) if (box.end.y > end.y) end.y = box.end.y;
 		static if (dim >= 3) if (box.end.z > end.z) end.z = box.end.z;
 	}
