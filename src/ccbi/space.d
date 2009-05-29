@@ -868,7 +868,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		size_t os = 0;
 		for (size_t i = 0; i < overlaps.length; ++i) {
 			auto o = overlaps[i];
-			if (aabb.overlaps(boxen[o]))
+			if (AABB(beg, end).overlaps(boxen[o]))
 				overlaps[os++] = o;
 		}
 
