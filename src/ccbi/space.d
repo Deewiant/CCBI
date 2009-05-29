@@ -833,220 +833,214 @@ final class FungeSpace(cell dim, bool befunge93) {
 	} body {
 		++stats.space.boxesPlaced;
 
-		auto contains = new size_t[boxen.length];
-		auto fusables = new size_t[boxen.length];
-		auto overlaps = new size_t[boxen.length];
-		auto disjoint = new size_t[boxen.length];
+		auto beg = aabb.beg, end = aabb.end;
+		size_t food = void;
+		size_t foodSize = 0;
+		size_t usedCells = 0;
 
-		{size_t c = 0, f = 0, o = 0, d = 0;
-		foreach (i, box; boxen) {
-			if (aabb.canFuseWith(box))
-				fusables[f++] = i;
-			else if (aabb.overlaps(box)) {
-				if (aabb.contains(box))
-					contains[c++] = i;
-				else
-					overlaps[o++] = i;
-			} else
-				disjoint[d++] = i;
+		auto subsumes   = new size_t[boxen.length];
+		auto candidates = new size_t[boxen.length];
+		foreach (i, ref c; candidates)
+			c = i;
+
+		size_t s = 0;
+
+		for (;;) {
+			// Disjoint assumes that it comes after fusables. Some reasoning for
+			// why that's probably a good idea anyway:
+			//
+			// F
+			// FD
+			// A
+			//
+			// F is fusable, D disjoint. If we looked for disjoints before
+			// fusables, we might subsume D, leaving us worse off than if we'd
+			// subsumed F.
+			    subsumeContains(candidates, subsumes, s, beg, end, food, foodSize, usedCells);
+			if (subsumeFusables(candidates, subsumes, s, beg, end, food, foodSize, usedCells)) continue;
+			if (subsumeDisjoint(candidates, subsumes, s, beg, end, food, foodSize, usedCells)) continue;
+			if (subsumeOverlaps(candidates, subsumes, s, beg, end, food, foodSize, usedCells)) continue;
+			break;
 		}
-		contains.length = c;
-		fusables.length = f;
-		overlaps.length = o;
-		disjoint.length = d;}
 
-		bool alloced = false;
-
-		if (contains.length || disjoint.length || fusables.length)
-			alloced = subsumeAll(aabb, contains, disjoint, fusables, overlaps);
-
-		if (overlaps.length) {
-			auto beg = aabb.beg, end = aabb.end;
-			size_t food;
-			size_t foodSize = 0;
-			size_t length = 0;
-
-			auto subsumableOverlaps =
-				validMinMaxSize!(dim)(
-					(AABB b, AABB fodder, size_t usedCells) {
-						AABB overlap = void;
-						size_t overSize = 0;
-
-						// If alloced is true, some of these could actually be
-						// contains, but subsumeAll currently only finds overlaps at
-						// the end (that's a TODO)
-						if (
-							!(alloced && aabb.contains(fodder))
-							&& aabb.getOverlapWith(fodder, overlap)
-						)
-							overSize = overlap.size;
-
-						return cheaperToAlloc(
-							b.size, usedCells + fodder.data.length - overSize);
-					},
-					boxen, beg, end, food, foodSize, length,
-					overlaps);
-
-			if (subsumableOverlaps) {
-				overlaps.length = subsumableOverlaps;
-
-				stats.space.subsumedOverlaps += overlaps.length;
-
-				aabb = consumeSubsume!(dim)(boxen, overlaps, food, beg, end);
-				alloced = true;
-
-				// TODO: subsuming these overlaps may have resulted in new
-				// contains/fusables/disjoints/overlaps...
-
-			} else {
-				if (!alloced)
-					aabb.alloc;
-				boxen ~= aabb;
-
-				auto ret = new AABB[overlaps.length + 1];
-				foreach (i, b; overlaps)
-					ret[i] = boxen[b];
-				ret[$-1] = aabb;
-
-				stats.newMax(stats.space.maxBoxesLive, boxen.length);
-				return ret;
-			}
+		// Find any remaining overlaps
+		auto overlaps = candidates;
+		size_t os = 0;
+		for (size_t i = 0; i < overlaps.length; ++i) {
+			auto o = overlaps[i];
+			if (aabb.overlaps(boxen[o]))
+				overlaps[os++] = o;
 		}
-		if (!alloced)
+
+		// Copy overlaps into ret now, since the indices are invalidated if we
+		// subsume anything
+		AABB[] ret;
+		if (os) {
+			ret = new AABB[os + 1];
+			foreach (i, o; overlaps[0..os])
+				ret[i] = boxen[o];
+		} else
+			ret = new AABB[1];
+
+		if (s)
+			aabb = consumeSubsume!(dim)(boxen, subsumes[0..s], food, beg, end);
+		else
 			aabb.alloc;
+
 		boxen ~= aabb;
-		return [aabb];
+		ret[$-1] = aabb;
+		stats.newMax(stats.space.maxBoxesLive, boxen.length);
+		return ret;
 	}
 
-	// TODO: if any function here needs cleanup, it's this one
-	bool subsumeAll(cell dim)(
-		ref AABB!(dim) aabb,
-		size_t[] contains, size_t[] disjoint, size_t[] fusables,
-		ref size_t[] overlaps)
+	// Doesn't return bool like the others since it doesn't change beg/end
+	void subsumeContains(
+		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
+		Coords beg, Coords end,
+		ref size_t food, ref size_t foodSize,
+		ref size_t usedCells)
 	{
-		auto beg = aabb.beg, end = aabb.end;
-		size_t
-			food = size_t.max,
-			foodSize = 0,
-			length = aabb.size;
+		for (size_t i = 0; i < candidates.length; ++i) {
+			auto c = candidates[i];
+			if (AABB(beg, end).contains(boxen[c])) {
+				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1715
+				Coords* NULL = null;
 
-		minMaxSize!(dim)(boxen, beg, end, food, foodSize, length, contains);
+				subsumes[sLen++] = c;
+				minMaxSize!(dim)(boxen, NULL, NULL, food, foodSize, usedCells, c);
+				candidates.removeAt(i--);
 
-		// Grab those that we can actually fuse, preferring those along the
-		// primary axis (y for 2d, z for 3d)
+				++stats.space.subsumedContains;
+			}
+		}
+	}
+	bool subsumeFusables(
+		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
+		ref Coords beg, ref Coords end,
+		ref size_t food, ref size_t foodSize,
+		ref size_t usedCells)
+	{
+		auto start = sLen;
+
+		// Get all the fusables first
 		//
-		// This ensures that all in fusables should be along the same axis, we
-		// can't fuse A with both X and Y in the following:
+		// Somewhat HACKY to avoid memory allocation: subsumes[start..sLen] are
+		// indices to candidates, not boxen
+		foreach (i, c; candidates)
+			if (AABB(beg, end).canFuseWith(boxen[c]))
+				subsumes[sLen++] = i;
+
+		// Now grab those that we can actually fuse, preferring those along the
+		// primary axis (y for 2D, z for 3D)
+		//
+		// This ensures that all the ones we fuse with are along the same axis.
+		// For instance, A can't fuse with both X and Y in the following:
+		//
 		// X
 		// AY
-		static if (dim > 1) if (fusables.length > 1) {
-			size_t j = 0;
-			for (size_t i = 0; i < fusables.length; ++i)
-				if (aabb.onSamePrimaryAxisAs(boxen[fusables[i]]))
-					fusables[j++] = fusables[i];
-
-			if (!j) {
-				j = 2;
-				for (size_t i = 2; i < fusables.length; ++i)
-					if (boxen[fusables[1]].onSameAxisAs(boxen[fusables[i]]))
-						fusables[j++] = fusables[i];
-			}
-
-			fusables.length = j;
-		}
-		minMaxSize!(dim)(boxen, beg, end, food, foodSize, length, fusables);
-
-		// Disjoints need to be found last, consider for instance:
 		//
-		// F
-		// FD
-		// A
-		//
-		// F is fusable, D disjoint. If we looked for disjoints before fusables,
-		// subsumeDisjoint could return true for D, and we'd be worse off. In
-		// general it seems to be a better idea to subsume fusables than
-		// disjoints.
-		auto goodDisjoints =
-			validMinMaxSize!(dim)(
-				(AABB b, AABB fodder, size_t usedCells) {
-					return cheaperToAlloc(b.size, usedCells + fodder.data.length);
-				},
-				boxen, beg, end, food, foodSize, length,
-				disjoint);
-
-		if (goodDisjoints) {
-			// New contains may have resulted, and fusables / bad disjoints may
-			// have become contains. For now, just add contains and remove old
-			// fusables / bad disjoints. See the TODO below for what we should be
-			// doing instead.
-			//
-			// Under our current scheme, at this point it no longer matters which
-			// array something is in, so the fusables->contains movement is
-			// unnecessary; but it will be necessary in the future, so leave it.
-			//
-			// New overlaps may also have resulted, but we recalculate those
-			// later anyway.
-			aabb = AABB(beg, end);
-
-			assert (fusables == fusables.dup.sort);
-
-			auto oldC = contains.length;
-			auto c = oldC;
-			contains.length = contains.length + disjoint.length - goodDisjoints;
-
-			for (size_t i = goodDisjoints; i < disjoint.length; ++i) {
-				auto d = disjoint[i];
-				if (aabb.contains(boxen[d])) {
-					contains[c++] = d;
-					disjoint.removeAt(i--);
-				}
+		// Not needed for 1D since they're trivially all along the same axis.
+		static if (dim > 1) if (sLen - start > 1) {
+			size_t j = start;
+			for (size_t i = start; i < sLen; ++i) {
+				auto c = candidates[subsumes[i]];
+				if (AABB(beg, end).onSamePrimaryAxisAs(boxen[c]))
+					subsumes[j++] = subsumes[i];
 			}
-			contains.length = c + fusables.length;
 
-			minMaxSize!(dim)
-				(boxen, beg, end, food, foodSize, length, contains[oldC..c]);
-
-			for (size_t i = 0; i < fusables.length; ++i) {
-				auto f = fusables[i];
-				if (aabb.contains(boxen[f])) {
-					contains[c++] = f;
-					fusables.removeAt(i--);
-				}
+			if (j == start) {
+				j = start + 1;
+				auto orig = boxen[candidates[subsumes[start]]];
+				for (size_t i = j; i < sLen; ++i)
+					if (orig.onSameAxisAs(boxen[candidates[subsumes[i]]]))
+						subsumes[j++] = subsumes[i];
 			}
-			contains.length = c;
+			sLen = j;
 		}
-		disjoint.length = goodDisjoints;
 
-		if (!(contains.length || disjoint.length || fusables.length))
+		assert (sLen >= start);
+		if (sLen == start)
 			return false;
+		else {
+			// Sort them so that we can find the correct offset to apply to the
+			// array index (since we're removing these from candidates as we go):
+			// if the lowest index is always next, the following ones' indices are
+			// reduced by one
+			subsumes[start..sLen].sort;
 
-		// TODO: iterate the above process: search for new fusables, then
-		// disjoints, then contains, then fusables, etc, until we find nothing
-		// new
+			size_t offset = 0;
+			foreach (ref s; subsumes[start..sLen]) {
+				auto corrected = s - offset++;
+				s = candidates[corrected];
+				minMaxSize!(dim)(boxen, &beg, &end, food, foodSize, usedCells, s);
+				candidates.removeAt(corrected);
 
-		stats.space.subsumedContains += contains.length;
-		stats.space.subsumedDisjoint += disjoint.length;
-		stats.space.subsumedFusables += fusables.length;
-
-		auto subsumes = contains ~ disjoint ~ fusables;
-
-		aabb = consumeSubsume!(dim)(boxen, subsumes, food, beg, end);
-
-		// There might be some things that overlap with this aabb but not the
-		// original
-		//
-		// We know that the original overlaps overlap with aabb, but we don't
-		// know which ones they are in boxen so we forget about them...
-		overlaps.length = boxen.length;
-		size_t o = 0;
-		for (size_t i = 0; i < boxen.length; ++i) {
-			auto box = boxen[i];
-			if (aabb.overlaps(box))
-				overlaps[o++] = i;
+				++stats.space.subsumedFusables;
+			}
+			return true;
 		}
-		overlaps.length = o;
+	}
+	bool subsumeDisjoint(
+		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
+		ref Coords beg, ref Coords end,
+		ref size_t food, ref size_t foodSize,
+		ref size_t usedCells)
+	{
+		auto valid = (AABB b, AABB fodder, size_t usedCells) {
+			return cheaperToAlloc(b.size, usedCells + fodder.data.length);
+		};
 
-		return true;
+		auto orig = sLen;
+		for (size_t i = 0; i < candidates.length; ++i) {
+			auto c = candidates[i];
+
+			// All fusables have been removed so a sufficient condition for
+			// disjointness is non-overlappingness
+			if (!AABB(beg, end).overlaps(boxen[c])
+			 && validMinMaxSize!(dim)(
+			    	valid, boxen, beg, end, food, foodSize, usedCells, c))
+			{
+				subsumes[sLen++] = c;
+				candidates.removeAt(i--);
+
+				++stats.space.subsumedDisjoint;
+			}
+		}
+		assert (sLen >= orig);
+		return sLen > orig;
+	}
+	bool subsumeOverlaps(
+		ref size_t[] candidates, ref size_t[] subsumes, ref size_t sLen,
+		ref Coords beg, ref Coords end,
+		ref size_t food, ref size_t foodSize,
+		ref size_t usedCells)
+	{
+		auto valid = (AABB b, AABB fodder, size_t usedCells) {
+			AABB overlap = void;
+			size_t overSize = 0;
+
+			if (AABB(beg, end).getOverlapWith(fodder, overlap))
+				overSize = overlap.size;
+
+			return cheaperToAlloc(
+				b.size, usedCells + fodder.data.length - overSize);
+		};
+
+		auto orig = sLen;
+		for (size_t i = 0; i < candidates.length; ++i) {
+			auto c = candidates[i];
+
+			if (AABB(beg, end).overlaps(boxen[c])
+			 && validMinMaxSize!(dim)(
+			    	valid, boxen, beg, end, food, foodSize, usedCells, c))
+			{
+				subsumes[sLen++] = c;
+				candidates.removeAt(i--);
+				++stats.space.subsumedOverlaps;
+			}
+		}
+		assert (sLen >= orig);
+		return sLen > orig;
 	}
 
 	// Takes ownership of the Array, detaching it.
@@ -1357,7 +1351,7 @@ private:
 // Assumes they're all allocated and max isn't.
 void minMaxSize(cell dim)
 	(AABB!(dim)[] boxen,
-	 ref Coords!(dim) beg, ref Coords!(dim) end,
+	 Coords!(dim)* beg, Coords!(dim)* end,
 	 ref size_t max, ref size_t maxSize,
 	 ref size_t length,
 	 size_t[] indices)
@@ -1368,7 +1362,7 @@ void minMaxSize(cell dim)
 
 void minMaxSize(cell dim)
 	(AABB!(dim)[] boxen,
-	 ref Coords!(dim) beg, ref Coords!(dim) end,
+	 Coords!(dim)* beg, Coords!(dim)* end,
 	 ref size_t max, ref size_t maxSize,
 	 ref size_t length,
 	 size_t i)
@@ -1379,12 +1373,16 @@ void minMaxSize(cell dim)
 		maxSize = box.data.length;
 		max = i;
 	}
-	                       if (box.beg.x < beg.x) beg.x = box.beg.x;
-	                       if (box.end.x > end.x) end.x = box.end.x;
-	static if (dim >= 2) { if (box.beg.y < beg.y) beg.y = box.beg.y;
-	                       if (box.end.y > end.y) end.y = box.end.y; }
-	static if (dim >= 3) { if (box.beg.z < beg.z) beg.z = box.beg.z;
-	                       if (box.end.z > end.z) end.z = box.end.z; }
+	if (beg) {
+	                     	if (box.beg.x < beg.x) beg.x = box.beg.x;
+		static if (dim >= 2) if (box.beg.y < beg.y) beg.y = box.beg.y;
+		static if (dim >= 3) if (box.beg.z < beg.z) beg.z = box.beg.z;
+	}
+	if (end) {
+	                     	if (box.end.x > end.x) end.x = box.end.x;
+		static if (dim >= 2) if (box.end.y > end.y) end.y = box.end.y;
+		static if (dim >= 3) if (box.end.z > end.z) end.z = box.end.z;
+	}
 }
 
 // The input delegate takes:
@@ -1398,38 +1396,24 @@ size_t validMinMaxSize(cell dim)
 	 ref Coords!(dim) beg, ref Coords!(dim) end,
 	 ref size_t max, ref size_t maxSize,
 	 ref size_t length,
-	 ref size_t[] indices)
+	 size_t idx)
 {
-	size_t count = 0;
-	for (size_t i = 0; i < indices.length; ++i) {
-		auto box = indices[i];
+	auto
+		tryBeg = beg, tryEnd = end,
+		tryMax = max, tryMaxSize = maxSize,
+		tryLen = length;
 
-		auto
-			tryBeg = beg, tryEnd = end,
-			tryMax = max, tryMaxSize = maxSize,
-			tryLength = length;
+	minMaxSize!(dim)(boxen, &tryBeg, &tryEnd, tryMax, tryMaxSize, tryLen, idx);
 
-		minMaxSize!(dim)
-			(boxen, tryBeg, tryEnd, tryMax, tryMaxSize, tryLength, box);
-
-		if (valid(AABB!(dim)(tryBeg, tryEnd), boxen[box], length)) {
-			indices[count] = box;
-
-			// Remove the valid ones from the invalid range in case the invalids
-			// need to be looked at separately
-			if (count != i)
-				indices.removeAt(i--);
-
-			++count;
-
-			beg     = tryBeg;
-			end     = tryEnd;
-			max     = tryMax;
-			maxSize = tryMaxSize;
-			length  = tryLength;
-		}
-	}
-	return count;
+	if (valid(AABB!(dim)(tryBeg, tryEnd), boxen[idx], length)) {
+		beg     = tryBeg;
+		end     = tryEnd;
+		max     = tryMax;
+		maxSize = tryMaxSize;
+		length  = tryLen;
+		return true;
+	} else
+		return false;
 }
 
 AABB!(dim) consumeSubsume(cell dim)
