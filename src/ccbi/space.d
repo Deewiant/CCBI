@@ -55,6 +55,17 @@ struct Coords(cell dim) {
 		return x == c.x;
 	}
 
+	void maxWith(Coords c) {
+		static if (dim >= 3) if (c.z > z) z = c.z;
+		static if (dim >= 2) if (c.y > y) y = c.y;
+		                     if (c.x > x) x = c.x;
+	}
+	void minWith(Coords c) {
+		static if (dim >= 3) if (c.z < z) z = c.z;
+		static if (dim >= 2) if (c.y < y) y = c.y;
+		                     if (c.x < x) x = c.x;
+	}
+
 	template Ops(T...) {
 		static assert (T.length != 1);
 
@@ -766,14 +777,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 	// TODO: shrink bounds sometimes, as well
 	void growBegEnd(Coords c) {
-			     if (c.x > end.x) end.x = c.x;
-			else if (c.x < beg.x) beg.x = c.x;
-		static if (dim >= 2) {
-			     if (c.y > end.y) end.y = c.y;
-			else if (c.y < beg.y) beg.y = c.y; }
-		static if (dim >= 3) {
-			     if (c.z > end.z) end.z = c.z;
-			else if (c.z < beg.z) beg.z = c.z; }
+		beg.minWith(c);
+		end.maxWith(c);
 	}
 
 	AABB[] placeBox(AABB aabb) {
@@ -1105,12 +1110,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 			aabb.finalize;
 
-			                     beg.x = min(beg.x, aabb.beg.x);
-			static if (dim >= 2) beg.y = min(beg.y, aabb.beg.y);
-			static if (dim >= 3) beg.z = min(beg.z, aabb.beg.z);
-			                     end.x = max(end.x, aabb.end.x);
-			static if (dim >= 2) end.y = max(end.y, aabb.end.y);
-			static if (dim >= 3) end.z = max(end.z, aabb.end.z);
+			beg.minWith(aabb.beg);
+			end.maxWith(aabb.end);
 
 			auto aabbs = placeBox(aabb);
 
@@ -1272,9 +1273,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				++pos.x;
 				break;
 		}
-		                     end.x = max(lastNonSpace.x, end.x);
-		static if (dim >= 2) end.y = max(lastNonSpace.y, end.y);
-		static if (dim >= 3) end.z = max(lastNonSpace.z, end.z);
+		end.maxWith(lastNonSpace);
 
 		return AABB.unsafe(beg, end);
 	}
@@ -1355,16 +1354,8 @@ void minMaxSize(cell dim)
 		maxSize = box.data.length;
 		max = i;
 	}
-	if (beg) {
-		                     if (box.beg.x < beg.x) beg.x = box.beg.x;
-		static if (dim >= 2) if (box.beg.y < beg.y) beg.y = box.beg.y;
-		static if (dim >= 3) if (box.beg.z < beg.z) beg.z = box.beg.z;
-	}
-	if (end) {
-		                     if (box.end.x > end.x) end.x = box.end.x;
-		static if (dim >= 2) if (box.end.y > end.y) end.y = box.end.y;
-		static if (dim >= 3) if (box.end.z > end.z) end.z = box.end.z;
-	}
+	if (beg) beg.minWith(box.beg);
+	if (end) end.maxWith(box.end);
 }
 
 // The input delegate takes:
