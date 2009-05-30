@@ -95,28 +95,6 @@ struct Coords(cell dim) {
 		"Add", "+",
 		"Sub", "-"
 	));
-
-	// {{{ MurmurHash 2.0, thanks to Austin Appleby
-	// at http://murmurhash.googlepages.com/
-	hash_t toHash() {
-		const hash_t m = 0x_5bd1_e995;
-
-		hash_t h = 0x7fd6_52ad ^ (x.sizeof * dim), k;
-
-			k = x; k *= m; k ^= k >> 24; k *= m; h *= m; h ^= k;
-		static if (dim >= 2) {
-			k = y; k *= m; k ^= k >> 24; k *= m; h *= m; h ^= k;
-		}
-		static if (dim >= 3) {
-			k = z; k *= m; k ^= k >> 24; k *= m; h *= m; h ^= k;
-		}
-
-		h ^= h >> 13;
-		h *= m;
-		h ^= h >> 15;
-
-		return h;
-	} // }}}
 }
 
 template Dimension(cell dim) {
