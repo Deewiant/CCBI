@@ -720,7 +720,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 	this(Stats* stats, Array source) {
 		this.stats = stats;
 
-		load(source, &end, InitCoords!(0), false, false);
+		load(source, &end, InitCoords!(0), false);
 
 		                     assert (beg.x >= 0);
 		static if (dim >= 2) assert (beg.y >= 0);
@@ -786,7 +786,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 			++stats.space.boxesIncorporated;
 			return [box];
 		}
-
 		return reallyPlaceBox(aabb);
 	}
 
@@ -1031,12 +1030,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	// Takes ownership of the Array, detaching it.
-	// TODO: this function is long, break it up
-	void load(
-		Array arr,
-		Coords* end, Coords target,
-		bool binary, bool getAllBeg
-	) in {
+	void load(Array arr, Coords* end, Coords target, bool binary)
+	in {
 		assert (end !is null);
 	} out {
 		if (boxen.length > 0) {
@@ -1052,56 +1047,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 		static if (befunge93) {
 			assert (target == 0);
 			assert (end is &this.end);
+			assert (!binary);
 
-			beg  = InitCoords!( 0, 0);
-			*end = InitCoords!(79,24);
-
-			auto aabb = AABB(beg, *end);
-			aabb.alloc;
-			boxen ~= aabb;
-
-			bool gotCR = false;
-			auto pos = target;
-
-			bool newLine() {
-				gotCR = false;
-				pos.x = 0;
-				++pos.y;
-				return pos.y >= 25;
-			}
-
-			loop: for (size_t i = 0; i < input.length; ++i) switch (input[i]) {
-				case '\r': gotCR = true; break;
-				case '\n':
-					if (newLine())
-						break loop;
-					break;
-				default:
-					if (gotCR && newLine())
-						break loop;
-
-					if (input[i] != ' ')
-						aabb[pos] = cast(cell)input[i];
-
-					if (++pos.x >= 80) {
-						++i;
-						skipRest: for (; i < input.length; ++i) switch (input[i]) {
-							case '\r': gotCR = true; break;
-							case '\n':
-								if (newLine())
-									break loop;
-								break skipRest;
-							default:
-								if (gotCR) {
-									if (newLine())
-										break loop;
-									break skipRest;
-								}
-								break;
-						}
-					}
-					break;
-			}
+			befunge93Load(input, end);
 		} else {
 			auto aabb = getAABB(input, binary, target);
 
@@ -1167,6 +1115,60 @@ final class FungeSpace(cell dim, bool befunge93) {
 						break;
 				}
 			}
+		}
+	}
+
+	static if (befunge93)
+	void befunge93Load(ubyte[] input, Coords* end) {
+		beg  = InitCoords!( 0, 0);
+		*end = InitCoords!(79,24);
+
+		auto aabb = AABB(beg, *end);
+		aabb.alloc;
+		boxen ~= aabb;
+
+		bool gotCR = false;
+		auto pos = InitCoords!(0,0);
+
+		bool newLine() {
+			gotCR = false;
+			pos.x = 0;
+			++pos.y;
+			return pos.y >= 25;
+		}
+
+		loop: for (size_t i = 0; i < input.length; ++i) switch (input[i]) {
+			case '\r': gotCR = true; break;
+			case '\n':
+				if (newLine())
+					break loop;
+				break;
+			default:
+				if (gotCR && newLine())
+					break loop;
+
+				if (input[i] != ' ')
+					aabb[pos] = cast(cell)input[i];
+
+				if (++pos.x < 80)
+					break;
+
+				++i;
+				skipRest: for (; i < input.length; ++i) switch (input[i]) {
+					case '\r': gotCR = true; break;
+					case '\n':
+						if (newLine())
+							break loop;
+						break skipRest;
+					default:
+						if (gotCR) {
+							if (newLine())
+								break loop;
+							break skipRest;
+						}
+						break;
+				}
+				break;
 		}
 	}
 
