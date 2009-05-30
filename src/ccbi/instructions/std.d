@@ -730,7 +730,7 @@ void inputFile() {
 		return reverse();
 	}
 
-	state.space.load(file, &vb, va, binary, true);
+	state.space.load(file, &vb, va, binary);
 
 	vb -= va;
 	++vb;
