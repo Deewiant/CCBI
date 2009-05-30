@@ -260,12 +260,9 @@ private struct AABB(cell dim) {
 				overBeg = Coords(cell.max, cell.max),
 				overEnd = Coords(cell.min, cell.min);
 
-			// We'll get more than two points so else-if is fine
 			void addPoint(Coords p) {
-				     if (p.x < overBeg.x) overBeg.x = p.x;
-				else if (p.x > overEnd.x) overEnd.x = p.x;
-				     if (p.y < overBeg.y) overBeg.y = p.y;
-				else if (p.y > overEnd.y) overEnd.y = p.y;
+				overBeg.minWith(p);
+				overEnd.maxWith(p);
 			}
 
 			bool intersected = false;
@@ -345,12 +342,8 @@ private struct AABB(cell dim) {
 				overEnd = Coords(cell.min, cell.min, cell.min);
 
 			void addPoint(Coords p) {
-				     if (p.x < overBeg.x) overBeg.x = p.x;
-				else if (p.x > overEnd.x) overEnd.x = p.x;
-				     if (p.y < overBeg.y) overBeg.y = p.y;
-				else if (p.y > overEnd.y) overEnd.y = p.y;
-				     if (p.z < overBeg.z) overBeg.z = p.z;
-				else if (p.z > overEnd.z) overEnd.z = p.z;
+				overBeg.minWith(p);
+				overEnd.maxWith(p);
 			}
 
 			bool intersected = false;
