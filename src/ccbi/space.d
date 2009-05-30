@@ -1201,10 +1201,12 @@ final class FungeSpace(cell dim, bool befunge93) {
 		bool binary,
 		Coords target)
 	{
-		auto beg = InitCoords!(cell.max,cell.max,cell.max);
-		auto end = target;
+		Coords beg = void;
+		Coords end = target;
 
 		if (binary) {
+			beg = target;
+
 			size_t i = 0;
 			while (i < input.length && input[i++] == ' '){}
 
@@ -1221,6 +1223,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 			return AABB.unsafe(beg, end);
 		}
 
+		beg = InitCoords!(cell.max,cell.max,cell.max);
 		ubyte getBeg = 0b111;
 		auto pos = target;
 		auto lastNonSpace = end;
