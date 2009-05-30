@@ -774,7 +774,7 @@ void outputFile() {
 		f.flush.close;
 	}
 
-	auto max = vaE; max += vbE;
+	auto max = vaE + vbE;
 
 	if (flags & 1) {
 		// treat as linear text file, meaning...
@@ -784,7 +784,7 @@ void outputFile() {
 		static if (dim >= 2) if (max.y > state.space.end.y) max.y = state.space.end.y;
 		                     if (max.x > state.space.end.x) max.x = state.space.end.x;
 
-		auto arraySize = max; arraySize -= vaE;
+		auto arraySize = max - vaE;
 
 		auto toBeWritten = new char[][][](arraySize.z, arraySize.y, arraySize.x);
 
@@ -855,15 +855,16 @@ void outputFile() {
 		toBeWritten.length = l;
 
 		if (toBeWritten.length) {
-			foreach (rect; toBeWritten[0..$-1]) {
-				foreach (row; rect)
-					file.append(row).append(NewlineString);
+			foreach (row; toBeWritten[0])
+				file.append(row).append(NewlineString);
 
+			foreach (rect; toBeWritten[1..$]) {
 				// put a form feed between rectangles, not after each one
 				file.append(\f);
+
+				foreach (row; rect)
+					file.append(row).append(NewlineString);
 			}
-			foreach (row; toBeWritten[$-1])
-				file.append(row).append(NewlineString);
 		}
 
 	} else {
@@ -951,7 +952,7 @@ void getSysInfo() {
 
 		// the rest
 
-		auto relEnd = state.space.end; relEnd -= state.space.beg;
+		auto relEnd = state.space.end - state.space.beg;
 
 		pushVector(relEnd);
 		pushVector(state.space.beg);
