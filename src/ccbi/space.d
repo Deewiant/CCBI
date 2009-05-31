@@ -21,9 +21,14 @@ public import ccbi.cell;
 struct Coords(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 
-	                       cell x;
-	static if (dim >= 2) { cell y; }
-	static if (dim >= 3) { cell z; }
+	union {
+		struct {
+			                       cell x;
+			static if (dim >= 2) { cell y; }
+			static if (dim >= 3) { cell z; }
+		}
+		cell[dim] v;
+	}
 
 	char[] toString() {
 		char[ToString!(cell.min).length] buf = void;
