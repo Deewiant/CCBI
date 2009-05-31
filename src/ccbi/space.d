@@ -35,8 +35,8 @@ struct Coords(cell dim) {
 		char[ToString!(cell.min).length] buf = void;
 
 		char[] s = "(";
-		                           s ~= format(buf, x);
-		foreach (x; v) { s ~= ','; s ~= format(buf, x); }
+		                                 s ~= format(buf, x);
+		foreach (x; v[1..$]) { s ~= ','; s ~= format(buf, x); }
 		s ~= ')';
 		return s;
 	}
