@@ -268,20 +268,6 @@ private struct AABB(cell dim) {
 			bool intersected = false;
 
 			void tryIntersect(Coords p1, Coords p2) {
-				static byte intersect1D(
-					cell b, cell e, cell compareBeg, cell compareEnd)
-				{
-					if (e >= compareBeg) {
-						if (e <= compareEnd) {
-							// e is in box: we know b isn't since !this.contains(box)
-							return 0;
-						} else if (b <= compareEnd) {
-							// e is past the box and b isn't
-							return b <= compareBeg ? 2 : 1;
-						}
-					}
-					return -1;
-				}
 				cell b, e;
 
 				// p1-p2 is axis-aligned: x or y?
@@ -293,10 +279,10 @@ private struct AABB(cell dim) {
 					if (p1.y < box.beg.y || p1.y > box.end.y) return;
 
 					switch (intersect1D(b, e, box.beg.x, box.end.x)) {
-						case 2: addPoint(Coords(box.beg.x, p1.y));
-						case 1: addPoint(Coords(box.end.x, p1.y)); break;
-						case 0: addPoint(Coords(box.beg.x, p1.y)); break;
-						default: return;
+						case I1D.BOTH_OUT: addPoint(Coords(box.beg.x, p1.y));
+						case I1D.BEG_IN:   addPoint(Coords(box.end.x, p1.y)); break;
+						case I1D.END_IN:   addPoint(Coords(box.beg.x, p1.y)); break;
+						case I1D.NONE: return;
 					}
 				} else {
 					// y
@@ -306,10 +292,10 @@ private struct AABB(cell dim) {
 					if (p1.x < box.beg.x || p1.x > box.end.x) return;
 
 					switch (intersect1D(b, e, box.beg.y, box.end.y)) {
-						case 2: addPoint(Coords(p1.x, box.beg.y));
-						case 1: addPoint(Coords(p1.x, box.end.y)); break;
-						case 0: addPoint(Coords(p1.x, box.beg.y)); break;
-						default: return;
+						case I1D.BOTH_OUT: addPoint(Coords(p1.x, box.beg.y));
+						case I1D.BEG_IN:   addPoint(Coords(p1.x, box.end.y)); break;
+						case I1D.END_IN:   addPoint(Coords(p1.x, box.beg.y)); break;
+						case I1D.NONE: return;
 					}
 				}
 
@@ -349,20 +335,6 @@ private struct AABB(cell dim) {
 			bool intersected = false;
 
 			void tryIntersect(Coords p1, Coords p2) {
-				static byte intersect1D(
-					cell b, cell e, cell compareBeg, cell compareEnd)
-				{
-					if (e >= compareBeg) {
-						if (e <= compareEnd) {
-							// e is in box: we know b isn't since !this.contains(box)
-							return 0;
-						} else if (b <= compareEnd) {
-							// e is past the box and b isn't
-							return b <= compareBeg ? 2 : 1;
-						}
-					}
-					return -1;
-				}
 				cell b, e;
 
 				// p1-p2 is axis-aligned: x, y, or z?
@@ -378,10 +350,10 @@ private struct AABB(cell dim) {
 					else             { b = p2.x; e = p1.x; }
 
 					switch (intersect1D(b, e, box.beg.x, box.end.x)) {
-						case 2: addPoint(Coords(box.beg.x, p1.y, p1.z));
-						case 1: addPoint(Coords(box.end.x, p1.y, p1.z)); break;
-						case 0: addPoint(Coords(box.beg.x, p1.y, p1.z)); break;
-						default: return;
+						case I1D.BOTH_OUT: addPoint(Coords(box.beg.x, p1.y, p1.z));
+						case I1D.BEG_IN:   addPoint(Coords(box.end.x, p1.y, p1.z)); break;
+						case I1D.END_IN:   addPoint(Coords(box.beg.x, p1.y, p1.z)); break;
+						case I1D.NONE: return;
 					}
 				} else if (p1.y != p2.y) {
 					// y
@@ -395,10 +367,10 @@ private struct AABB(cell dim) {
 					else             { b = p2.y; e = p1.y; }
 
 					switch (intersect1D(b, e, box.beg.y, box.end.y)) {
-						case 2: addPoint(Coords(p1.x, box.beg.y, p1.z));
-						case 1: addPoint(Coords(p1.x, box.end.y, p1.z)); break;
-						case 0: addPoint(Coords(p1.x, box.beg.y, p1.z)); break;
-						default: return;
+						case I1D.BOTH_OUT: addPoint(Coords(p1.x, box.beg.y, p1.z));
+						case I1D.BEG_IN:   addPoint(Coords(p1.x, box.end.y, p1.z)); break;
+						case I1D.END_IN:   addPoint(Coords(p1.x, box.beg.y, p1.z)); break;
+						case I1D.NONE: return;
 					}
 				} else {
 					// z
@@ -412,10 +384,10 @@ private struct AABB(cell dim) {
 					else             { b = p2.z; e = p1.z; }
 
 					switch (intersect1D(b, e, box.beg.z, box.end.z)) {
-						case 2: addPoint(Coords(p1.x, p1.y, box.beg.z));
-						case 1: addPoint(Coords(p1.x, p1.y, box.end.z)); break;
-						case 0: addPoint(Coords(p1.x, p1.y, box.beg.z)); break;
-						default: return;
+						case I1D.BOTH_OUT: addPoint(Coords(p1.x, p1.y, box.beg.z));
+						case I1D.BEG_IN:   addPoint(Coords(p1.x, p1.y, box.end.z)); break;
+						case I1D.END_IN:   addPoint(Coords(p1.x, p1.y, box.beg.z)); break;
+						case I1D.NONE: return;
 					}
 				}
 
@@ -1468,4 +1440,23 @@ void irrelevizeSubsumptionOrder(cell dim)
 				boxen[j].subsumeArea(boxen[i], overlap);
 		}
 	}
+}
+
+enum I1D {
+	NONE,
+	END_IN,
+	BEG_IN,
+	BOTH_OUT
+}
+// Assumes that boxB–boxE doesn't contain b–e
+I1D intersect1D(cell b, cell e, cell boxB, cell boxE) {
+	if (e >= boxB) {
+		if (e <= boxE)
+			return I1D.END_IN;
+		else if (b <= boxE) {
+			// e is past the box and b isn't
+			return b < boxB ? I1D.BOTH_OUT : I1D.BEG_IN;
+		}
+	}
+	return I1D.NONE;
 }
