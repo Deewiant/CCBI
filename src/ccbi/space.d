@@ -619,9 +619,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 	cell opIndex(Coords c) {
 		++stats.space.lookups;
 
-		foreach (aabb; boxen)
-			if (aabb.contains(c))
-				return aabb[c];
+		foreach (box; boxen)
+			if (box.contains(c))
+				return box[c];
 		return ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
@@ -630,13 +630,13 @@ final class FungeSpace(cell dim, bool befunge93) {
 		if (v != ' ')
 			growBegEnd(c);
 
-		foreach (aabb; boxen)
-			if (aabb.contains(c))
-				return aabb[c] = v;
+		foreach (box; boxen)
+			if (box.contains(c))
+				return box[c] = v;
 
-		foreach (aabb; reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD)))
-			if (aabb.contains(c))
-				return aabb[c] = v;
+		foreach (box; reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD)))
+			if (box.contains(c))
+				return box[c] = v;
 
 		assert (false, "Cell in no box");
 	}
