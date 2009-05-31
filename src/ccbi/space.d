@@ -5,6 +5,7 @@
 // Funge-Space and the Coords struct.
 module ccbi.space;
 
+import tango.core.Array           : mismatch;
 import tango.io.device.Array      : Array;
 import tango.io.model.IConduit    : OutputStream;
 import tango.io.stream.Typed      : TypedOutput;
@@ -238,7 +239,6 @@ private struct AABB(cell dim) {
 
 		return over;
 	}
-	// TODO: cleanup
 	bool getOverlapWith(AABB box, ref AABB overlap)
 	in {
 		// Allows us to make some assumptions
@@ -273,42 +273,40 @@ private struct AABB(cell dim) {
 
 			bool intersected = false;
 
-			static if (dim == 2) {
-				void tryIntersect(Coords p1, Coords p2) {
-					cell b, e;
+			void tryIntersect(Coords p1, Coords p2) {
+				void onAxis(size_t axis) {
+					if (p1 == p2)
+						return;
 
-					// p1-p2 is axis-aligned: x or y?
-					if (p1.x != p2.x) {
-						// x
-						if (p1.x < p2.x) { b = p1.x; e = p2.x; }
-						else             { b = p2.x; e = p1.x; }
+					assert (axis < dim);
 
-						if (p1.y < box.beg.y || p1.y > box.end.y) return;
+					alias axis x;
 
-						switch (intersect1D(b, e, box.beg.x, box.end.x)) {
-							case I1D.BOTH_OUT: addPoint(Coords(box.beg.x, p1.y));
-							case I1D.BEG_IN:   addPoint(Coords(box.end.x, p1.y)); break;
-							case I1D.END_IN:   addPoint(Coords(box.beg.x, p1.y)); break;
-							case I1D.NONE: return;
-						}
-					} else {
-						// y
-						if (p1.y < p2.y) { b = p1.y; e = p2.y; }
-						else             { b = p2.y; e = p1.y; }
+					for (size_t i = 0; i < dim; ++i) if (i != x) {
+						assert (p1.v[i] == p2.v[i]);
 
-						if (p1.x < box.beg.x || p1.x > box.end.x) return;
-
-						switch (intersect1D(b, e, box.beg.y, box.end.y)) {
-							case I1D.BOTH_OUT: addPoint(Coords(p1.x, box.beg.y));
-							case I1D.BEG_IN:   addPoint(Coords(p1.x, box.end.y)); break;
-							case I1D.END_IN:   addPoint(Coords(p1.x, box.beg.y)); break;
-							case I1D.NONE: return;
-						}
+						if (p1.v[i] < box.beg.v[i] || p1.v[i] > box.end.v[i])
+							return;
 					}
 
+					auto b = min(p1.v[x], p2.v[x]);
+					auto e = max(p1.v[x], p2.v[x]);
+
+					auto c = p1;
+					switch (intersect1D(b, e, box.beg.v[x], box.end.v[x])) {
+						case I1D.BOTH_OUT: c.v[x] = box.beg.v[x]; addPoint(c);
+						case I1D.BEG_IN:   c.v[x] = box.end.v[x]; addPoint(c); break;
+						case I1D.END_IN:   c.v[x] = box.beg.v[x]; addPoint(c); break;
+						case I1D.NONE:     return;
+					}
 					intersected = true;
 				}
 
+				// p1–p2 is axis-aligned, just find which axis
+				onAxis(mismatch(p1.v, p2.v));
+			}
+
+			static if (dim == 2) {
 				auto ne = Coords(end.x, beg.y);
 				auto sw = Coords(beg.x, end.y);
 				auto prev = sw;
@@ -326,66 +324,6 @@ private struct AABB(cell dim) {
 				}
 
 			} else static if (dim == 3) {
-				void tryIntersect(Coords p1, Coords p2) {
-					cell b, e;
-
-					// p1-p2 is axis-aligned: x, y, or z?
-					if (p1.x != p2.x) {
-						// x
-						assert (p1.y == p2.y);
-						assert (p1.z == p2.z);
-
-						if (p1.y < box.beg.y || p1.y > box.end.y) return;
-						if (p1.z < box.beg.z || p1.z > box.end.z) return;
-
-						if (p1.x < p2.x) { b = p1.x; e = p2.x; }
-						else             { b = p2.x; e = p1.x; }
-
-						switch (intersect1D(b, e, box.beg.x, box.end.x)) {
-							case I1D.BOTH_OUT: addPoint(Coords(box.beg.x, p1.y, p1.z));
-							case I1D.BEG_IN:   addPoint(Coords(box.end.x, p1.y, p1.z)); break;
-							case I1D.END_IN:   addPoint(Coords(box.beg.x, p1.y, p1.z)); break;
-							case I1D.NONE: return;
-						}
-					} else if (p1.y != p2.y) {
-						// y
-						assert (p1.x == p2.x);
-						assert (p1.z == p2.z);
-
-						if (p1.x < box.beg.x || p1.x > box.end.x) return;
-						if (p1.z < box.beg.z || p1.z > box.end.z) return;
-
-						if (p1.y < p2.y) { b = p1.y; e = p2.y; }
-						else             { b = p2.y; e = p1.y; }
-
-						switch (intersect1D(b, e, box.beg.y, box.end.y)) {
-							case I1D.BOTH_OUT: addPoint(Coords(p1.x, box.beg.y, p1.z));
-							case I1D.BEG_IN:   addPoint(Coords(p1.x, box.end.y, p1.z)); break;
-							case I1D.END_IN:   addPoint(Coords(p1.x, box.beg.y, p1.z)); break;
-							case I1D.NONE: return;
-						}
-					} else {
-						// z
-						assert (p1.x == p2.x);
-						assert (p1.y == p2.y);
-
-						if (p1.x < box.beg.x || p1.x > box.end.x) return;
-						if (p1.y < box.beg.y || p1.y > box.end.y) return;
-
-						if (p1.z < p2.z) { b = p1.z; e = p2.z; }
-						else             { b = p2.z; e = p1.z; }
-
-						switch (intersect1D(b, e, box.beg.z, box.end.z)) {
-							case I1D.BOTH_OUT: addPoint(Coords(p1.x, p1.y, box.beg.z));
-							case I1D.BEG_IN:   addPoint(Coords(p1.x, p1.y, box.end.z)); break;
-							case I1D.END_IN:   addPoint(Coords(p1.x, p1.y, box.beg.z)); break;
-							case I1D.NONE: return;
-						}
-					}
-
-					intersected = true;
-				}
-
 				Coords[2][12] edges;
 				edges[ 0][0] = beg;         edges[ 0][1] = Coords(end.x,beg.y,beg.z);
 				edges[ 1][0] = beg;         edges[ 1][1] = Coords(beg.x,end.y,beg.z);
