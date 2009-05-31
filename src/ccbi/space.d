@@ -399,13 +399,18 @@ private struct AABB(cell dim) {
 
 	}
 
-	bool canDirectCopy(AABB box) {
+	bool canDirectCopy(AABB box, size_t size) {
 		static if (dim == 1) return true;
 		else {
-			if (box.size <= this.width) return true;
+			if (size <= this.width) return true;
 			static if (dim == 2) return width == box.width;
 			static if (dim == 3) return width == box.width && area == box.area;
 		}
+	}
+	bool canDirectCopy(AABB box, AABB owner, size_t size) {
+		static if (dim == 2) if (box.width != owner.width) return false;
+		static if (dim == 3) if (box.area  != owner.area)  return false;
+		return canDirectCopy(box, size);
 	}
 
 	// This should be unallocated, the other allocated. Can't be checked in the
@@ -423,7 +428,7 @@ private struct AABB(cell dim) {
 
 		auto oldIdx = this.getIdx(old.beg);
 
-		if (canDirectCopy(old)) {
+		if (canDirectCopy(old, oldLength)) {
 			if (oldIdx < oldLength) {
 				memmove(&data[oldIdx], data.ptr, oldLength * cell.sizeof);
 				data[0..oldIdx] = ' ';
@@ -502,7 +507,7 @@ private struct AABB(cell dim) {
 	in {
 		assert (this.contains(old));
 	} body {
-		subsumeArea(old, old.data);
+		subsumeArea(old, old, old.data);
 	}
 
 	// This and b should be allocated, area not; copies the cells in the area
@@ -517,39 +522,59 @@ private struct AABB(cell dim) {
 		assert ((*this)[area.beg] == b[area.beg]);
 		assert ((*this)[area.end] == b[area.end]);
 	} body {
-		subsumeArea(area, b.data[b.getIdx(area.beg)..b.getIdx(area.end)+1]);
+		subsumeArea(b, area, b.data[b.getIdx(area.beg)..b.getIdx(area.end)+1]);
 	}
 
-	// Internal: copies the cells in area from the given array to this.
-	void subsumeArea(AABB area, initcell[] data)
+	// Internal: copies from the given array to this, given that it's an area
+	// contained in owner.
+	//
+	// We can't just use only area since the data is usually not continuous:
+	//
+	//   ownerowner
+	//   ownerAREAr
+	//   ownerAREAr
+	//   ownerAREAr
+	//
+	//   ownerowner
+	//   ownerDATAD
+	//   ATADATADAT
+	//   ADATADATAr
+	//
+	// In the above, if we advanced by area.width instead of owner.width we'd be
+	// screwed.
+	void subsumeArea(AABB owner, AABB area, initcell[] data)
 	in {
-		assert (this.contains(area));
-		assert (area.size == data.length);
+		assert ( this.contains(area));
+		assert (owner.contains(area));
 	} out {
 		assert ((*this)[area.beg] == data[0]  );
 		assert ((*this)[area.end] == data[$-1]);
+		assert ((*this)[area.beg] == owner[area.beg]);
+		assert ((*this)[area.end] == owner[area.end]);
 	} body {
-		auto begIdx = this.getIdx(area.beg);
+		auto begIdx = getIdx(area.beg);
 
-		if (canDirectCopy(area))
-			this.data[begIdx .. begIdx + area.size] = data;
+		if (canDirectCopy(area, owner, area.size))
+			this.data[begIdx .. begIdx + data.length] = data;
 
 		else static if (dim == 2) {
 			for (size_t i = 0, j = begIdx; i < data.length;) {
-				this.data[j .. j+area.width] = data[i..i+area.width];
-				i += area.width;
-				j += this.width;
+				this.data[j..j+area.width] = data[i..i+area.width];
+				i += owner.width;
+				j +=  this.width;
 			}
 
 		} else static if (dim == 3) {
 			for (size_t i = 0, j = begIdx; i < data.length;) {
-				for (size_t k = i, l = j; k < i + area.area;) {
-					this.data[l .. l+area.width] = data[k..k+area.width];
-					k += area.width;
-					l += this.width;
+				auto areaHeight = area.area / area.width;
+
+				for (size_t k = i, l = j; k < i + areaHeight * owner.width;) {
+					this.data[l..l+area.width] = data[k..k+area.width];
+					k += owner.width;
+					l +=  this.width;
 				}
-				i += area.area;
-				j += this.area;
+				i += owner.area;
+				j +=  this.area;
 			}
 		}
 	}
