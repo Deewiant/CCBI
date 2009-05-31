@@ -35,42 +35,29 @@ struct Coords(cell dim) {
 		char[ToString!(cell.min).length] buf = void;
 
 		char[] s = "(";
-		                                 s ~= format(buf, x);
-		static if (dim >= 2) { s ~= ','; s ~= format(buf, y); }
-		static if (dim >= 3) { s ~= ','; s ~= format(buf, z); }
+		                           s ~= format(buf, x);
+		foreach (x; v) { s ~= ','; s ~= format(buf, x); }
 		s ~= ')';
 		return s;
 	}
 
 	Coords!(3) extend(cell val) {
 		Coords!(3) c;
-		static if (dim >= 3) { c.z = z; } else c.z = val;
-		static if (dim >= 2) { c.y = y; } else c.y = val;
-		                       c.x = x;
+		c.v[0..dim] = v;
+		c.v[dim..$] = val;
 		return c;
 	}
 
 	int opEquals(cell c) {
-		static if (dim >= 3) if (z != c) return false;
-		static if (dim >= 2) if (y != c) return false;
-		return x == c;
+		foreach (x; v)
+			if (x != c)
+				return false;
+		return true;
 	}
-	int opEquals(Coords c) {
-		static if (dim >= 3) if (z != c.z) return false;
-		static if (dim >= 2) if (y != c.y) return false;
-		return x == c.x;
-	}
+	int opEquals(Coords c) { return v == c.v; }
 
-	void maxWith(Coords c) {
-		static if (dim >= 3) if (c.z > z) z = c.z;
-		static if (dim >= 2) if (c.y > y) y = c.y;
-		                     if (c.x > x) x = c.x;
-	}
-	void minWith(Coords c) {
-		static if (dim >= 3) if (c.z < z) z = c.z;
-		static if (dim >= 2) if (c.y < y) y = c.y;
-		                     if (c.x < x) x = c.x;
-	}
+	void maxWith(Coords c) { foreach (i, ref x; v) if (c.v[i] > x) x = c.v[i]; }
+	void minWith(Coords c) { foreach (i, ref x; v) if (c.v[i] < x) x = c.v[i]; }
 
 	template Ops(T...) {
 		static assert (T.length != 1);
@@ -81,28 +68,21 @@ struct Coords(cell dim) {
 			const Ops =
 				"Coords op" ~T[0]~ "(cell c) {
 					Coords co = *this;
-					                     co.x "~T[1]~"= c;
-					static if (dim >= 2) co.y "~T[1]~"= c;
-					static if (dim >= 3) co.z "~T[1]~"= c;
+					co.v[] "~T[1]~"= c;
 					return co;
 				}
 				void op" ~T[0]~ "Assign(cell c) {
-					                     x "~T[1]~"= c;
-					static if (dim >= 2) y "~T[1]~"= c;
-					static if (dim >= 3) z "~T[1]~"= c;
+					v[] "~T[1]~"= c;
 				}
 
+				// c.v[] is WORKAROUND: http://www.dsource.org/projects/ldc/ticket/315
 				Coords op" ~T[0]~ "(Coords c) {
 					Coords co = *this;
-					                     co.x "~T[1]~"= c.x;
-					static if (dim >= 2) co.y "~T[1]~"= c.y;
-					static if (dim >= 3) co.z "~T[1]~"= c.z;
+					co.v[] "~T[1]~"= c.v[];
 					return co;
 				}
 				void op" ~T[0]~ "Assign(Coords c) {
-					                     x "~T[1]~"= c.x;
-					static if (dim >= 2) y "~T[1]~"= c.y;
-					static if (dim >= 3) z "~T[1]~"= c.z;
+					v[] "~T[1]~"= c.v[];
 				}"
 				~ Ops!(T[2..$]);
 	}
@@ -120,12 +100,8 @@ template Dimension(cell dim) {
 		else static if (dim == 2) const Coords = .Coords!(dim)(x,y);
 		else static if (dim == 3) const Coords = .Coords!(dim)(x,y,z);
 	}
-	template Coords(cell x, cell y) {
-		const Coords = Coords!(x,y,0);
-	}
-	template Coords(cell x) {
-		const Coords = Coords!(x,0,0);
-	}
+	template Coords(cell x, cell y) { const Coords = Coords!(x,y,0); }
+	template Coords(cell x)         { const Coords = Coords!(x,0,0); }
 }
 
 private struct AABB(cell dim) {
@@ -146,9 +122,8 @@ private struct AABB(cell dim) {
 
 	static typeof(*this) opCall(Coords b, Coords e)
 	in {
-		                     assert (b.x <= e.x);
-		static if (dim >= 2) assert (b.y <= e.y);
-		static if (dim >= 3) assert (b.z <= e.z);
+		foreach (i, x; b.v)
+			assert (x <= e.v[i]);
 	} body {
 		auto aabb = unsafe(b, e);
 		aabb.finalize;
@@ -184,10 +159,9 @@ private struct AABB(cell dim) {
 	int opEquals(AABB b) { return beg == b.beg && end == b.end; }
 
 	bool contains(Coords p) {
-		                     if (!(p.x >= beg.x && p.x <= end.x)) return false;
-      static if (dim >= 2) if (!(p.y >= beg.y && p.y <= end.y)) return false;
-      static if (dim >= 3) if (!(p.z >= beg.z && p.z <= end.z)) return false;
-
+		foreach (i, x; p.v)
+			if (!(x >= beg.v[i] && x <= end.v[i]))
+				return false;
 		return true;
 	}
 	bool contains(AABB b)
@@ -229,15 +203,10 @@ private struct AABB(cell dim) {
 	}
 
 	bool overlaps(AABB b) {
-		bool over = beg.x <= b.end.x && b.beg.x <= end.x;
-
-		static if (dim >= 2)
-			over = over && beg.y <= b.end.y && b.beg.y <= end.y;
-
-		static if (dim >= 3)
-			over = over && beg.z <= b.end.z && b.beg.z <= end.z;
-
-		return over;
+		for (size_t i = 0; i < dim; ++i)
+			if (!(beg.v[i] <= b.end.v[i] && b.beg.v[i] <= end.v[i]))
+				return false;
+		return true;
 	}
 	bool getOverlapWith(AABB box, ref AABB overlap)
 	in {
@@ -618,9 +587,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 		load(source, &end, InitCoords!(0), false);
 
-		                     assert (beg.x >= 0);
-		static if (dim >= 2) assert (beg.y >= 0);
-		static if (dim >= 3) assert (beg.z >= 0);
+		foreach (x; beg.v)
+			assert (x >= 0);
 	}
 
 	this(FungeSpace other) {
@@ -930,11 +898,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 	in {
 		assert (end !is null);
 	} out {
-		if (boxen.length > 0) {
-			                     assert (beg.x <= end.x);
-			static if (dim >= 2) assert (beg.y <= end.y);
-			static if (dim >= 3) assert (beg.z <= end.z);
-		}
+		if (boxen.length > 0)
+			for (size_t i = 0; i < dim; ++i)
+				assert (beg.v[i] <= end.v[i]);
 	} body {
 		scope (exit) arr.detach;
 
@@ -1151,20 +1117,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 				if (b != ' ') {
 					lastNonSpace = pos;
 
-					if (getBeg) {
-						static if (dim >= 3)
-						if (getBeg & 0b100 && pos.z < beg.z) {
-							beg.z = pos.z;
-							getBeg &= ~0b100;
-						}
-						static if (dim >= 2)
-						if (getBeg & 0b010 && pos.y < beg.y) {
-							beg.y = pos.y;
-							getBeg &= ~0b010;
-						}
-						if (getBeg & 0b001 && pos.x < beg.x) {
-							beg.x = pos.x;
-							getBeg &= ~0b001;
+					if (getBeg) for (size_t i = 0; i < dim; ++i) {
+						auto mask = 1 << i;
+						if (getBeg & mask && pos.v[i] < beg.v[i]) {
+							beg.v[i] = pos.v[i];
+							getBeg &= ~mask;
 						}
 					}
 				}
