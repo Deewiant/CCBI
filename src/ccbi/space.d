@@ -401,9 +401,11 @@ private struct AABB(cell dim) {
 
 	bool canDirectCopy(AABB box) {
 		static if (dim == 1) return true;
-		else if (box.size <= this.width) return true;
-		static if (dim == 2) return width == box.width;
-		static if (dim == 3) return width == box.width && area == box.area;
+		else {
+			if (box.size <= this.width) return true;
+			static if (dim == 2) return width == box.width;
+			static if (dim == 3) return width == box.width && area == box.area;
+		}
 	}
 
 	// This should be unallocated, the other allocated. Can't be checked in the
@@ -1148,8 +1150,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		scope tfile = new TypedOutput!(ubyte)(file);
 		scope (exit) tfile.flush;
 
-		Coords c;
-		ubyte b = void;
+		Coords c = void;
+		ubyte b  = void;
 		for (cell z = beg.z; z < end.z;) {
 
 			static if (dim >= 3) c.z = z;
