@@ -553,6 +553,16 @@ private struct AABB(cell dim) {
 			}
 		}
 	}
+
+	bool nonSpaceAlong(size_t start, size_t stride) {
+		return nonSpaceAlong(start, stride, data.length);
+	}
+	bool nonSpaceAlong(size_t start, size_t stride, size_t end) {
+		for (size_t i = start; i < end; i += stride)
+			if (data[i] != ' ')
+				return true;
+		return false;
+	}
 }
 
 final class FungeSpace(cell dim, bool befunge93) {
@@ -631,20 +641,109 @@ final class FungeSpace(cell dim, bool befunge93) {
 			growBegEnd(c);
 
 		foreach (box; boxen)
-			if (box.contains(c))
-				return box[c] = v;
+		if (box.contains(c)) {
+			box[c] = v;
+			if (v == ' ')
+				shrinkBegEnd(box, c);
+			return v;
+		}
 
 		foreach (box; reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD)))
-			if (box.contains(c))
-				return box[c] = v;
+		if (box.contains(c)) {
+			box[c] = v;
+			if (v == ' ')
+				shrinkBegEnd(box, c);
+			return v;
+		}
 
 		assert (false, "Cell in no box");
 	}
 
-	// TODO: shrink bounds sometimes, as well
 	void growBegEnd(Coords c) {
 		beg.minWith(c);
 		end.maxWith(c);
+	}
+	void shrinkBegEnd(AABB aabb, Coords c) {
+		static if (dim == 1) {
+			if (c.x == end.x && aabb.end.x == end.x)
+				--end.x;
+			else if (c.x == beg.x && aabb.beg.x == beg.x)
+				++beg.x;
+
+		} else static if (dim == 2) {
+			if (c.x == end.x) {
+				foreach (box; boxen)
+					if (box.end.x == end.x
+					 && box.nonSpaceAlong(box.width - 1, box.width)
+					)
+						return;
+				--end.x;
+			} else if (c.x == beg.x) {
+				foreach (box; boxen)
+					if (box.beg.x == beg.x && box.nonSpaceAlong(0, box.width))
+						return;
+				++beg.x;
+			} else if (c.y == end.y) {
+				foreach (box; boxen)
+					if (box.end.y == end.y
+					 && box.nonSpaceAlong(box.data.length - box.width, 1)
+					)
+						return;
+				--end.y;
+			} else if (c.y == beg.y) {
+				foreach (box; boxen)
+					if (box.beg.y == beg.y && box.nonSpaceAlong(0, 1, box.width))
+						return;
+				++beg.y;
+			}
+		} else static if (dim == 3) {
+			if (c.x == end.x) {
+				foreach (box; boxen)
+					if (box.end.x == end.x)
+						for (size_t i = 0; i < box.size; i += box.area)
+							if (box.nonSpaceAlong(
+							    	i + box.width - 1, box.width, i + box.area)
+							)
+								return;
+				--end.x;
+			} else if (c.x == beg.x) {
+				foreach (box; boxen)
+					if (box.beg.x == beg.x)
+						for (size_t i = 0; i < box.size; i += box.area)
+							if (box.nonSpaceAlong(i, box.width, i + box.area))
+								return;
+				++beg.x;
+			} else if (c.y == end.y) {
+				foreach (box; boxen)
+					if (box.end.y == end.y)
+						for (size_t i = 0; i < box.size; i += box.area) {
+							auto next = i + box.area;
+							if (box.nonSpaceAlong(next - box.width, 1, next))
+								return;
+						}
+
+				--end.y;
+			} else if (c.y == beg.y) {
+				foreach (box; boxen)
+					if (box.beg.y == beg.y)
+						for (size_t i = 0; i < box.size; i += box.area)
+							if (box.nonSpaceAlong(i, 1, i + box.width))
+								return;
+				++beg.y;
+			} else if (c.z == end.z) {
+				foreach (box; boxen)
+					if (box.end.z == end.z
+					 && box.nonSpaceAlong(box.data.length - box.area, 1)
+					)
+						return;
+				--end.z;
+			} else if (c.z == beg.z) {
+				foreach (box; boxen)
+					if (box.beg.z == beg.z && box.nonSpaceAlong(0, 1, box.area))
+						return;
+				++beg.z;
+			}
+		}
 	}
 
 	AABB[] placeBox(AABB aabb) {
