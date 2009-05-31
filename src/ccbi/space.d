@@ -1046,8 +1046,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 			aabb.finalize;
 
-			beg.minWith(aabb.beg);
-			end.maxWith(aabb.end);
+			     beg.minWith(aabb.beg);
+			     end.maxWith(aabb.end);
+			this.end.maxWith(aabb.end);
 
 			auto aabbs = placeBox(aabb);
 
