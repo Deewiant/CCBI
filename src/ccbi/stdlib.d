@@ -228,3 +228,98 @@ private:
 		}
 	}
 }
+
+// Solves for x in the equation ax = 1 (mod 2^(U.sizeof * 8)), given a.
+// Alternatively stated, finds the modular inverse of a in the same ring as the
+// type's normal integer arithmetic works.
+//
+// For all unsigned integer types U and odd values a of that type, it holds
+// that a * modInv!(U)(a) = 1.
+//
+// For even values, this returns 0: there's no inverse.
+//
+// The comments speak of 32-bit throughout but this works for any unsigned
+// type.
+U modInv(U)(U a) {
+	static assert (isUnsignedIntegerType!(U));
+
+	// No solution if not coprime with 2^32
+	if (a % 2 == 0)
+		return 0;
+
+	// Extended Euclidean algorithm with a few tricks at the start to deal with
+	// the fact that U can't represent the initial modulus
+
+	// We need quot = floor(2^32 / p)
+	//
+	// floor(2^31 / p) * 2 differs from floor(2^32 / p) by at most 1. I seem
+	// unable to discern what property p needs to have for them to differ, so we
+	// figure it out using a possibly suboptimal method.
+	U p   = a;
+	U gcd = 1 << (U.sizeof * 8 - 1);
+	U quot;
+
+	if (p <= gcd)
+		quot = gcd / p * cast(U)2;
+	else
+		// The above algorithm obviously doesn't work if p exceeds gcd:
+		// fortunately, we know that quot = 1 in all those cases.
+		quot = 1;
+
+	// So now quot is either floor(2^32 / p) or floor(2^32 / p) - 1.
+	//
+	// 2^32 = quot * p + rem
+	//
+	// If quot is the former, then rem = -p * quot. Otherwise, rem = -p * (1 +
+	// quot) and quot needs to be corrected.
+	//
+	// So we try the former case. For this to be the correct remainder, it
+	// should be in the range [0,p). If it isn't, we know that quot is off by
+	// one.
+	U rem = -p * quot;
+
+	if (rem >= p) {
+		rem -= p;
+		++quot;
+	}
+
+	// And now we can continue using normal division.
+	//
+	// We peeled only half of the first iteration above so the loop condition is
+	// in the middle.
+	U x = 0;
+	for (U u = 1;;) {
+		U oldX = x;
+
+		gcd = p;
+		p = rem;
+		x = u;
+		u = oldX - u*quot;
+
+		if (!p) break;
+
+		quot = gcd / p;
+		rem  = gcd % p;
+	}
+
+	return x;
+}
+
+// Solves for x in the equation ax = b (mod 2^(U.sizeof * 8)), given nonzero a
+// and b.
+//
+// Returns false if there was no solution; if there is a solution, it is stored
+// in the out parameter and true is returned.
+bool modDiv(U)(U a, U b, out U result) {
+
+	// modInv can't deal with even numbers, so handle that here
+	while (b % 2 == 0 && a % 2 == 0) {
+		b /= 2;
+		a /= 2;
+	}
+	if (b % 2 == 0)
+		return false;
+
+	result = a * modInv(b);
+	return true;
+}
