@@ -654,10 +654,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 	cell opIndex(Coords c) {
 		++stats.space.lookups;
 
-		foreach (box; boxen)
-			if (box.contains(c))
-				return box[c];
-		return ' ';
+		AABB box;
+		if (findBox(c, box))
+			return box[c];
+		else
+			return ' ';
 	}
 	cell opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
@@ -665,13 +666,13 @@ final class FungeSpace(cell dim, bool befunge93) {
 		if (v != ' ')
 			growBegEnd(c);
 
-		foreach (box; boxen)
-		if (box.contains(c)) {
+		{AABB box;
+		if (findBox(c, box)) {
 			box[c] = v;
 			if (v == ' ')
 				shrinkBegEnd(box, c);
 			return v;
-		}
+		}}
 
 		foreach (box; reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD)))
 		if (box.contains(c)) {
@@ -769,6 +770,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 				++beg.z;
 			}
 		}
+	}
+
+	bool findBox(Coords pos, out AABB aabb) {
+		foreach (box; boxen) if (box.contains(pos)) {
+			aabb = box;
+			return true;
+		}
+		return false;
 	}
 
 	AABB[] placeBox(AABB aabb) {
