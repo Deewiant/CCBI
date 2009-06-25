@@ -4,6 +4,13 @@
 
 module ccbi.fingerprints.cats_eye.turt;
 
+import tango.io.device.File;
+import tango.math.Math : PI, cos, sin, round = rndint, abs;
+import tango.text.convert.Integer : format;
+
+// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
+import tango.text.xml.DocPrinter;
+
 import ccbi.fingerprint;
 
 // 0x54555254: TURT
@@ -31,10 +38,6 @@ mixin (Fingerprint!(
 ));
 
 const TURT_FILE_INIT = "CCBI_TURT.svg";
-
-import tango.io.device.File;
-import tango.math.Math : PI, cos, sin, round = rndint, abs;
-import tango.text.convert.Integer : format;
 
 // {{{ turtle coordinates
 
