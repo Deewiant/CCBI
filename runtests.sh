@@ -9,8 +9,8 @@ ins=
 for f in tests/space/*.t; do
 	if [ ! -e "$f.in" ]; then
 		echo $n > "$f.in"
-		ins="$ins $f.in"
 	fi
+	ins="$ins $f.in"
 done
 
 prove -e tests/runner.pl -r tests $*
