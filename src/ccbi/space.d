@@ -508,7 +508,7 @@ private struct AABB(cell dim) {
 	bool canDirectCopy(AABB box, size_t size) {
 		static if (dim == 1) return true;
 		else {
-			if (size <= this.width) return true;
+			if (size <= this.width && size == box.width) return true;
 			static if (dim == 2) return width == box.width;
 			static if (dim == 3) return width == box.width && area == box.area;
 		}
