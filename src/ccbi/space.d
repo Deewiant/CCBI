@@ -23,7 +23,7 @@ struct Coords(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 
 	union {
-		struct {
+		align (1) struct {
 			                       cell x;
 			static if (dim >= 2) { cell y; }
 			static if (dim >= 3) { cell z; }
