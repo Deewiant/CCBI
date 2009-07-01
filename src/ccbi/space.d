@@ -772,12 +772,26 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 	}
 
-	bool findBox(Coords pos, out AABB aabb) {
-		foreach (box; boxen) if (box.contains(pos)) {
+	bool findHigherBox(Coords pos, ref AABB aabb, ref size_t idx) {
+		foreach (i, box; boxen[0..idx]) if (box.contains(pos)) {
+			idx  = i;
 			aabb = box;
 			return true;
 		}
 		return false;
+	}
+
+	bool findBox(Coords pos, out AABB box, out size_t idx) {
+		idx = boxen.length;
+		return findHigherBox(pos, box, idx);
+	}
+	bool findBox(Coords pos, out size_t idx) {
+		AABB _;
+		return findBox(pos, _, idx);
+	}
+	bool findBox(Coords pos, out AABB box) {
+		size_t _;
+		return findBox(pos, box, _);
 	}
 
 	AABB[] placeBox(AABB aabb) {
