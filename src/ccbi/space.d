@@ -233,6 +233,11 @@ private struct AABB(cell dim) {
 		static bool getMoves(
 			cell from, cell to, cell delta, out ucell_base moves)
 		{
+			// Optimization: this is the typical case
+			if (delta == 1) {
+				moves = cast(ucell_base)(to - from);
+				return true;
+			}
 			return modDiv(
 				cast(ucell_base)(to - from),
 				cast(ucell_base)delta,
@@ -244,7 +249,7 @@ private struct AABB(cell dim) {
 			return pos >= e1 && pos <= e2;
 		}
 
-		ucell bestMoves = ucell.max;
+		ucell bestMoves = void;
 		bool gotMoves = false;
 
 		for (size_t i = 0; i < dim; ++i) {
