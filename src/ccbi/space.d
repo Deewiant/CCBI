@@ -202,6 +202,107 @@ private struct AABB(cell dim) {
 		return idx;
 	}
 
+	bool rayIntersects(Coords from, Coords dir, out ucell steps, out Coords at)
+	in {
+		// It should be a ray and not a point
+		assert (dir != 0);
+	} out (intersects) {
+		assert (!intersects || this.contains(at));
+	} body {
+		// The range of possible coordinates in the given range that the given 1D
+		// ray can collide with.
+		static void getBegEnd(
+			cell edge1, cell edge2, cell from, cell delta,
+			out cell beg, out cell end)
+		{
+			if (delta > 0) {
+				beg = edge1;
+				if (from >= edge1 && from <= edge2)
+					beg = from + cast(cell)1;
+
+				end = min(beg + delta - cast(cell)1, edge2);
+
+			} else {
+				end = edge2;
+				if (from >= edge1 && from <= edge2)
+					end = from - cast(cell)1;
+
+				beg = max(end + delta - cast(cell)1, edge1);
+			}
+		}
+		static bool getMoves(
+			cell from, cell to, cell delta, out ucell_base moves)
+		{
+			return modDiv(
+				cast(ucell_base)(to - from),
+				cast(ucell_base)delta,
+				moves);
+		}
+		static bool matches(ucell moves, cell e1, cell e2, cell from, cell delta)
+		{
+			cell pos = from + cast(cell)moves * delta;
+			return pos >= e1 && pos <= e2;
+		}
+
+		ucell bestMoves = ucell.max;
+		bool gotMoves = false;
+
+		for (size_t i = 0; i < dim; ++i) {
+			if (!dir.v[i]) {
+				// We never move along this axis: make sure we're contained in the
+				// box.
+				if (!(from.v[i] >= this.beg.v[i] && from.v[i] <= this.end.v[i]))
+					return false;
+				continue;
+			}
+
+			// Figure out the coordinates in the box that this 1D ray can
+			// plausibly hit.
+			cell rangeBeg, rangeEnd;
+			getBegEnd(
+				this.beg.v[i], this.end.v[i],
+				from.v[i], dir.v[i], rangeBeg, rangeEnd);
+
+			// For each coordinate...
+			matchCoords: for (cell c = rangeBeg; c <= rangeEnd; ++c) {
+
+				// ... figure out the number of moves needed to reach that
+				// coordinate...
+				ucell moves;
+				if (!getMoves(from.v[i], c, dir.v[i], moves))
+					continue;
+
+				// Grab only the lowest.
+				//
+				// If we gotMoves then bestMoves definitely works. The bestMoves
+				// that we want is the minimal moves, the one that first hits the
+				// box, so don't bother with anything longer whether it would
+				// intersect or not.
+				if (gotMoves && moves >= bestMoves)
+					continue;
+
+				// ... and make sure that the other axes also need the same number
+				// of moves.
+				for (auto j = 0; j < dim; ++j)
+					if (i != j && dir.v[j]
+					 && !matches(
+					 	moves, this.beg.v[j], this.end.v[j], from.v[j], dir.v[j])
+					)
+						continue matchCoords;
+
+				bestMoves = moves;
+				gotMoves  = true;
+			}
+		}
+
+		if (gotMoves) {
+			steps = bestMoves;
+			at.v[] = from.v[] + cast(cell)bestMoves * dir.v[];
+			return true;
+		} else
+			return false;
+	}
+
 	bool overlaps(AABB b) {
 		for (size_t i = 0; i < dim; ++i)
 			if (!(beg.v[i] <= b.end.v[i] && b.beg.v[i] <= end.v[i]))
@@ -683,6 +784,154 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 
 		assert (false, "Cell in no box");
+	}
+
+	static final class InfiniteLoopException : Exception {
+		this(char[] msg, Coords pos, Coords delta) {
+			super(
+				"Funge-Space detected eternal loop from " ~ pos.toString() ~
+				" with delta " ~ delta.toString() ~
+				": " ~ msg);
+		}
+	}
+
+	template DetectInfiniteLoopDecls() {
+		version (detectInfiniteLoops) {
+			Coords firstExit;
+			bool gotFirstExit = false;
+		}
+	}
+	template DetectInfiniteLoop(char[] doing) {
+		const DetectInfiniteLoop = `
+			version (detectInfiniteLoops) {
+				if (gotFirstExit) {
+					if (pos == firstExit)
+						throw new InfiniteLoopException(
+							"Found itself whilst ` ~doing~ `", pos, δ);
+				} else {
+					firstExit    = pos;
+					gotFirstExit = true;
+				}
+			}
+		`;
+	}
+
+	Coords skipSpaces(Coords pos, Coords δ, ref AABB box, ref size_t boxIdx)
+	in {
+		assert (box.contains(pos));
+	} out (c) {
+		assert (this[c] != ' ');
+	} body {
+		mixin DetectInfiniteLoopDecls!();
+
+		void move() {
+			pos += δ;
+			if (box.contains(pos))
+				findHigherBox(pos, box, boxIdx);
+			else if (!findBox(pos, box, boxIdx)) {
+				mixin (DetectInfiniteLoop!("processing spaces"));
+				pos = jumpToBox(pos, δ, box, boxIdx);
+			}
+		}
+
+		while (box[pos] == ' ')
+			move;
+		return pos;
+	}
+
+	Coords skipSemicolons(Coords pos, Coords δ, ref AABB box, ref size_t boxIdx)
+	in {
+		assert (box.contains(pos));
+	} out (c) {
+		assert (this[c] != ';');
+	} body {
+		mixin DetectInfiniteLoopDecls!();
+
+		void move() {
+			pos += δ;
+			if (box.contains(pos))
+				findHigherBox(pos, box, boxIdx);
+			else if (!findBox(pos, box, boxIdx)) {
+				mixin (DetectInfiniteLoop!("jumping over semicolons"));
+				pos = jumpToBox(pos, δ, box, boxIdx);
+			}
+		}
+
+		while (box[pos] == ';') {
+			do move; while (box[pos] != ';')
+			move;
+		}
+		return pos;
+	}
+
+	Coords skipMarkers(Coords pos, Coords delta)
+	out (c) {
+		assert (this[c] != ' ');
+		assert (this[c] != ';');
+	} body {
+		size_t b;
+		if (!findBox(pos, b) && !tryJumpToBox(pos, delta, b)) {
+			version (detectInfiniteLoops)
+				throw new InfiniteLoopException(
+					"Never meets an allocated area", pos, delta);
+			else
+				for (;;) {}
+		}
+
+		auto box = boxen[b];
+		do {
+			pos = skipSpaces    (pos, delta, box, b);
+			pos = skipSemicolons(pos, delta, box, b);
+		} while (box[pos] == ' ')
+
+		return pos;
+	}
+	Coords skipToLastSpace(Coords pos, Coords delta)
+	out (c) {
+		assert (this[pos] != ' ' || this[c] == ' ');
+	} body {
+		size_t b;
+		if (!findBox(pos, b) && !tryJumpToBox(pos, delta, b)) {
+			version (detectInfiniteLoops)
+				throw new InfiniteLoopException(
+					"Never meets an allocated area", pos, delta);
+			else
+				for (;;) {}
+		}
+		auto box = boxen[b];
+
+		return box[pos] == ' ' ? skipSpaces(pos, delta, box, b) - delta : pos;
+	}
+
+	Coords jumpToBox(Coords pos, Coords delta, out AABB box, out size_t idx) {
+		bool found = tryJumpToBox(pos, delta, idx);
+		assert (found);
+		box = boxen[idx];
+		return pos;
+	}
+	bool tryJumpToBox(ref Coords pos, Coords delta, out size_t boxIdx)
+	in {
+		AABB _;
+		assert (!findBox(pos, _));
+	} body {
+		ucell moves = 0;
+		Coords pos2 = void;
+		size_t idx  = void;
+		foreach (i, box; boxen) {
+			ucell m;
+			Coords c;
+			if (box.rayIntersects(pos, delta, m, c) && (m < moves || !moves)) {
+				pos2  = c;
+				idx   = i;
+				moves = m;
+			}
+		}
+		if (moves) {
+			pos    = pos2;
+			boxIdx = idx;
+			return true;
+		} else
+			return false;
 	}
 
 	void growBegEnd(Coords c) {
