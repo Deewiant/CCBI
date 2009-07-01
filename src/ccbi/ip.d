@@ -79,47 +79,14 @@ final class IP(cell dim, bool befunge93, fings...) {
 			mapping = o.mapping.dup;
 	}
 
-	void move() {
-		auto next = pos; next += delta;
-
-		if (!space.inBounds(next)) {
-			do next -= delta;
-			while (space.inBounds(next));
-			next += delta;
-		}
-
-		pos = next;
-	}
+	void move() { pos += delta; }
 
 	void reverse() { delta *= -1; }
 
-	// eat spaces and semicolons, the zero-tick instructions
 	void gotoNextInstruction() {
-		if (mode & STRING) {
-			if (space[pos] == ' ') {
-				// SGML spaces: move past all but one space
-				Coords next = void;
-				do {
-					next = pos;
-					move();
-				} while (space[pos] == ' ');
-
-				pos = next;
-			}
-		} else for (;;) {
-			if (space[pos] == ' ') {
-				// no operation until next non-' ', takes no time
-				do move();
-				while (space[pos] == ' ');
-			}
-
-			if (space[pos] == ';') {
-				// no operation until next ';', takes no time
-				do move();
-				while (space[pos] != ';');
-				move();
-			} else break;
-		}
+		pos = mode & STRING
+			? space.skipToLastSpace(pos, delta)
+			: space.skipMarkers    (pos, delta);
 	}
 
 	Container!(cell) newStack() {
