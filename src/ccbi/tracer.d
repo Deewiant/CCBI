@@ -59,6 +59,9 @@ bool doTrace() {
 Where an IP parameter is optional, the default is the traced IP unless
 otherwise specified.
 
+Vectors, including positions and sizes, are specified with their coordinates
+separated by spaces, e.g. '0 0' for the origin.
+
 (h)elp
    Show this help text
 e(x)plain
