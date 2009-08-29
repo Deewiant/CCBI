@@ -562,14 +562,7 @@ private struct AABB(cell dim) {
 					data[j..j+old.width] = ' ';
 				} else if (i != j) {
 					memmove(&data[i], &data[j], old.width * cell.sizeof);
-
-					// When the copies are overlapping, the area to be spaced only
-					// occurs here, at the last iteration
-					//
-					// I can't prove this but it makes some sort of sense and seems
-					// to be that way.
-					if (i <= iend)
-						data[j..i] = ' ';
+					data[j..i] = ' ';
 				}
 			}
 		} else static if (dim == 3) {
@@ -594,12 +587,9 @@ private struct AABB(cell dim) {
 						data[l..l+old.width] = ' ';
 					} else if (k != l) {
 						memmove(&data[k], &data[l], old.width * cell.sizeof);
-
-						if (k <= kend)
-							data[l..k] = ' ';
+						data[l..k] = ' ';
 					}
 				}
-
 				j -= old.area;
 			}
 		}
