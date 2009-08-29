@@ -560,6 +560,7 @@ private struct AABB(cell dim) {
 				if (j+old.width <= i) {
 					data[i..i+old.width] = data[j..j+old.width];
 					data[j..j+old.width] = ' ';
+
 				} else if (i != j) {
 					memmove(&data[i], &data[j], old.width * cell.sizeof);
 					data[j..i] = ' ';
@@ -734,18 +735,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	size_t boxCount() { return boxen.length; }
-
-	bool inBounds(Coords c) {
-		static if (dim == 3) return
-			c.x >= beg.x && c.x <= end.x &&
-			c.y >= beg.y && c.y <= end.y &&
-			c.z >= beg.z && c.z <= end.z;
-		else static if (dim == 2) return
-			c.x >= beg.x && c.x <= end.x &&
-			c.y >= beg.y && c.y <= end.y;
-		else return
-			c.x >= beg.x && c.x <= end.x;
-	}
 
 	cell opIndex(Coords c) {
 		++stats.space.lookups;
@@ -1107,11 +1096,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 		// Find any remaining overlaps
 		auto overlaps = candidates;
 		size_t os = 0;
-		for (size_t i = 0; i < overlaps.length; ++i) {
-			auto o = overlaps[i];
+		foreach (o; overlaps)
 			if (eater.overlaps(boxen[o]))
 				overlaps[os++] = o;
-		}
 
 		// Copy overlaps into ret now, since the indices are invalidated if we
 		// subsume anything
