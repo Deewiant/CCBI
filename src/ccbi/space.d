@@ -535,12 +535,14 @@ private struct AABB(cell dim) {
 		auto oldIdx = this.getIdx(old.beg);
 
 		if (canDirectCopy(old, oldLength)) {
-			if (oldIdx < oldLength) {
-				memmove(&data[oldIdx], data.ptr, oldLength * cell.sizeof);
-				data[0..oldIdx] = ' ';
-			} else {
-				data[oldIdx..oldIdx + oldLength] = data[0..oldLength];
-				data[0..oldLength] = ' ';
+			if (oldIdx != 0) {
+				if (oldIdx < oldLength) {
+					memmove(&data[oldIdx], data.ptr, oldLength * cell.sizeof);
+					data[0..oldIdx] = ' ';
+				} else {
+					data[oldIdx..oldIdx + oldLength] = data[0..oldLength];
+					data[0..oldLength] = ' ';
+				}
 			}
 
 		} else static if (dim == 2) {
