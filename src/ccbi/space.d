@@ -761,7 +761,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 			return v;
 		}}
 
-		foreach (box; reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD)))
+		foreach (box; placeBoxFor(c))
 		if (box.contains(c)) {
 			box[c] = v;
 			if (v == ' ')
@@ -1027,6 +1027,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 	bool findBox(Coords pos, out AABB box) {
 		size_t _;
 		return findBox(pos, box, _);
+	}
+
+	AABB[] placeBoxFor(Coords c) {
+		return reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD));
 	}
 
 	AABB[] placeBox(AABB aabb) {
