@@ -327,105 +327,14 @@ private struct AABB(cell dim) {
 		} else
 			assert (!this.overlaps(box));
 	} body {
-		static if (dim == 1) {
-			if (this.overlaps(box)) {
-				overlap = AABB(
-					Coords(max(beg.x, box.beg.x)),
-					Coords(min(end.x, box.end.x)));
-				return true;
-			} else
-				return false;
+		if (this.overlaps(box)) {
+			auto ob = beg; ob.maxWith(box.beg);
+			auto oe = end; oe.minWith(box.end);
 
-		} else {
-			auto
-				overBeg = InitCoords!(cell.max, cell.max, cell.max),
-				overEnd = InitCoords!(cell.min, cell.min, cell.min);
-
-			void addPoint(Coords p) {
-				overBeg.minWith(p);
-				overEnd.maxWith(p);
-			}
-
-			bool intersected = false;
-
-			void tryIntersect(Coords p1, Coords p2) {
-				void onAxis(size_t axis) {
-					if (p1 == p2)
-						return;
-
-					assert (axis < dim);
-
-					alias axis x;
-
-					for (size_t i = 0; i < dim; ++i) if (i != x) {
-						assert (p1.v[i] == p2.v[i]);
-
-						if (p1.v[i] < box.beg.v[i] || p1.v[i] > box.end.v[i])
-							return;
-					}
-
-					auto b = min(p1.v[x], p2.v[x]);
-					auto e = max(p1.v[x], p2.v[x]);
-
-					auto c = p1;
-					switch (intersect1D(b, e, box.beg.v[x], box.end.v[x])) {
-						case I1D.BOTH_OUT: c.v[x] = box.beg.v[x]; addPoint(c);
-						case I1D.BEG_IN:   c.v[x] = box.end.v[x]; addPoint(c); break;
-						case I1D.END_IN:   c.v[x] = box.beg.v[x]; addPoint(c); break;
-						case I1D.NONE:     return;
-					}
-					intersected = true;
-				}
-
-				// p1–p2 is axis-aligned, just find which axis
-				onAxis(mismatch(p1.v, p2.v));
-			}
-
-			static if (dim == 2) {
-				auto ne = Coords(end.x, beg.y);
-				auto sw = Coords(beg.x, end.y);
-				auto prev = sw;
-				auto prevContained = box.contains(prev);
-
-				foreach (pt; [beg, ne, end, sw]) {
-					bool contained = box.contains(pt);
-					if (contained)
-						addPoint(pt);
-					if (!prevContained || !contained)
-						tryIntersect(prev, pt);
-
-					prev = pt;
-					prevContained = contained;
-				}
-
-			} else static if (dim == 3) {
-				Coords[2][12] edges;
-				edges[ 0][0] = beg;         edges[ 0][1] = Coords(end.x,beg.y,beg.z);
-				edges[ 1][0] = beg;         edges[ 1][1] = Coords(beg.x,end.y,beg.z);
-				edges[ 2][0] = beg;         edges[ 2][1] = Coords(beg.x,beg.y,end.z);
-				edges[ 3][0] = end;         edges[ 3][1] = Coords(beg.x,end.y,end.z);
-				edges[ 4][0] = end;         edges[ 4][1] = Coords(end.x,beg.y,end.z);
-				edges[ 5][0] = end;         edges[ 5][1] = Coords(end.x,end.y,beg.z);
-				edges[ 6][0] = edges[0][1]; edges[ 6][1] = edges[4][1];
-				edges[ 7][0] = edges[0][1]; edges[ 7][1] = edges[5][1];
-				edges[ 8][0] = edges[2][1]; edges[ 8][1] = edges[4][1];
-				edges[ 9][0] = edges[2][1]; edges[ 9][1] = edges[3][1];
-				edges[10][0] = edges[1][1]; edges[10][1] = edges[5][1];
-				edges[11][0] = edges[1][1]; edges[11][1] = edges[3][1];
-
-				foreach (edge; edges) {
-					bool a = false, b = false;
-					if (box.contains(edge[0])) { addPoint(edge[0]); a = true; }
-					if (box.contains(edge[1])) { addPoint(edge[1]); b = true; }
-					if (!a || !b)
-						tryIntersect(edge[0], edge[1]);
-				}
-			}
-
-			if (intersected)
-				overlap = AABB(overBeg, overEnd);
-			return intersected;
-		}
+			overlap = AABB(ob, oe);
+			return true;
+		} else
+			return false;
 	}
 
 	// True if we can create a new AABB which covers exactly this and the
