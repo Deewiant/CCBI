@@ -606,13 +606,28 @@ final class FungeSpace(cell dim, bool befunge93) {
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
 
+	// All arbitrary
 	private const
-		// Completely arbitrary
 		NEWBOX_PAD = 8,
 
-		// Fairly arbitrary... A box 5 units wide, otherwise of size NEWBOX_PAD.
-		ACCEPTABLE_WASTE = Power!(size_t, NEWBOX_PAD, dim-1) * 5;
+		// A box 5 units wide, otherwise of size NEWBOX_PAD.
+		ACCEPTABLE_WASTE = Power!(size_t, NEWBOX_PAD, dim-1) * 5,
 
+		BIGBOX_PAD = 512,
+
+		// Implicitly defines an ACCEPTABLE_WASTE for BIGBOXes: it's
+		// (BIG_SEQUENCE_MAX_SPACING - 1) * BIGBOX_PAD^(dim-1).
+		BIG_SEQUENCE_MAX_SPACING = 4;
+
+	private {
+		struct Memory {
+			AABB box, finalBox;
+			Coords c;
+		}
+		AnamnesicRing!(Memory, 3) recentBuf;
+		bool justPlacedBig = void;
+		Coords bigSequenceStart = void, firstPlacedBig = void;
+	}
 	Stats* stats;
 
 	// These are array indices, starting from 0. Thus the in-use map size is
@@ -933,13 +948,126 @@ final class FungeSpace(cell dim, bool befunge93) {
 		AABB _;
 		return findBox(pos, _, idx);
 	}
-	bool findBox(Coords pos, out AABB box) {
+	bool findBox(Coords pos, out AABB aabb) {
 		size_t _;
-		return findBox(pos, box, _);
+		return findBox(pos, aabb, _);
 	}
 
 	AABB[] placeBoxFor(Coords c) {
-		return reallyPlaceBox(AABB(c - NEWBOX_PAD, c + NEWBOX_PAD));
+		auto box = getBoxFor(c);
+		auto bs = reallyPlaceBox(box);
+		recentBuf.push(Memory(box, bs[$-1], c));
+		return bs;
+	}
+	AABB getBoxFor(Coords c) {
+		if (recentBuf.size() == recentBuf.CAPACITY) {
+
+			Memory[recentBuf.CAPACITY] a;
+			auto recents = a[0..recentBuf.read(a)];
+
+			if (justPlacedBig) {
+
+				auto last = recents[$-1].finalBox;
+
+				// See if c is at bigSequenceStart except for one axis, along which
+				// it's just past last.end.
+				outer: for (cell i = 0; i < dim; ++i) {
+					if (c.v[i] >  last.end.v[i] &&
+					    c.v[i] <= last.end.v[i] + BIG_SEQUENCE_MAX_SPACING)
+					{
+						for (cell j = i + cast(cell)1; j < dim; ++j)
+							if (c.v[j] != bigSequenceStart.v[j])
+								continue outer;
+
+						// We're making a line/rectangle/box (depending on the value
+						// of i): extend last along the axis where c was outside it.
+						auto end = last.end;
+						end.v[i] += BIGBOX_PAD;
+						return AABB(c, end);
+
+					} else if (c.v[i] != bigSequenceStart.v[i])
+						break;
+				}
+
+				// Match against firstPlacedBig. This is for the case when we've
+				// made a few non-big boxes and then hit a new dimension for the
+				// first time in a location which doesn't match with the actual
+				// box. E.g.:
+				//
+				// BsBBBBB
+				// BBBc
+				//  n
+				//
+				// B being boxes and c being c.
+				static if (dim > 1) {
+					for (cell i = 0; i < dim; ++i) {
+						if (c.v[i] >  firstPlacedBig.v[i] &&
+						    c.v[i] <= firstPlacedBig.v[i] + BIG_SEQUENCE_MAX_SPACING)
+						{
+
+							auto end = last.end;
+							end.v[i] += BIGBOX_PAD;
+
+							// We want to start the resulting box from
+							// bigSequenceStart (s in the graphic) instead of c, since
+							// after we've finished the line on which c lies, we'll be
+							// going to the point marked n next.
+							//
+							// If we were to make a huge box which doesn't include the
+							// n column, we'd not only have to have a different
+							// heuristic for the n case but we'd need to move all the
+							// data in the big box to the resulting different big box
+							// anyway. This way is much better.
+							return AABB(bigSequenceStart, end);
+						}
+					}
+				}
+
+			} else {
+				bool allAlongLine = true;
+
+				alongLoop: for (size_t i = 0; i < recents.length - 1; ++i) {
+					auto v = recents[i+1].c - recents[i].c;
+
+					for (cell d = 0; d < dim; ++d) {
+						if (v.v[d] == NEWBOX_PAD + 1) {
+							for (cell j = d + cast(cell)1; j < dim; ++j) {
+								if (v.v[j] != 0) {
+									allAlongLine = false;
+									break alongLoop;
+								}
+							}
+						} else if (v.v[d] != 0) {
+							allAlongLine = false;
+							break alongLoop;
+						}
+					}
+				}
+
+				if (allAlongLine) {
+					if (!justPlacedBig) {
+						justPlacedBig = true;
+						firstPlacedBig = c;
+						bigSequenceStart = recents[0].c;
+					}
+
+					ubyte axis = void;
+					for (ubyte i = 0; i < dim; ++i) {
+							if (recents[0].box.beg.v[i] != recents[1].box.beg.v[i]) {
+							axis = i;
+							break;
+						}
+					}
+
+					auto end = c;
+					end.v[axis] += BIGBOX_PAD;
+					return AABB(c, end);
+				}
+			}
+		}
+
+		justPlacedBig = false;
+		return AABB(c - NEWBOX_PAD, c + NEWBOX_PAD);
 	}
 
 	AABB[] placeBox(AABB aabb) {

@@ -9,6 +9,42 @@ import tango.text.Util   : delimit, join;
 
 import ccbi.cell;
 
+struct AnamnesicRing(T, ubyte N) {
+	static assert (N > 0);
+private:
+	T[N] ring = void;
+	ubyte pos = 0;
+	bool full = false;
+
+public:
+	void push(T t) {
+		if (pos == N) {
+			full = true;
+			pos = 0;
+		}
+		ring[pos++] = t;
+	}
+
+	ubyte read(T[] ts)
+	in {
+		assert (ts.length == N);
+	} body {
+		auto pos2 = pos == N ? 0 : pos;
+
+		if (full) {
+			ts[0 .. N - pos2] = ring[pos2..N];
+			ts[N - pos2 .. $] = ring[0..pos2];
+		} else
+			ts[0..pos] = ring[0..pos];
+
+		return size();
+	}
+
+	ubyte size() { return full ? N : pos; }
+
+	const ubyte CAPACITY = N;
+}
+
 void removeAt(T)(inout T[] a, size_t i)
 in {
   assert (i < a.length);
