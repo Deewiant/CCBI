@@ -779,11 +779,6 @@ void outputFile() {
 	if (flags & 1) {
 		// treat as linear text file, meaning...
 
-		// ...don't bother writing stuff that is only whitespace...
-		static if (dim >= 3) if (max.z > state.space.end.z) max.z = state.space.end.z;
-		static if (dim >= 2) if (max.y > state.space.end.y) max.y = state.space.end.y;
-		                     if (max.x > state.space.end.x) max.x = state.space.end.x;
-
 		auto arraySize = max - vaE;
 
 		auto toBeWritten = new char[][][](arraySize.z, arraySize.y, arraySize.x);
@@ -952,10 +947,11 @@ void getSysInfo() {
 
 		// the rest
 
-		auto relEnd = state.space.end - state.space.beg;
+		auto beg    = state.space.getBeg();
+		auto relEnd = state.space.getEnd() - beg;
 
 		pushVector(relEnd);
-		pushVector(state.space.beg);
+		pushVector(beg);
 		pushVector(cip.offset);
 		pushVector(cip.delta);
 		pushVector(cip.pos);

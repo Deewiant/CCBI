@@ -64,16 +64,12 @@ void ctor() { buf = new char[80]; }
 void get() {
 	Coords c = popOffsetVector();
 
-	static if (dim >= 3) if (c.z > state.space.end.z) return reverse;
-	static if (dim >= 2) if (c.y > state.space.end.y) return reverse;
-
 	size_t i = 0;
 	do {
 		if (i == buf.length)
 			buf.length = buf.length * 2;
 
-		if (c.x > state.space.end.x)
-			return reverse();
+		// TODO: should check for and throw an InfiniteLoopException
 
 		buf[i] = cast(char)state.space[c];
 		++c.x;
