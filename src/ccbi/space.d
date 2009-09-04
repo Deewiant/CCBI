@@ -630,25 +630,12 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 	Stats* stats;
 
-	// These are array indices, starting from 0. Thus the in-use map size is
-	// (end.x - beg.x + 1) * (end.y - beg.y + 1) * (end.z - beg.z + 1).
-	//
-	// Initialize so that min/max give what we want. end can't be negative
-	// initially so 0 is fine, and beg.y and beg.z must be zero or nothing is
-	// ever executed, so 0 is fine there as well.
-	Coords
-		beg = InitCoords!(cell.max),
-		end = InitCoords!(0);
-
 	private AABB[] boxen;
 
 	this(Stats* stats, Array source) {
 		this.stats = stats;
 
-		load(source, &end, InitCoords!(0), false);
-
-		foreach (x; beg.v)
-			assert (x >= 0);
+		load(source, null, InitCoords!(0), false);
 	}
 
 	this(FungeSpace other) {
@@ -674,26 +661,37 @@ final class FungeSpace(cell dim, bool befunge93) {
 	cell opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
 
-		if (v != ' ')
-			growBegEnd(c);
-
 		{AABB box;
-		if (findBox(c, box)) {
-			box[c] = v;
-			if (v == ' ')
-				shrinkBegEnd(box, c);
-			return v;
-		}}
-
-		foreach (box; placeBoxFor(c))
-		if (box.contains(c)) {
-			box[c] = v;
-			if (v == ' ')
-				shrinkBegEnd(box, c);
-			return v;
+		if (findBox(c, box))
+			return box[c] = v;
 		}
 
+		foreach (box; placeBoxFor(c))
+		if (box.contains(c))
+			return box[c] = v;
+
 		assert (false, "Cell in no box");
+	}
+
+	static if (befunge93) {
+		Coords getBeg() { return InitCoords!( 0, 0); }
+		Coords getEnd() { return InitCoords!(79,24); }
+	} else {
+		// FIXME: these are imprecise
+		Coords getBeg() {
+			auto beg = boxen[0].beg;
+			foreach (box; boxen[1..$])
+				foreach (i, c; box.beg.v)
+					beg.v[i] = min(beg.v[i], c);
+			return beg;
+		}
+		Coords getEnd() {
+			auto end = boxen[0].end;
+			foreach (box; boxen[1..$])
+				foreach (i, c; box.end.v)
+					end.v[i] = max(end.v[i], c);
+			return end;
+		}
 	}
 
 	static final class InfiniteLoopException : Exception {
@@ -842,93 +840,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 			return true;
 		} else
 			return false;
-	}
-
-	void growBegEnd(Coords c) {
-		beg.minWith(c);
-		end.maxWith(c);
-	}
-	void shrinkBegEnd(AABB aabb, Coords c) {
-		static if (dim == 1) {
-			if (c.x == end.x && aabb.end.x == end.x)
-				--end.x;
-			else if (c.x == beg.x && aabb.beg.x == beg.x)
-				++beg.x;
-
-		} else static if (dim == 2) {
-			if (c.x == end.x) {
-				foreach (box; boxen)
-					if (box.end.x == end.x
-					 && box.nonSpaceAlong(box.width - 1, box.width)
-					)
-						return;
-				--end.x;
-			} else if (c.x == beg.x) {
-				foreach (box; boxen)
-					if (box.beg.x == beg.x && box.nonSpaceAlong(0, box.width))
-						return;
-				++beg.x;
-			} else if (c.y == end.y) {
-				foreach (box; boxen)
-					if (box.end.y == end.y
-					 && box.nonSpaceAlong(box.data.length - box.width, 1)
-					)
-						return;
-				--end.y;
-			} else if (c.y == beg.y) {
-				foreach (box; boxen)
-					if (box.beg.y == beg.y && box.nonSpaceAlong(0, 1, box.width))
-						return;
-				++beg.y;
-			}
-		} else static if (dim == 3) {
-			if (c.x == end.x) {
-				foreach (box; boxen)
-					if (box.end.x == end.x)
-						for (size_t i = 0; i < box.size; i += box.area)
-							if (box.nonSpaceAlong(
-							    	i + box.width - 1, box.width, i + box.area)
-							)
-								return;
-				--end.x;
-			} else if (c.x == beg.x) {
-				foreach (box; boxen)
-					if (box.beg.x == beg.x)
-						for (size_t i = 0; i < box.size; i += box.area)
-							if (box.nonSpaceAlong(i, box.width, i + box.area))
-								return;
-				++beg.x;
-			} else if (c.y == end.y) {
-				foreach (box; boxen)
-					if (box.end.y == end.y)
-						for (size_t i = 0; i < box.size; i += box.area) {
-							auto next = i + box.area;
-							if (box.nonSpaceAlong(next - box.width, 1, next))
-								return;
-						}
-
-				--end.y;
-			} else if (c.y == beg.y) {
-				foreach (box; boxen)
-					if (box.beg.y == beg.y)
-						for (size_t i = 0; i < box.size; i += box.area)
-							if (box.nonSpaceAlong(i, 1, i + box.width))
-								return;
-				++beg.y;
-			} else if (c.z == end.z) {
-				foreach (box; boxen)
-					if (box.end.z == end.z
-					 && box.nonSpaceAlong(box.data.length - box.area, 1)
-					)
-						return;
-				--end.z;
-			} else if (c.z == beg.z) {
-				foreach (box; boxen)
-					if (box.beg.z == beg.z && box.nonSpaceAlong(0, 1, box.area))
-						return;
-				++beg.z;
-			}
-		}
 	}
 
 	bool findHigherBox(Coords pos, ref AABB aabb, ref size_t idx) {
@@ -1317,24 +1228,18 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	// Takes ownership of the Array, detaching it.
-	void load(Array arr, Coords* end, Coords target, bool binary)
-	in {
-		assert (end !is null);
-	} out {
-		if (boxen.length > 0)
-			for (size_t i = 0; i < dim; ++i)
-				assert (beg.v[i] <= end.v[i]);
-	} body {
+	void load(Array arr, Coords* end, Coords target, bool binary) {
+
 		scope (exit) arr.detach;
 
 		auto input = cast(ubyte[])arr.slice;
 
 		static if (befunge93) {
 			assert (target == 0);
-			assert (end is &this.end);
+			assert (end is null);
 			assert (!binary);
 
-			befunge93Load(input, end);
+			befunge93Load(input);
 		} else {
 			auto aabb = getAABB(input, binary, target);
 
@@ -1343,9 +1248,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 			aabb.finalize;
 
-			     beg.minWith(aabb.beg);
-			     end.maxWith(aabb.end);
-			this.end.maxWith(aabb.end);
+			if (end)
+				end.maxWith(aabb.end);
 
 			auto aabbs = placeBox(aabb);
 
@@ -1405,11 +1309,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	static if (befunge93)
-	void befunge93Load(ubyte[] input, Coords* end) {
-		beg  = InitCoords!( 0, 0);
-		*end = InitCoords!(79,24);
-
-		auto aabb = AABB(beg, *end);
+	void befunge93Load(ubyte[] input) {
+		auto aabb = AABB(getBeg(), getEnd());
 		aabb.alloc;
 		boxen ~= aabb;
 

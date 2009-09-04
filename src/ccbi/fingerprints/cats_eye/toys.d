@@ -216,16 +216,19 @@ void fishhook() {
 		Coords c  = cip.pos;
 		Coords c2 = c;
 
+		auto beg = state.space.getBeg();
+		auto end = state.space.getEnd();
+
 		if (n < 0) {
-			c.y = state.space.beg.y;
+			c.y = beg.y;
 			c2.y = c.y + n;
-			for (auto oldEnd = state.space.end.y; c.y <= oldEnd; ++c.y, ++c2.y)
+			for (auto oldEnd = end.y; c.y <= oldEnd; ++c.y, ++c2.y)
 				state.space[c2] = state.space[c];
 
 		} else if (n > 0) {
-			c.y = state.space.end.y;
+			c.y = end.y;
 			c2.y = c.y + n;
-			for (auto oldBeg = state.space.beg.y; c.y >= oldBeg; --c.y, --c2.y)
+			for (auto oldBeg = beg.y; c.y >= oldBeg; --c.y, --c2.y)
 				state.space[c2] = state.space[c];
 		}
 	}
@@ -240,16 +243,19 @@ void boulder() {
 		Coords c  = cip.pos;
 		Coords c2 = c;
 
+		auto beg = state.space.getBeg();
+		auto end = state.space.getEnd();
+
 		if (n < 0) {
-			c.x = state.space.beg.x;
+			c.x = beg.x;
 			c2.x = c.x + n;
-			for (auto oldEnd = state.space.end.x; c.x <= oldEnd; ++c.x, ++c2.x)
+			for (auto oldEnd = end.x; c.x <= oldEnd; ++c.x, ++c2.x)
 				state.space[c2] = state.space[c];
 
 		} else if (n > 0) {
-			c.x = state.space.end.x;
+			c.x = end.x;
 			c2.x = c.x + n;
-			for (auto oldBeg = state.space.beg.x; c.x >= oldBeg; --c.x, --c2.x)
+			for (auto oldBeg = beg.x; c.x >= oldBeg; --c.x, --c2.x)
 				state.space[c2] = state.space[c];
 		}
 	}
