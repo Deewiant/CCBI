@@ -666,11 +666,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 			return box[c] = v;
 		}
 
-		foreach (box; placeBoxFor(c))
-		if (box.contains(c))
-			return box[c] = v;
-
-		assert (false, "Cell in no box");
+		return placeBoxFor(c)[c] = v;
 	}
 
 	static if (befunge93) {
@@ -864,11 +860,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 		return findBox(pos, aabb, _);
 	}
 
-	AABB[] placeBoxFor(Coords c) {
+	AABB placeBoxFor(Coords c) {
 		auto box = getBoxFor(c);
-		auto bs = reallyPlaceBox(box);
-		recentBuf.push(Memory(box, bs[$-1], c));
-		return bs;
+		auto pox = reallyPlaceBox(box)[$-1];
+		recentBuf.push(Memory(box, pox, c));
+		return pox;
 	}
 	AABB getBoxFor(Coords c) {
 		if (recentBuf.size() == recentBuf.CAPACITY) {
