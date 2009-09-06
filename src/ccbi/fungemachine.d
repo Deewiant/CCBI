@@ -222,19 +222,11 @@ private:
 			cip.stack.push(c);
 		else {
 			static if (!befunge93) if (flags.fingerprintsEnabled) {
-				static if (GOT_IMAP) {
-					if (c >= 0 && c < cip.mapping.length) {
+				static if (GOT_IMAP)
+					if (c < cip.mapping.length && c >= 0)
 						c = cip.mapping[c];
 
-						// Semantics are all in the range ['A','Z'], so since this
-						// assert succeeds the isSemantics check can be inside this
-						// if statement.
-						static assert (cip.mapping.length > 'Z');
-
-						if (isSemantics(c))
-							return executeSemantics(c);
-					}
-				} else if (isSemantics(c))
+				if (isSemantics(c))
 					return executeSemantics(c);
 			}
 

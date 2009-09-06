@@ -20,6 +20,11 @@ mixin (Fingerprint!(
 
 template IMAP() {
 
+void ctor() {
+	// Support mapping 0 through 255
+	cip.mapping = new typeof(cip.mapping)(256);
+}
+
 void remap() {
 	auto old = cip.stack.pop;
 	if (old >= 0 && old < cip.mapping.length)
