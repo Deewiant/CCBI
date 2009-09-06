@@ -45,10 +45,6 @@ final class IP(cell dim, bool befunge93, fings...) {
 			stackStack.push(stack);
 		}
 
-		static if (GOT_IMAP)
-			foreach (j, inout i; mapping)
-				i = cast(cell)j;
-
 		static if (!befunge93)
 			foreach (inout sem; semantics)
 				sem = new typeof(sem)(semanticStats);
@@ -78,6 +74,10 @@ final class IP(cell dim, bool befunge93, fings...) {
 		// deep copy semantics
 		foreach (i, inout sem; semantics)
 			sem = new typeof(sem)(o.semantics[i]);
+
+		// deep copy mapping
+		static if (GOT_IMAP)
+			mapping = o.mapping.dup;
 	}
 
 	void move() {
@@ -153,7 +153,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 	}
 
 	static if (GOT_IMAP)
-		cell[256] mapping = void;
+		cell[] mapping;
 
 	enum : typeof(mode) {
 		STRING        = 1 << 0,
