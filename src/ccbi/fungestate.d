@@ -61,8 +61,8 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 				}
 			}
 
-			static if (GOT_REFC) references  = references.dup;
-			static if (GOT_SUBR) callStack   =  callStack.dup;
+			static if (GOT_REFC) references = references.dup;
+			static if (GOT_SUBR) callStack  =  callStack.dup;
 		}
 		return copy;
 	}

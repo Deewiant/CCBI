@@ -118,7 +118,7 @@ char[] popStringWithZero() {
 		if (j == s.length)
 			s.length = 2 * s.length;
 
-		s[j] = cip.stack.pop;
+		s[j] = cast(char)cip.stack.pop;
 	} while (s[j++]);
 
 	return s[0..j];

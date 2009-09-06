@@ -12,7 +12,7 @@ import tango.io.stream.Buffered   : BufferedOutput;
 import tango.io.stream.Format;
 import tango.io.stream.Typed      : TypedOutput;
 import tango.stdc.string          : memmove;
-import tango.text.convert.Integer : toString;
+import tango.text.convert.Integer : format;
 
 import ccbi.container;
 import ccbi.fingerprint;
@@ -460,17 +460,18 @@ private:
 		ss ~= Stat(null);
 		ss ~= Stat("Stopped time",                  stats.timeStopped,         "time");
 
+		char[20] buf;
 		size_t wideName = 0, wideN = 0;
 		foreach (stat; ss)
 		if (stat.name !is null && stat.n) {
-			uint width = .toString(stat.n).length;
+			uint width = cast(uint).format!(char,ulong)(buf, stat.n).length;
 			if (width > wideN)
 				wideN = width;
 			if (stat.name.length > wideName)
 				wideName = stat.name.length;
 		}
 
-		auto fmt = "{," ~ .toString(wideN) ~ ":d} ";
+		auto fmt = "{," ~ .format!(char,ulong)(buf, wideN) ~ ":} ";
 		bool newline = false;
 
 		foreach (stat; ss)

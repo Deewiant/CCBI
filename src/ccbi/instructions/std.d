@@ -801,7 +801,7 @@ void outputFile() {
 
 				for (cell x = vaE.x; x < max.x; ++x) {
 					c.x = x;
-					row[x - vaE.x] = state.space[c];
+					row[x - vaE.x] = cast(char)state.space[c];
 				}
 			}
 		}
