@@ -77,7 +77,10 @@ void ret() {
 		push(cip.stack.pop());
 
 	popVector(cip.delta);
-	popVector(cip.pos);
+
+	Coords c;
+	popVector(c);
+	cip.pos = c;
 
 	while (n--)
 		cip.stack.push(pop());

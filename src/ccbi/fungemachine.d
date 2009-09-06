@@ -98,16 +98,7 @@ private:
 
 		state.space = new FungeSpace(&stats, source);
 
-		auto ip = new IP(
-			state.space,
-			&stackStats, &stackStackStats, &semanticStats);
-
-		static if (befunge93)
-			tip = cip = ip;
-		else {
-			state.startIdx = state.ips.length = 1;
-			tip = state.ips[0] = ip;
-		}
+		auto pos = InitCoords!(0);
 
 		static if (dim >= 2)
 		if (
@@ -116,9 +107,18 @@ private:
 			state.space[InitCoords!(0,1)] == '!'
 		)
 		static if (befunge93)
-			cip.pos.y = 1;
-		else
-			state.ips[0].pos.y = 1;
+			pos.y = 1;
+
+		auto ip = new IP(
+			pos, state.space,
+			&stackStats, &stackStackStats, &semanticStats);
+
+		static if (befunge93)
+			tip = cip = ip;
+		else {
+			state.startIdx = state.ips.length = 1;
+			tip = state.ips[0] = ip;
+		}
 	}
 
 	public int run() {
@@ -211,7 +211,7 @@ private:
 		static if (!befunge93)
 			cip.gotoNextInstruction();
 
-		auto c = state.space[cip.pos];
+		auto c = cip.unsafeCell;
 
 		if (c == '"')
 			cip.mode ^= IP.STRING;
@@ -317,7 +317,7 @@ private:
 //			if (inMini)
 //				miniUnimplemented();
 /+			else +/ {
-				auto i = state.space[cip.pos];
+				auto i = cip.unsafeCell;
 				warn(
 					"Unimplemented instruction '{}' ({1:d}) (0x{1:x})"
 					" encountered at {}.",

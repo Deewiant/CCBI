@@ -57,7 +57,7 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 				ips = ips.dup;
 				foreach (ref ip; ips) {
 					ip = new IP(ip);
-					ip.space = space;
+					ip.cursor.space = space;
 				}
 			}
 
