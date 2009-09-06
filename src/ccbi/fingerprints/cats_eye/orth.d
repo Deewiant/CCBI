@@ -75,10 +75,10 @@ void changeDx() { cip.delta.x = cip.stack.pop; }
 void changeDy() { static if (dim >= 2) cip.delta.y = cip.stack.pop; else reverse; }
 
 // change x
-void changeX() { cip.pos.x = cip.stack.pop; }
+void changeX() { auto c = cip.pos; c.x = cip.stack.pop; cip.pos = c; }
 
 // change x
-void changeY() { static if (dim >= 2) cip.pos.y = cip.stack.pop; else reverse; }
+void changeY() { static if (dim >= 2) { auto c = cip.pos; c.y = cip.stack.pop; cip.pos = c; } else reverse; }
 
 // ramp if zero
 void rampIfZero() {

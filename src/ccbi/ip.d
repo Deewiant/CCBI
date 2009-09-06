@@ -27,6 +27,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 	mixin (EmitGot!("TRDS", fings));
 
 	this(
+		Coords pos,
 		FungeSpace!(dim, befunge93) s,
 		ContainerStats* stackStats,
 		ContainerStats* stackStackStats,
@@ -37,7 +38,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 		static if (GOT_IIPC)
 			parentID = 0;
 
-		stack = new Stack!(cell)(stackStats);
+		stack = new Stack!(.cell)(stackStats);
 
 		static if (!befunge93) {
 			stackStack = new typeof(stackStack)(stackStackStats, 1u);
@@ -48,7 +49,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 			foreach (inout sem; semantics)
 				sem = new typeof(sem)(semanticStats);
 
-		space = s;
+		cursor = typeof(cursor)(pos, delta, s);
 	}
 
 	static if (!befunge93) this(IP o) {
@@ -60,8 +61,8 @@ final class IP(cell dim, bool befunge93, fings...) {
 		bool deque = cast(Deque)stack !is null;
 
 		foreach (inout stack; stackStack) {
-			alias Container!(cell) CC;
-			alias Stack    !(cell) Ctack;
+			alias Container!(.cell) CC;
+			alias Stack    !(.cell) Ctack;
 
 			stack = (deque
 				? cast(CC)new Deque(cast(Deque)stack)
@@ -79,39 +80,46 @@ final class IP(cell dim, bool befunge93, fings...) {
 			mapping = o.mapping.dup;
 	}
 
-	void move() { pos += delta; }
+	void   move()         { cursor.advance(delta); }
+	void unmove()         { cursor.retreat(delta); }
+	void   move(Coords d) { cursor.advance(d); }
 
 	void reverse() { delta *= -1; }
 
 	void gotoNextInstruction() {
-		pos = mode & STRING
-			? space.skipToLastSpace(pos, delta)
-			: space.skipMarkers    (pos, delta);
+		mode & STRING
+			? cursor.skipToLastSpace(delta)
+			: cursor.skipMarkers    (delta);
 	}
 
-	Container!(cell) newStack() {
+	Container!(.cell) newStack() {
 		return (cast(Deque)stack
-			? cast(Container!(cell))new Deque       (stack.stats)
-			: cast(Container!(cell))new Stack!(cell)(stack.stats)
+			? cast(Container!(.cell))new Deque        (stack.stats)
+			: cast(Container!(.cell))new Stack!(.cell)(stack.stats)
 		);
 	}
 
-	FungeSpace!(dim, befunge93) space;
+	Coords pos()         { return cursor.pos; }
+	void   pos(Coords c) { return cursor.pos = c; }
 
-	Coords
-		pos   = InitCoords!(0),
-		delta = InitCoords!(1);
+	.cell       cell()        { return cursor.      get(); }
+	.cell unsafeCell()        { return cursor.unsafeGet(); }
+	void        cell(.cell c) { return cursor.      set(c); }
+	void  unsafeCell(.cell c) { return cursor.unsafeSet(c); }
+
+	Cursor!(dim, befunge93) cursor;
+	Coords delta = InitCoords!(1);
 
 	static if (!befunge93)
 		Coords offset = InitCoords!(0);
 
 	static if (!befunge93)
-		cell id = void;
+		.cell id = void;
 
 	static if (GOT_IIPC)
-		cell parentID = void;
+		.cell parentID = void;
 
-	Container!(cell) stack;
+	Container!(.cell) stack;
 
 	static if (!befunge93) {
 		Stack!(typeof(stack)) stackStack;
@@ -119,7 +127,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 	}
 
 	static if (GOT_IMAP)
-		cell[] mapping;
+		.cell[] mapping;
 
 	enum : typeof(mode) {
 		STRING        = 1 << 0,

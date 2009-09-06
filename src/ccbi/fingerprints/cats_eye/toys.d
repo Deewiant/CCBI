@@ -269,7 +269,7 @@ void corner() {
 
 		Std.turnLeft();
 		cip.move();
-		cip.stack.push(state.space[cip.pos]);
+		cip.stack.push(cip.cell);
 
 		cip.pos   = p;
 		cip.delta = d;
@@ -285,7 +285,7 @@ void canOpener() {
 
 		Std.turnRight();
 		cip.move();
-		cip.stack.push(state.space[cip.pos]);
+		cip.stack.push(cip.cell);
 
 		cip.pos   = p;
 		cip.delta = d;
@@ -398,15 +398,15 @@ void barstool() {
 
 void tumbler() {
 	switch (rand_up_to!(2*dim)()) {
-		case 0: state.space[cip.pos] = '<'; goWest (); break;
-		case 1: state.space[cip.pos] = '>'; goEast (); break;
+		case 0: cip.unsafeCell = '<'; goWest (); break;
+		case 1: cip.unsafeCell = '>'; goEast (); break;
 	static if (dim >= 2) {
-		case 2: state.space[cip.pos] = 'v'; goSouth(); break;
-		case 3: state.space[cip.pos] = '^'; goNorth(); break;
+		case 2: cip.unsafeCell = 'v'; goSouth(); break;
+		case 3: cip.unsafeCell = '^'; goNorth(); break;
 	}
 	static if (dim >= 3) {
-		case 4: state.space[cip.pos] = 'l'; goLow  (); break;
-		case 5: state.space[cip.pos] = 'h'; goHigh (); break;
+		case 4: cip.unsafeCell = 'l'; goLow  (); break;
+		case 5: cip.unsafeCell = 'h'; goHigh (); break;
 	}
 		default: assert (false);
 	}
@@ -423,16 +423,17 @@ void televisionAntenna() {
 	if (x < v) {
 		cip.stack.push(v);
 		pushOffsetVector(c);
-		cip.pos -= cip.delta;
+		cip.unmove;
+
 	} else if (x > v)
 		reverse();
 }
 
 // buried treasure
-void buriedTreasure() {                      ++cip.pos.x; }
-void slingshot()      { static if (dim >= 2) ++cip.pos.y; else reverse; }
+void buriedTreasure() {                      cip.move(InitCoords!(1,0,0)); }
+void slingshot()      { static if (dim >= 2) cip.move(InitCoords!(0,1,0)); else reverse; }
 
 // barn door
-void barnDoor()       { static if (dim >= 3) ++cip.pos.z; else reverse; }
+void barnDoor()       { static if (dim >= 3) cip.move(InitCoords!(0,0,1)); else reverse; }
 
 }

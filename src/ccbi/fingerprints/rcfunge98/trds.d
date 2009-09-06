@@ -139,9 +139,9 @@ Request jump() {
 
 	if (cip.mode & IP.SPACE_SET) {
 		if (cip.mode & IP.ABS_SPACE)
-			cip.pos  = cip.tardisPos;
+			cip.pos = cip.tardisPos;
 		else
-			cip.pos += cip.tardisPos;
+			cip.move(cip.tardisPos);
 	} else
 		// We do want to move the IP off the J now in any case, since we return
 		// either Request.NONE or Request.TIMEJUMP, neither of which move the IP.

@@ -104,6 +104,11 @@ template Dimension(cell dim) {
 	template Coords(cell x)         { const Coords = Coords!(x,0,0); }
 }
 
+// Various *NoOffset functions exist; their argument Coords is one which is
+// relative to beg, not (0,0,0).
+//
+// If a non-NoOffset version exists, the NoOffset one is typically faster. A
+// notable exception is containsNoOffset.
 private struct AABB(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 
@@ -171,6 +176,13 @@ private struct AABB(cell dim) {
 		return contains(b.beg) && contains(b.end);
 	}
 
+	bool containsNoOffset(Coords p) {
+		foreach (i, x; p.v)
+			if (!(x >= 0 && x <= end.v[i] - beg.v[i]))
+				return false;
+		return true;
+	}
+
 	cell opIndex(Coords p)
 	in {
 		assert (this.contains(p));
@@ -191,15 +203,31 @@ private struct AABB(cell dim) {
 	} body {
 		return cast(cell)(data[getIdx(p)] = cast(initcell)val);
 	}
-	private size_t getIdx(Coords p) {
-		p -= beg;
-
+	private size_t getIdx        (Coords p) { return getIdxNoOffset(p - beg); }
+	private size_t getIdxNoOffset(Coords p) {
 		size_t idx = p.x;
 
 		static if (dim >= 2) idx += width * p.y;
 		static if (dim >= 3) idx += area  * p.z;
 
 		return idx;
+	}
+
+	cell getNoOffset(Coords p)
+	in {
+		assert (this.containsNoOffset(p));
+		assert (data !is null);
+		assert (getIdxNoOffset(p) < data.length);
+	} body {
+		return cast(cell)data[getIdxNoOffset(p)];
+	}
+	cell setNoOffset(Coords p, cell val)
+	in {
+		assert (this.containsNoOffset(p));
+		assert (data !is null);
+		assert (getIdxNoOffset(p) < data.length);
+	} body {
+		return cast(cell)(data[getIdxNoOffset(p)] = cast(initcell)val);
 	}
 
 	bool rayIntersects(Coords from, Coords dir, out ucell steps, out Coords at)
@@ -587,6 +615,103 @@ private struct AABB(cell dim) {
 		}
 	}
 
+	// Gives an AABB from within this box which contains the given coordinates
+	// and overlaps with none of the given boxes.
+	//
+	// The AABB returned by this function is only a view: it shares its data
+	// with this AABB.
+	//
+	// In addition, it is weird: its width and height are not its own, so that
+	// its opIndexen work correctly.
+	AABB tessellationAt(Coords p, AABB[] bs)
+	in {
+		assert (this.contains(p));
+	} out (tes) {
+		foreach (b; bs)
+			assert (!tes.overlaps(b));
+	} body {
+		auto tes = *this;
+		foreach (b; bs) foreach (i, x; p.v) {
+			// This could be improved, consider for instance the bottommost box in
+			// the following graphic and its current tessellation:
+			//
+			// +-------+    +--*--*-+
+			// |       |    |X .  . |
+			// |       |    |  .  . |
+			// |     +---   *..*..+---
+			// |     |      |  .  |
+			// |  +--|      *..+--|
+			// |  |  |      |  |  |
+			// |  |  |      |  |  |
+			// +--|  |      +--|  |
+			//
+			// (Note that this isn't actually a tessellation: all points will get
+			// a rectangle containing the rectangle at X.)
+			//
+			// Any of the following three would be an improvement (and they would
+			// actually be tessellations):
+			//
+			// +--*--*-+    +-------+    +-----*-+
+			// |  .  . |    |       |    |     . |
+			// |  .  . |    |       |    |     . |
+			// |  .  +---   *.....+---   |     +---
+			// |  .  |      |     |      |     |
+			// |  +--|      *..+--|      *..+--|
+			// |  |  |      |  |  |      |  |  |
+			// |  |  |      |  |  |      |  |  |
+			// +--|  |      +--|  |      +--|  |
+			const cell l = 1;
+			if (b.end.v[i] < x) tes.beg.v[i] = max(tes.beg.v[i], b.end.v[i]+l);
+			if (b.beg.v[i] > x) tes.end.v[i] = min(b.beg.v[i]-l, tes.end.v[i]);
+		}
+		return tes;
+	}
+
+	// These return false if the skipping couldn't be completed within this box.
+	bool skipSpacesNoOffset(ref Coords p, Coords delta)
+	in {
+		assert (this.containsNoOffset(p));
+	} out (done) {
+		assert (done == (this.containsNoOffset(p) && getNoOffset(p) != ' '));
+	} body {
+		while (getNoOffset(p) == ' ') {
+			p += delta;
+			if (!this.containsNoOffset(p))
+				return false;
+		}
+		return true;
+	}
+
+	// The bool argument should start at false and thereafter just be passed
+	// back unmodified.
+	bool skipSemicolonsNoOffset(ref Coords p, Coords delta, ref bool inMiddle)
+	in {
+		assert (this.containsNoOffset(p));
+	} out (done) {
+		assert (done == (this.containsNoOffset(p) && getNoOffset(p) != ';'));
+	} body {
+		if (inMiddle)
+			goto continuePrev;
+
+		while (getNoOffset(p) == ';') {
+			do {
+				p += delta;
+				if (!this.containsNoOffset(p)) {
+					inMiddle = true;
+					return false;
+				}
+continuePrev:;
+			} while (getNoOffset(p) != ';')
+
+			p += delta;
+			if (!this.containsNoOffset(p)) {
+				inMiddle = false;
+				return false;
+			}
+		}
+		return true;
+	}
+
 	bool nonSpaceAlong(size_t start, size_t stride) {
 		return nonSpaceAlong(start, stride, data.length);
 	}
@@ -688,123 +813,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 					end.v[i] = max(end.v[i], c);
 			return end;
 		}
-	}
-
-	static final class InfiniteLoopException : Exception {
-		this(char[] msg, Coords pos, Coords delta) {
-			super(
-				"Funge-Space detected eternal loop from " ~ pos.toString() ~
-				" with delta " ~ delta.toString() ~
-				": " ~ msg);
-		}
-	}
-
-	template DetectInfiniteLoopDecls() {
-		version (detectInfiniteLoops) {
-			Coords firstExit;
-			bool gotFirstExit = false;
-		}
-	}
-	template DetectInfiniteLoop(char[] doing) {
-		const DetectInfiniteLoop = `
-			version (detectInfiniteLoops) {
-				if (gotFirstExit) {
-					if (pos == firstExit)
-						throw new InfiniteLoopException(
-							"Found itself whilst ` ~doing~ `", pos, δ);
-				} else {
-					firstExit    = pos;
-					gotFirstExit = true;
-				}
-			}
-		`;
-	}
-
-	Coords skipSpaces(Coords pos, Coords δ, ref AABB box, ref size_t boxIdx)
-	in {
-		assert (box.contains(pos));
-	} out (c) {
-		assert (this[c] != ' ');
-	} body {
-		mixin DetectInfiniteLoopDecls!();
-
-		void move() {
-			pos += δ;
-			if (box.contains(pos))
-				findHigherBox(pos, box, boxIdx);
-			else if (!findBox(pos, box, boxIdx)) {
-				mixin (DetectInfiniteLoop!("processing spaces"));
-				pos = jumpToBox(pos, δ, box, boxIdx);
-			}
-		}
-
-		while (box[pos] == ' ')
-			move;
-		return pos;
-	}
-
-	Coords skipSemicolons(Coords pos, Coords δ, ref AABB box, ref size_t boxIdx)
-	in {
-		assert (box.contains(pos));
-	} out (c) {
-		assert (this[c] != ';');
-	} body {
-		mixin DetectInfiniteLoopDecls!();
-
-		void move() {
-			pos += δ;
-			if (box.contains(pos))
-				findHigherBox(pos, box, boxIdx);
-			else if (!findBox(pos, box, boxIdx)) {
-				mixin (DetectInfiniteLoop!("jumping over semicolons"));
-				pos = jumpToBox(pos, δ, box, boxIdx);
-			}
-		}
-
-		while (box[pos] == ';') {
-			do move; while (box[pos] != ';')
-			move;
-		}
-		return pos;
-	}
-
-	Coords skipMarkers(Coords pos, Coords delta)
-	out (c) {
-		assert (this[c] != ' ');
-		assert (this[c] != ';');
-	} body {
-		size_t b;
-		if (!findBox(pos, b) && !tryJumpToBox(pos, delta, b)) {
-			version (detectInfiniteLoops)
-				throw new InfiniteLoopException(
-					"Never meets an allocated area", pos, delta);
-			else
-				for (;;) {}
-		}
-
-		auto box = boxen[b];
-		do {
-			pos = skipSpaces    (pos, delta, box, b);
-			pos = skipSemicolons(pos, delta, box, b);
-		} while (box[pos] == ' ')
-
-		return pos;
-	}
-	Coords skipToLastSpace(Coords pos, Coords delta)
-	out (c) {
-		assert (this[pos] != ' ' || this[c] == ' ');
-	} body {
-		size_t b;
-		if (!findBox(pos, b) && !tryJumpToBox(pos, delta, b)) {
-			version (detectInfiniteLoops)
-				throw new InfiniteLoopException(
-					"Never meets an allocated area", pos, delta);
-			else
-				for (;;) {}
-		}
-		auto box = boxen[b];
-
-		return box[pos] == ' ' ? skipSpaces(pos, delta, box, b) - delta : pos;
 	}
 
 	Coords jumpToBox(Coords pos, Coords delta, out AABB box, out size_t idx) {
@@ -1498,7 +1506,189 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 }
 
-// Functions that don't need to live in FungeSpace
+struct Cursor(cell dim, bool befunge93) {
+private:
+	alias .Coords    !(dim)            Coords;
+	alias .Dimension !(dim).Coords     InitCoords;
+	alias .AABB      !(dim)            AABB;
+	alias .FungeSpace!(dim, befunge93) FungeSpace;
+
+	Coords pos_ = void, relPos = void;
+	AABB box = void;
+	size_t boxIdx = void;
+
+public:
+	FungeSpace space;
+
+	cell       get()    { return  box.contains(pos) ? unsafeGet() : ' '; }
+	cell unsafeGet() in { assert (box.contains(pos)); }
+	               body { return  box.getNoOffset(relPos); }
+
+	void       set(cell c) {
+		return box.contains(pos) ? unsafeSet(c) : (space[pos] = c);
+	}
+	void unsafeSet(cell c)
+	in {
+		assert (box.contains(pos));
+	} body {
+		box.setNoOffset(relPos, c);
+	}
+
+	Coords pos()         { return pos_; }
+	void   pos(Coords c) {
+		pos_ = c;
+		if (box.contains(pos))
+			relPos = pos - box.beg;
+		else
+			getBox();
+	}
+
+	static typeof(*this) opCall(Coords c, Coords delta, FungeSpace s) {
+
+		typeof(*this) cursor;
+		with (cursor) {
+			space = s;
+			pos_  = c;
+
+			if (!space.findBox(pos, box, boxIdx)) {
+				if (space.tryJumpToBox(pos_, delta, boxIdx))
+					box = space.boxen[boxIdx];
+
+				else version (detectInfiniteLoops)
+					throw new InfiniteLoopException(
+						"IP diverged while being placed",
+						pos.toString(), delta.toString());
+				else
+					for (;;){}
+			}
+			tessellate();
+			relPos = pos - box.beg;
+		}
+		return cursor;
+	}
+
+	private void tessellate() {
+		// Care only about boxes that are above box
+		auto overlaps = new AABB[boxIdx];
+		size_t i = 0;
+		foreach (b; space.boxen[0..boxIdx])
+			if (b.overlaps(box))
+				overlaps[i++] = b;
+
+		box = box.tessellationAt(pos, overlaps[0..i]);
+	}
+
+	private bool getBox() {
+		if (space.findBox(pos, box, boxIdx)) {
+			tessellate();
+			relPos = pos - box.beg;
+			return true;
+		} else
+			return false;
+	}
+
+	void advance(Coords delta) { pos_ += delta; relPos += delta; }
+	void retreat(Coords delta) { pos_ -= delta; relPos -= delta; }
+
+	template DetectInfiniteLoopDecls() {
+		version (detectInfiniteLoops) {
+			Coords firstExit;
+			bool gotFirstExit = false;
+		}
+	}
+	template DetectInfiniteLoop(char[] doing) {
+		const DetectInfiniteLoop = `
+			version (detectInfiniteLoops) {
+				if (gotFirstExit) {
+					if (relPos == firstExit)
+						throw new InfiniteLoopException(
+							"Found itself whilst ` ~doing~ `",
+							(relPos + box.beg).toString(), delta.toString());
+				} else {
+					firstExit    = relPos;
+					gotFirstExit = true;
+				}
+			}
+		`;
+	}
+
+	void skipMarkers(Coords delta)
+	out {
+		assert (get() != ' ');
+		assert (get() != ';');
+	} body {
+		mixin DetectInfiniteLoopDecls!();
+
+		if (!box.contains(pos))
+			goto findBox;
+
+		switch (unsafeGet()) {
+			do {
+			case ' ':
+				while (!box.skipSpacesNoOffset(relPos, delta)) {
+					pos_ = relPos + box.beg;
+findBox:
+					if (!getBox()) {
+						mixin (DetectInfiniteLoop!("processing spaces"));
+						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
+						tessellate();
+						relPos = pos - box.beg;
+					}
+				}
+			case ';':
+				bool status = false;
+				while (!box.skipSemicolonsNoOffset(relPos, delta, status)) {
+					pos_ = relPos + box.beg;
+					if (!getBox()) {
+						mixin (DetectInfiniteLoop!("jumping over semicolons"));
+						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
+						tessellate();
+						relPos = pos - box.beg;
+					}
+				}
+				pos_ = relPos + box.beg;
+
+			} while (unsafeGet() == ' ')
+
+			default: break;
+		}
+	}
+	void skipToLastSpace(Coords delta) {
+		if (box.contains(pos)) {
+contained:
+			if (unsafeGet() == ' ') {
+				mixin DetectInfiniteLoopDecls!();
+
+				while (!box.skipSpacesNoOffset(relPos, delta)) {
+					pos_ = relPos + box.beg;
+					if (!getBox()) {
+						mixin (DetectInfiniteLoop!("processing spaces"));
+						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
+						tessellate();
+						relPos = pos - box.beg;
+					}
+				}
+				relPos -= delta;
+				pos_ = relPos + box.beg;
+			}
+		} else {
+			if (space.tryJumpToBox(pos_, delta, boxIdx)) {
+				box    = space.boxen[boxIdx];
+				tessellate();
+				relPos = pos - box.beg;
+				goto contained;
+
+			} else version (detectInfiniteLoops)
+				throw new InfiniteLoopException(
+					"Never meets an allocated area",
+					pos.toString(), delta.toString());
+			else
+				for (;;){}
+		}
+	}
+}
+
+// Functions that don't need to live inside any of the aggregates
 private:
 
 // Finds the bounds of the tightest AABB containing all the boxen referred by
@@ -1668,4 +1858,13 @@ I1D intersect1D(cell b, cell e, cell boxB, cell boxE) {
 		}
 	}
 	return I1D.NONE;
+}
+
+final class InfiniteLoopException : Exception {
+	this(char[] msg, char[] pos, char[] delta) {
+		super(
+			"Funge-Space detected eternal loop from " ~ pos ~
+			" with delta " ~ delta ~
+			": " ~ msg);
+	}
 }

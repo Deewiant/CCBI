@@ -193,7 +193,7 @@ static if (dim >= 2) {
 // Turn Right
 void turnRight() {
 	if (cip.mode & cip.SWITCH)
-		state.space[cip.pos] = '[';
+		cip.unsafeCell = '[';
 
 	// x = cos(90) x - sin(90) y = -y
 	// y = sin(90) x + cos(90) y =  x
@@ -205,7 +205,7 @@ void turnRight() {
 // Turn Left
 void turnLeft() {
 	if (cip.mode & cip.SWITCH)
-		state.space[cip.pos] = ']';
+		cip.unsafeCell = ']';
 
 	// x = cos(-90) x - sin(-90) y =  y
 	// y = sin(-90) x + cos(-90) y = -x
@@ -273,11 +273,11 @@ Request iterate() {
 
 	auto r = Request.MOVE;
 
-	auto i = state.space[cip.pos];
+	auto i = cip.cell;
 
 	if (i == ' ' || i == ';') {
 		cip.gotoNextInstruction();
-		i = state.space[cip.pos];
+		i = cip.unsafeCell;
 	}
 
 	// negative argument is undefined by spec, just ignore it
@@ -435,13 +435,13 @@ static if (!befunge93) {
 // Fetch Character
 void fetchCharacter() {
 	cip.move();
-	cip.stack.push(state.space[cip.pos]);
+	cip.stack.push(cip.cell);
 }
 
 // Store Character
 void storeCharacter() {
 	cip.move();
-	state.space[cip.pos] = cip.stack.pop;
+	cip.cell = cip.stack.pop;
 }
 
 }
@@ -487,7 +487,7 @@ Request beginBlock() {
 	alias stdStackStackBuf buf;
 
 	if (cip.mode & cip.SWITCH)
-		state.space[cip.pos] = '}';
+		cip.unsafeCell = '}';
 
 	try cip.stackStack.push(cip.newStack());
 	catch {
@@ -526,7 +526,7 @@ void endBlock() {
 	alias stdStackStackBuf buf;
 
 	if (cip.mode & cip.SWITCH)
-		state.space[cip.pos] = '{';
+		cip.unsafeCell = '{';
 
 	if (cip.stackStack.size == 1)
 		return reverse();
@@ -1049,7 +1049,7 @@ private bool popFingerprint(out cell fingerprint) {
 // Load Semantics
 Request loadSemantics() {
 	if (cip.mode & cip.SWITCH)
-		state.space[cip.pos] = ')';
+		cip.unsafeCell = ')';
 
 	cell fingerprint;
 	if (!popFingerprint(fingerprint))
@@ -1076,7 +1076,7 @@ Request loadSemantics() {
 // Unload Semantics
 void unloadSemantics() {
 	if (cip.mode & cip.SWITCH)
-		state.space[cip.pos] = '(';
+		cip.unsafeCell = '(';
 
 	cell fingerprint;
 	if (!popFingerprint(fingerprint))
