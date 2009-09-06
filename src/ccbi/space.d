@@ -385,7 +385,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 				for (cell x = beg.x; x < end.x; ++x) {
 					c.x = x;
-					b = this[c];
+					b = cast(ubyte)this[c];
 					tfile.write(b);
 				}
 				if (++y != end.y) foreach (ch; NewlineString) {

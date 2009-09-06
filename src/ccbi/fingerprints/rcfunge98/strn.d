@@ -75,7 +75,7 @@ void get() {
 		if (c.x > state.space.end.x)
 			return reverse();
 
-		buf[i] = state.space[c];
+		buf[i] = cast(char)state.space[c];
 		++c.x;
 
 	} while (buf[i++] != 0);

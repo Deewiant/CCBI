@@ -209,7 +209,7 @@ void send() {
 			buffer.length = len;
 
 		for (typeof(len) i = 0; i < len; ++i, ++c.x)
-			buffer[i] = state.space[c];
+			buffer[i] = cast(ubyte)state.space[c];
 
 		auto sent = sockets[s].send(buffer[0..len]);
 

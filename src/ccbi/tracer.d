@@ -695,8 +695,6 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				break;
 		}
 	}
-
-	return true;
 }
 
 char[] arg(char[][] as, size_t i) { return i < as.length ? as[i] : null; }
