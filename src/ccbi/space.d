@@ -75,7 +75,6 @@ struct Coords(cell dim) {
 					v[] "~T[1]~"= c;
 				}
 
-				// c.v[] is WORKAROUND: http://www.dsource.org/projects/ldc/ticket/315
 				Coords op" ~T[0]~ "(Coords c) {
 					Coords co = *this;
 					co.v[] "~T[1]~"= c.v[];
