@@ -726,9 +726,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
 	static assert (!befunge93 || dim == 2);
 
-	alias .AABB     !(dim) AABB;
-	alias .Coords   !(dim) Coords;
-	alias .Dimension!(dim).Coords InitCoords;
+	alias .AABB     !(dim)            AABB;
+	alias .Coords   !(dim)            Coords;
+	alias .Dimension!(dim).Coords     InitCoords;
+	alias .Cursor   !(dim, befunge93) Cursor;
 
 	// All arbitrary
 	private const
@@ -751,6 +752,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		AnamnesicRing!(Memory, 3) recentBuf;
 		bool justPlacedBig = void;
 		Coords bigSequenceStart = void, firstPlacedBig = void;
+
+		Cursor*[] cursors;
 	}
 	Stats* stats;
 
@@ -769,6 +772,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 		boxen = other.boxen.dup;
 		foreach (i, ref aabb; boxen)
 			aabb.data = aabb.data.dup;
+
+		// Empty out cursors, they refer to the other space
+		cursors.length = 0;
 	}
 
 	size_t boxCount() { return boxen.length; }
@@ -1075,6 +1081,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 		boxen ~= aabb;
 		ret[$-1] = aabb;
 		stats.newMax(stats.space.maxBoxesLive, boxen.length);
+
+		foreach (c; cursors)
+			c.invalidate();
+
 		return ret;
 	}
 
@@ -1503,6 +1513,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			}
 		}
 	}
+
+	void informOf(Cursor* c) { cursors ~= c; }
 }
 
 struct Cursor(cell dim, bool befunge93) {
@@ -1564,6 +1576,15 @@ public:
 			relPos = pos - box.beg;
 		}
 		return cursor;
+	}
+
+	private void invalidate() {
+		if (!getBox()) {
+			// Just grab a box which we aren't contained in; skipMarkers will sort
+			// it out
+			box = space.boxen[boxIdx = 0];
+			relPos = pos - box.beg;
+		}
 	}
 
 	private void tessellate() {

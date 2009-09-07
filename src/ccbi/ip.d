@@ -50,6 +50,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 				sem = new typeof(sem)(semanticStats);
 
 		cursor = typeof(cursor)(pos, delta, s);
+		s.informOf(&cursor);
 	}
 
 	static if (!befunge93) this(IP o) {
