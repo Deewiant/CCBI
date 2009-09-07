@@ -1525,7 +1525,7 @@ private:
 	alias .AABB      !(dim)            AABB;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
-	Coords pos_ = void, relPos = void, oBeg = void, ob2b = void, ob2e = void;
+	Coords relPos = void, oBeg = void, ob2b = void, ob2e = void;
 	AABB box = void;
 	size_t boxIdx = void;
 
@@ -1542,12 +1542,11 @@ public:
 	void unsafeSet(cell c) in { assert (inBox()); }
 	                     body { box.setNoOffset(relPos, c); }
 
-	Coords pos()         { return pos_; }
+	Coords pos()         { return relPos + oBeg; }
 	void   pos(Coords c) {
-		pos_ = c;
 		relPos = c - oBeg;
 		if (!inBox())
-			getBox();
+			getBox(c);
 	}
 
 	static typeof(*this) opCall(Coords c, Coords delta, FungeSpace s) {
@@ -1555,32 +1554,32 @@ public:
 		typeof(*this) cursor;
 		with (cursor) {
 			space = s;
-			pos_  = c;
 
-			if (!space.findBox(pos, box, boxIdx)) {
-				if (space.tryJumpToBox(pos_, delta, boxIdx))
+			if (!space.findBox(c, box, boxIdx)) {
+				if (space.tryJumpToBox(c, delta, boxIdx))
 					box = space.boxen[boxIdx];
 
 				else version (detectInfiniteLoops)
 					throw new InfiniteLoopException(
 						"IP diverged while being placed",
-						pos.toString(), delta.toString());
+						c.toString(), delta.toString());
 				else
 					for (;;){}
 			}
-			tessellate();
+			tessellate(c);
 		}
 		return cursor;
 	}
 
 	private void invalidate() {
-		if (!getBox())
+		auto p = pos;
+		if (!getBox(p))
 			// Just grab a box which we aren't contained in; skipMarkers will sort
 			// it out
 			box = space.boxen[boxIdx = 0];
 	}
 
-	private void tessellate() {
+	private void tessellate(Coords p) {
 		// Care only about boxes that are above box
 		auto overlaps = new AABB[boxIdx];
 		size_t i = 0;
@@ -1589,22 +1588,22 @@ public:
 				overlaps[i++] = b;
 
 		oBeg = box.beg;
-		relPos = pos - oBeg;
-		box = box.tessellationAt(pos, overlaps[0..i]);
+		relPos = p - oBeg;
+		box = box.tessellationAt(p, overlaps[0..i]);
 		ob2b = box.beg - oBeg;
 		ob2e = box.end - oBeg;
 	}
 
-	private bool getBox() {
-		if (space.findBox(pos_, box, boxIdx)) {
-			tessellate();
+	private bool getBox(ref Coords p) {
+		if (space.findBox(p, box, boxIdx)) {
+			tessellate(p);
 			return true;
 		} else
 			return false;
 	}
 
-	void advance(Coords delta) { pos_ += delta; relPos += delta; }
-	void retreat(Coords delta) { pos_ -= delta; relPos -= delta; }
+	void advance(Coords delta) { relPos += delta; }
+	void retreat(Coords delta) { relPos -= delta; }
 
 	template DetectInfiniteLoopDecls() {
 		version (detectInfiniteLoops) {
@@ -1642,25 +1641,22 @@ public:
 			do {
 			case ' ':
 				while (!box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e)) {
-					pos_ = relPos + oBeg;
 findBox:
-					if (!getBox()) {
+					auto p = pos;
+					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
-						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
-						tessellate();
+						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
 			case ';':
 				bool status = false;
 				while (!box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, status)) {
-					pos_ = relPos + oBeg;
-					if (!getBox()) {
+					auto p = pos;
+					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("jumping over semicolons"));
-						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
-						tessellate();
+						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
-				pos_ = relPos + oBeg;
 
 			} while (unsafeGet() == ' ')
 
@@ -1674,26 +1670,25 @@ contained:
 				mixin DetectInfiniteLoopDecls!();
 
 				while (!box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e)) {
-					pos_ = relPos + oBeg;
-					if (!getBox()) {
+					auto p = pos;
+					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
-						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
-						tessellate();
+						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
 				relPos -= delta;
-				pos_ = relPos + oBeg;
 			}
 		} else {
-			if (space.tryJumpToBox(pos_, delta, boxIdx)) {
+			auto p = pos;
+			if (space.tryJumpToBox(p, delta, boxIdx)) {
 				box = space.boxen[boxIdx];
-				tessellate();
+				tessellate(p);
 				goto contained;
 
 			} else version (detectInfiniteLoops)
 				throw new InfiniteLoopException(
 					"Never meets an allocated area",
-					pos.toString(), delta.toString());
+					p.toString(), delta.toString());
 			else
 				for (;;){}
 		}
