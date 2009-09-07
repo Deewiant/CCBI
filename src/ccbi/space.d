@@ -175,9 +175,9 @@ private struct AABB(cell dim) {
 		return contains(b.beg) && contains(b.end);
 	}
 
-	bool containsNoOffset(Coords p) {
+	bool containsNoOffset(Coords p, Coords oBeg) {
 		foreach (i, x; p.v)
-			if (!(x >= 0 && x <= end.v[i] - beg.v[i]))
+			if (!(x >= 0 && x <= end.v[i] - oBeg.v[i]))
 				return false;
 		return true;
 	}
@@ -214,7 +214,6 @@ private struct AABB(cell dim) {
 
 	cell getNoOffset(Coords p)
 	in {
-		assert (this.containsNoOffset(p));
 		assert (data !is null);
 		assert (getIdxNoOffset(p) < data.length);
 	} body {
@@ -222,7 +221,6 @@ private struct AABB(cell dim) {
 	}
 	cell setNoOffset(Coords p, cell val)
 	in {
-		assert (this.containsNoOffset(p));
 		assert (data !is null);
 		assert (getIdxNoOffset(p) < data.length);
 	} body {
@@ -669,15 +667,15 @@ private struct AABB(cell dim) {
 	}
 
 	// These return false if the skipping couldn't be completed within this box.
-	bool skipSpacesNoOffset(ref Coords p, Coords delta)
+	bool skipSpacesNoOffset(ref Coords p, Coords delta, Coords oBeg)
 	in {
-		assert (this.containsNoOffset(p));
+		assert (this.containsNoOffset(p, oBeg));
 	} out (done) {
-		assert (done == (this.containsNoOffset(p) && getNoOffset(p) != ' '));
+		assert (done == (containsNoOffset(p, oBeg) && getNoOffset(p) != ' '));
 	} body {
 		while (getNoOffset(p) == ' ') {
 			p += delta;
-			if (!this.containsNoOffset(p))
+			if (!this.containsNoOffset(p, oBeg))
 				return false;
 		}
 		return true;
@@ -685,11 +683,12 @@ private struct AABB(cell dim) {
 
 	// The bool argument should start at false and thereafter just be passed
 	// back unmodified.
-	bool skipSemicolonsNoOffset(ref Coords p, Coords delta, ref bool inMiddle)
+	bool skipSemicolonsNoOffset(
+		ref Coords p, Coords delta, Coords oBeg, ref bool inMiddle)
 	in {
-		assert (this.containsNoOffset(p));
+		assert (this.containsNoOffset(p, oBeg));
 	} out (done) {
-		assert (done == (this.containsNoOffset(p) && getNoOffset(p) != ';'));
+		assert (done == (containsNoOffset(p, oBeg) && getNoOffset(p) != ' '));
 	} body {
 		if (inMiddle)
 			goto continuePrev;
@@ -697,7 +696,7 @@ private struct AABB(cell dim) {
 		while (getNoOffset(p) == ';') {
 			do {
 				p += delta;
-				if (!this.containsNoOffset(p)) {
+				if (!this.containsNoOffset(p, oBeg)) {
 					inMiddle = true;
 					return false;
 				}
@@ -705,7 +704,7 @@ continuePrev:;
 			} while (getNoOffset(p) != ';')
 
 			p += delta;
-			if (!this.containsNoOffset(p)) {
+			if (!this.containsNoOffset(p, oBeg)) {
 				inMiddle = false;
 				return false;
 			}
@@ -1526,7 +1525,7 @@ private:
 	alias .AABB      !(dim)            AABB;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
-	Coords pos_ = void, relPos = void;
+	Coords pos_ = void, relPos = void, oBeg = void;
 	AABB box = void;
 	size_t boxIdx = void;
 
@@ -1546,9 +1545,8 @@ public:
 	Coords pos()         { return pos_; }
 	void   pos(Coords c) {
 		pos_ = c;
-		if (inBox())
-			relPos = pos - box.beg;
-		else
+		relPos = c - oBeg;
+		if (!inBox())
 			getBox();
 	}
 
@@ -1592,8 +1590,9 @@ public:
 			if (b.overlaps(box))
 				overlaps[i++] = b;
 
+		oBeg = box.beg;
+		relPos = pos - oBeg;
 		box = box.tessellationAt(pos, overlaps[0..i]);
-		relPos = pos - box.beg;
 	}
 
 	private bool getBox() {
@@ -1620,7 +1619,7 @@ public:
 					if (relPos == firstExit)
 						throw new InfiniteLoopException(
 							"Found itself whilst ` ~doing~ `",
-							(relPos + box.beg).toString(), delta.toString());
+							(relPos + oBeg).toString(), delta.toString());
 				} else {
 					firstExit    = relPos;
 					gotFirstExit = true;
@@ -1642,8 +1641,8 @@ public:
 		switch (unsafeGet()) {
 			do {
 			case ' ':
-				while (!box.skipSpacesNoOffset(relPos, delta)) {
-					pos_ = relPos + box.beg;
+				while (!box.skipSpacesNoOffset(relPos, delta, oBeg)) {
+					pos_ = relPos + oBeg;
 findBox:
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
@@ -1653,15 +1652,15 @@ findBox:
 				}
 			case ';':
 				bool status = false;
-				while (!box.skipSemicolonsNoOffset(relPos, delta, status)) {
-					pos_ = relPos + box.beg;
+				while (!box.skipSemicolonsNoOffset(relPos, delta, oBeg, status)) {
+					pos_ = relPos + oBeg;
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("jumping over semicolons"));
 						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
 						tessellate();
 					}
 				}
-				pos_ = relPos + box.beg;
+				pos_ = relPos + oBeg;
 
 			} while (unsafeGet() == ' ')
 
@@ -1674,8 +1673,8 @@ contained:
 			if (unsafeGet() == ' ') {
 				mixin DetectInfiniteLoopDecls!();
 
-				while (!box.skipSpacesNoOffset(relPos, delta)) {
-					pos_ = relPos + box.beg;
+				while (!box.skipSpacesNoOffset(relPos, delta, oBeg)) {
+					pos_ = relPos + oBeg;
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
 						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
@@ -1683,7 +1682,7 @@ contained:
 					}
 				}
 				relPos -= delta;
-				pos_ = relPos + box.beg;
+				pos_ = relPos + oBeg;
 			}
 		} else {
 			if (space.tryJumpToBox(pos_, delta, boxIdx)) {
