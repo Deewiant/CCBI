@@ -175,9 +175,9 @@ private struct AABB(cell dim) {
 		return contains(b.beg) && contains(b.end);
 	}
 
-	bool containsNoOffset(Coords p, Coords oBeg) {
+	bool containsNoOffset(Coords p, Coords ob2b, Coords ob2e) {
 		foreach (i, x; p.v)
-			if (!(x >= beg.v[i] - oBeg.v[i] && x <= end.v[i] - oBeg.v[i]))
+			if (!(x >= ob2b.v[i] && x <= ob2e.v[i]))
 				return false;
 		return true;
 	}
@@ -667,15 +667,15 @@ private struct AABB(cell dim) {
 	}
 
 	// These return false if the skipping couldn't be completed within this box.
-	bool skipSpacesNoOffset(ref Coords p, Coords delta, Coords oBeg)
+	bool skipSpacesNoOffset(ref Coords p, Coords delta, Coords ob2b, Coords ob2e)
 	in {
-		assert (this.containsNoOffset(p, oBeg));
+		assert (this.containsNoOffset(p, ob2b, ob2e));
 	} out (done) {
-		assert (done == (containsNoOffset(p, oBeg) && getNoOffset(p) != ' '));
+		assert (done == (containsNoOffset(p, ob2b, ob2e) && getNoOffset(p) != ' '));
 	} body {
 		while (getNoOffset(p) == ' ') {
 			p += delta;
-			if (!this.containsNoOffset(p, oBeg))
+			if (!this.containsNoOffset(p, ob2b, ob2e))
 				return false;
 		}
 		return true;
@@ -684,11 +684,11 @@ private struct AABB(cell dim) {
 	// The bool argument should start at false and thereafter just be passed
 	// back unmodified.
 	bool skipSemicolonsNoOffset(
-		ref Coords p, Coords delta, Coords oBeg, ref bool inMiddle)
+		ref Coords p, Coords delta, Coords ob2b, Coords ob2e, ref bool inMiddle)
 	in {
-		assert (this.containsNoOffset(p, oBeg));
+		assert (this.containsNoOffset(p, ob2b, ob2e));
 	} out (done) {
-		assert (done == (containsNoOffset(p, oBeg) && getNoOffset(p) != ' '));
+		assert (done == (containsNoOffset(p, ob2b, ob2e) && getNoOffset(p) != ' '));
 	} body {
 		if (inMiddle)
 			goto continuePrev;
@@ -696,7 +696,7 @@ private struct AABB(cell dim) {
 		while (getNoOffset(p) == ';') {
 			do {
 				p += delta;
-				if (!this.containsNoOffset(p, oBeg)) {
+				if (!this.containsNoOffset(p, ob2b, ob2e)) {
 					inMiddle = true;
 					return false;
 				}
@@ -704,7 +704,7 @@ continuePrev:;
 			} while (getNoOffset(p) != ';')
 
 			p += delta;
-			if (!this.containsNoOffset(p, oBeg)) {
+			if (!this.containsNoOffset(p, ob2b, ob2e)) {
 				inMiddle = false;
 				return false;
 			}
@@ -1525,14 +1525,14 @@ private:
 	alias .AABB      !(dim)            AABB;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
-	Coords pos_ = void, relPos = void, oBeg = void;
+	Coords pos_ = void, relPos = void, oBeg = void, ob2b = void, ob2e = void;
 	AABB box = void;
 	size_t boxIdx = void;
 
 public:
 	FungeSpace space;
 
-	private bool inBox() { return box.contains(pos); }
+	private bool inBox() { return box.containsNoOffset(relPos, ob2b, ob2e); }
 
 	cell       get()    { return  inBox() ? unsafeGet() : ' '; }
 	cell unsafeGet() in { assert (inBox()); }
@@ -1591,6 +1591,8 @@ public:
 		oBeg = box.beg;
 		relPos = pos - oBeg;
 		box = box.tessellationAt(pos, overlaps[0..i]);
+		ob2b = box.beg - oBeg;
+		ob2e = box.end - oBeg;
 	}
 
 	private bool getBox() {
@@ -1639,7 +1641,7 @@ public:
 		switch (unsafeGet()) {
 			do {
 			case ' ':
-				while (!box.skipSpacesNoOffset(relPos, delta, oBeg)) {
+				while (!box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e)) {
 					pos_ = relPos + oBeg;
 findBox:
 					if (!getBox()) {
@@ -1650,7 +1652,7 @@ findBox:
 				}
 			case ';':
 				bool status = false;
-				while (!box.skipSemicolonsNoOffset(relPos, delta, oBeg, status)) {
+				while (!box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, status)) {
 					pos_ = relPos + oBeg;
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("jumping over semicolons"));
@@ -1671,7 +1673,7 @@ contained:
 			if (unsafeGet() == ' ') {
 				mixin DetectInfiniteLoopDecls!();
 
-				while (!box.skipSpacesNoOffset(relPos, delta, oBeg)) {
+				while (!box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e)) {
 					pos_ = relPos + oBeg;
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
