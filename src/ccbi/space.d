@@ -1574,12 +1574,10 @@ public:
 	}
 
 	private void invalidate() {
-		if (!getBox()) {
+		if (!getBox())
 			// Just grab a box which we aren't contained in; skipMarkers will sort
 			// it out
 			box = space.boxen[boxIdx = 0];
-			relPos = pos - box.beg;
-		}
 	}
 
 	private void tessellate() {
