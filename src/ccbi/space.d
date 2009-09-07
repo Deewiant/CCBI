@@ -618,10 +618,12 @@ private struct AABB(cell dim) {
 	// and overlaps with none of the given boxes.
 	//
 	// The AABB returned by this function is only a view: it shares its data
-	// with this AABB.
+	// with this AABB. Be careful! Only contains and the *NoOffset functions in
+	// it work properly, since the others (notably, getIdx and thereby
+	// opIndex[Assign]) tend to depend on beg and end matching data.
 	//
 	// In addition, it is weird: its width and height are not its own, so that
-	// its opIndexen work correctly.
+	// its getNoOffsets work.
 	AABB tessellationAt(Coords p, AABB[] bs)
 	in {
 		assert (this.contains(p));
@@ -1531,24 +1533,20 @@ private:
 public:
 	FungeSpace space;
 
-	cell       get()    { return  box.contains(pos) ? unsafeGet() : ' '; }
-	cell unsafeGet() in { assert (box.contains(pos)); }
+	private bool inBox() { return box.contains(pos); }
+
+	cell       get()    { return  inBox() ? unsafeGet() : ' '; }
+	cell unsafeGet() in { assert (inBox()); }
 	               body { return  box.getNoOffset(relPos); }
 
-	void       set(cell c) {
-		return box.contains(pos) ? unsafeSet(c) : (space[pos] = c);
-	}
-	void unsafeSet(cell c)
-	in {
-		assert (box.contains(pos));
-	} body {
-		box.setNoOffset(relPos, c);
-	}
+	void       set(cell c)    { return inBox ? unsafeSet(c) : (space[pos]=c); }
+	void unsafeSet(cell c) in { assert (inBox()); }
+	                     body { box.setNoOffset(relPos, c); }
 
 	Coords pos()         { return pos_; }
 	void   pos(Coords c) {
 		pos_ = c;
-		if (box.contains(pos))
+		if (inBox())
 			relPos = pos - box.beg;
 		else
 			getBox();
@@ -1638,7 +1636,7 @@ public:
 	} body {
 		mixin DetectInfiniteLoopDecls!();
 
-		if (!box.contains(pos))
+		if (!inBox())
 			goto findBox;
 
 		switch (unsafeGet()) {
@@ -1671,7 +1669,7 @@ findBox:
 		}
 	}
 	void skipToLastSpace(Coords delta) {
-		if (box.contains(pos)) {
+		if (inBox()) {
 contained:
 			if (unsafeGet() == ' ') {
 				mixin DetectInfiniteLoopDecls!();
@@ -1680,7 +1678,7 @@ contained:
 					pos_ = relPos + box.beg;
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
-						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
+						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
 						tessellate();
 					}
 				}
