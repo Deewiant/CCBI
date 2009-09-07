@@ -1573,7 +1573,6 @@ public:
 					for (;;){}
 			}
 			tessellate();
-			relPos = pos - box.beg;
 		}
 		return cursor;
 	}
@@ -1596,12 +1595,12 @@ public:
 				overlaps[i++] = b;
 
 		box = box.tessellationAt(pos, overlaps[0..i]);
+		relPos = pos - box.beg;
 	}
 
 	private bool getBox() {
-		if (space.findBox(pos, box, boxIdx)) {
+		if (space.findBox(pos_, box, boxIdx)) {
 			tessellate();
-			relPos = pos - box.beg;
 			return true;
 		} else
 			return false;
@@ -1650,9 +1649,8 @@ public:
 findBox:
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
-						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
+						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
 						tessellate();
-						relPos = pos - box.beg;
 					}
 				}
 			case ';':
@@ -1661,9 +1659,8 @@ findBox:
 					pos_ = relPos + box.beg;
 					if (!getBox()) {
 						mixin (DetectInfiniteLoop!("jumping over semicolons"));
-						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
+						pos_ = space.jumpToBox(pos, delta, box, boxIdx);
 						tessellate();
-						relPos = pos - box.beg;
 					}
 				}
 				pos_ = relPos + box.beg;
@@ -1685,7 +1682,6 @@ contained:
 						mixin (DetectInfiniteLoop!("processing spaces"));
 						pos_   = space.jumpToBox(pos, delta, box, boxIdx);
 						tessellate();
-						relPos = pos - box.beg;
 					}
 				}
 				relPos -= delta;
@@ -1693,9 +1689,8 @@ contained:
 			}
 		} else {
 			if (space.tryJumpToBox(pos_, delta, boxIdx)) {
-				box    = space.boxen[boxIdx];
+				box = space.boxen[boxIdx];
 				tessellate();
-				relPos = pos - box.beg;
 				goto contained;
 
 			} else version (detectInfiniteLoops)
