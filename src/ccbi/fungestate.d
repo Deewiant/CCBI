@@ -58,6 +58,9 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 				foreach (ref ip; ips) {
 					ip = new IP(ip);
 					ip.cursor.space = space;
+
+					// Cursor is a value type so inform space of this new copy
+					space.informOf(&ip.cursor);
 				}
 			}
 
