@@ -177,7 +177,7 @@ private struct AABB(cell dim) {
 
 	bool containsNoOffset(Coords p, Coords oBeg) {
 		foreach (i, x; p.v)
-			if (!(x >= 0 && x <= end.v[i] - oBeg.v[i]))
+			if (!(x >= beg.v[i] - oBeg.v[i] && x <= end.v[i] - oBeg.v[i]))
 				return false;
 		return true;
 	}
