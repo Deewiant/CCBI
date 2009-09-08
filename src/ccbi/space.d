@@ -1507,11 +1507,25 @@ public:
 
 	private bool inBox() { return box.containsNoOffset(relPos, ob2b, ob2e); }
 
-	cell       get()    { return  inBox() ? unsafeGet() : ' '; }
+	cell get() {
+		if (!inBox()) {
+			auto p = pos;
+			if (!getBox(p))
+				return ' ';
+		}
+		return unsafeGet();
+	}
 	cell unsafeGet() in { assert (inBox()); }
 	               body { return  box.getNoOffset(relPos); }
 
-	void       set(cell c)    { return inBox ? unsafeSet(c) : (space[pos]=c); }
+	void set(cell c) {
+		if (!inBox()) {
+			auto p = pos;
+			if (!getBox(p))
+				return space[p] = c;
+		}
+		unsafeSet(c);
+	}
 	void unsafeSet(cell c) in { assert (inBox()); }
 	                     body { box.setNoOffset(relPos, c); }
 
