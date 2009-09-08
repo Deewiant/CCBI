@@ -876,7 +876,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 	AABB placeBoxFor(Coords c) {
 		auto box = getBoxFor(c);
-		auto pox = reallyPlaceBox(box)[$-1];
+		auto pox = reallyPlaceBox(box);
 		recentBuf.push(Memory(box, pox, c));
 		return pox;
 	}
@@ -991,7 +991,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		return AABB(c - NEWBOX_PAD, c + NEWBOX_PAD);
 	}
 
-	AABB[] placeBox(AABB aabb) {
+	void placeBox(AABB aabb) {
 		foreach (box; boxen) if (box.contains(aabb)) {
 			++stats.space.boxesIncorporated;
 			return [box];
@@ -999,29 +999,25 @@ final class FungeSpace(cell dim, bool befunge93) {
 		return reallyPlaceBox(aabb);
 	}
 
-	// Returns the new boxes placed
-	AABB[] reallyPlaceBox(AABB aabb)
+	// Returns the placed box, which may be bigger than the given box
+	AABB reallyPlaceBox(AABB aabb)
 	in {
 		foreach (box; boxen)
 			assert (!box.contains(aabb));
 	} out (result) {
 
-		// Everything in result should be in the same relative order as in boxen,
-		// and should be contained in boxen
+		assert (result.contains(aabb));
 
-		size_t prev = boxen.length;
-
-		foreach_reverse (x; result) {
-			size_t origIdx = boxen.length;
-
-			foreach (j, y; boxen) if (x == y) {
-				origIdx = j;
+		bool found = false;
+		foreach (box; boxen) {
+			assert (!found);
+			if (box == result) {
+				found = true;
 				break;
 			}
-
-			assert (origIdx < prev);
-			prev = origIdx;
 		}
+		assert (found);
+
 	} body {
 		++stats.space.boxesPlaced;
 
@@ -1057,36 +1053,18 @@ final class FungeSpace(cell dim, bool befunge93) {
 			break;
 		}
 
-		// Find any remaining overlaps
-		auto overlaps = candidates;
-		size_t os = 0;
-		foreach (o; overlaps)
-			if (eater.overlaps(boxen[o]))
-				overlaps[os++] = o;
-
-		// Copy overlaps into ret now, since the indices are invalidated if we
-		// subsume anything
-		AABB[] ret;
-		if (os) {
-			ret = new AABB[os + 1];
-			foreach (i, o; overlaps[0..os])
-				ret[i] = boxen[o];
-		} else
-			ret = new AABB[1];
-
 		if (s)
 			aabb = consumeSubsume!(dim)(boxen, subsumes[0..s], food, eater);
 		else
 			aabb.alloc;
 
 		boxen ~= aabb;
-		ret[$-1] = aabb;
 		stats.newMax(stats.space.maxBoxesLive, boxen.length);
 
 		foreach (c; cursors)
 			c.invalidate();
 
-		return ret;
+		return aabb;
 	}
 
 	// Doesn't return bool like the others since it doesn't change eater
@@ -1265,24 +1243,22 @@ final class FungeSpace(cell dim, bool befunge93) {
 			if (end)
 				end.maxWith(aabb.end);
 
-			auto aabbs = placeBox(aabb);
+			placeBox(aabb);
 
-			auto pos = target;
+			auto cursor = Cursor(target, null, this);
 
-			if (binary) foreach (b; input) {
-				if (b != ' ') foreach (box; aabbs) if (box.contains(pos)) {
-					box[pos] = cast(cell)b;
-					break;
-				}
-				++pos.x;
+			if (binary) {
+				foreach (b; input)
+					if (b != ' ')
+						cursor.set(cast(cell)b);
 			} else {
 				static if (dim >= 2) {
 					bool gotCR = false;
 
 					void newLine() {
 						gotCR = false;
-						pos.x = target.x;
-						++pos.y;
+						cursor.relPos.x = target.x - cursor.oBeg.x;
+						cursor.relPos.y++;
 					}
 				}
 
@@ -1295,27 +1271,24 @@ final class FungeSpace(cell dim, bool befunge93) {
 								newLine();
 
 						static if (dim >= 3) {
-							pos.x = target.x;
-							pos.y = target.y;
-							++pos.z;
+							cursor.relPos.x = target.x - cursor.oBeg.x;
+							cursor.relPos.y = target.y - cursor.oBeg.y;
+							cursor.relPos.z++;
 						}
 						break;
 					case ' ':
 						static if (dim >= 2)
 							if (gotCR)
 								newLine();
-						++pos.x;
+						cursor.relPos.x++;
 						break;
 					default:
 						static if (dim >= 2)
 							if (gotCR)
 								newLine();
 
-						foreach (box; aabbs) if (box.contains(pos)) {
-							box[pos] = cast(cell)b;
-							break;
-						}
-						++pos.x;
+						cursor.set(cast(cell)b);
+						cursor.relPos.x++;
 						break;
 				}
 			}
@@ -1549,14 +1522,17 @@ public:
 			getBox(c);
 	}
 
-	static typeof(*this) opCall(Coords c, Coords delta, FungeSpace s) {
+	static typeof(*this) opCall(Coords c, Coords* delta, FungeSpace s) {
 
 		typeof(*this) cursor;
 		with (cursor) {
 			space = s;
 
 			if (!space.findBox(c, box, boxIdx)) {
-				if (space.tryJumpToBox(c, delta, boxIdx))
+
+				assert (delta !is null);
+
+				if (space.tryJumpToBox(c, *delta, boxIdx))
 					box = space.boxen[boxIdx];
 
 				else version (detectInfiniteLoops)

@@ -49,7 +49,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 			foreach (inout sem; semantics)
 				sem = new typeof(sem)(semanticStats);
 
-		cursor = typeof(cursor)(pos, delta, s);
+		cursor = typeof(cursor)(pos, &delta, s);
 		s.informOf(&cursor);
 	}
 
