@@ -1516,11 +1516,7 @@ public:
 	                     body { box.setNoOffset(relPos, c); }
 
 	Coords pos()         { return relPos + oBeg; }
-	void   pos(Coords c) {
-		relPos = c - oBeg;
-		if (!inBox())
-			getBox(c);
-	}
+	void   pos(Coords c) { relPos = c - oBeg; }
 
 	static typeof(*this) opCall(Coords c, Coords* delta, FungeSpace s) {
 
