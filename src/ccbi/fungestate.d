@@ -69,4 +69,5 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 		}
 		return copy;
 	}
+	void free() { space.free(); }
 }
