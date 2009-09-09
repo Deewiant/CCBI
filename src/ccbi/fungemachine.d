@@ -100,7 +100,7 @@ private:
 
 		auto ip = new IP(
 			state.space,
-			&stackStats, &stackStackStats, &dequeStats, &semanticStats);
+			&stackStats, &stackStackStats, &semanticStats);
 
 		static if (befunge93)
 			tip = cip = ip;
