@@ -102,7 +102,9 @@ void newTick() {
 	// Must be appended: preserves correct execution order
 	foreach (ip; travellers) if (state.tick == ip.jumpedTo) {
 		++stats.travellerArrived;
-		state.ips ~= new IP(ip);
+		auto i = new IP(ip);
+		i.cursor.space = state.space;
+		state.ips ~= i;
 	}
 }
 
