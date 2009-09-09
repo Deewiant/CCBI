@@ -10,6 +10,7 @@ import tango.io.device.Array      : Array;
 import tango.io.model.IConduit    : OutputStream;
 import tango.io.stream.Typed      : TypedOutput;
 import tango.math.Math            : min, max;
+import tango.stdc.stdlib          : malloc, realloc, free;
 import tango.stdc.string          : memmove;
 import tango.text.convert.Integer : format;
 
@@ -103,6 +104,19 @@ template Dimension(cell dim) {
 	template Coords(cell x)         { const Coords = Coords!(x,0,0); }
 }
 
+// We use these for AABB data mainly to keep memory usage in check. Using
+// cell[] data, "data.length = foo" appears to keep the original data unfreed
+// if a reallocation occurred until at least the next GC. I'm not sure if that
+// was the exact cause, but using this instead of the GC can reduce worst-case
+// memory usage by up to 50% in some cases. We weren't really utilizing the
+// advantages of the GC anyway.
+private cell* cmalloc(size_t s) {
+	return cast(cell*)malloc(s * cell.sizeof);
+}
+private cell* crealloc(cell* p, size_t s) {
+	return cast(cell*)realloc(p, s * cell.sizeof);
+}
+
 // Various *NoOffset functions exist; their argument Coords is one which is
 // relative to beg, not (0,0,0).
 //
@@ -114,11 +128,8 @@ private struct AABB(cell dim) {
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
 
-	typedef cell initcell = ' ';
-	union {
-		initcell[] data;
-		size_t size;
-	}
+	cell* data;
+	size_t size;
 	Coords beg, end;
 
 	static if (dim >= 2) size_t width;
@@ -155,9 +166,8 @@ private struct AABB(cell dim) {
 	}
 
 	void alloc() {
-		auto size = size;
-		data = null;
-		data = new typeof(data)(size);
+		data = cmalloc(size);
+		data[0..size] = ' ';
 	}
 
 	int opEquals(AABB b) { return beg == b.beg && end == b.end; }
@@ -188,9 +198,9 @@ private struct AABB(cell dim) {
 
 		// If alloc hasn't been called, might not be caught
 		assert (data !is null);
-		assert (getIdx(p) < data.length);
+		assert (getIdx(p) < size);
 	} body {
-		return cast(cell)data[getIdx(p)];
+		return data[getIdx(p)];
 	}
 	cell opIndexAssign(cell val, Coords p)
 	in {
@@ -198,9 +208,9 @@ private struct AABB(cell dim) {
 
 		// Ditto above
 		assert (data !is null);
-		assert (getIdx(p) < data.length);
+		assert (getIdx(p) < size);
 	} body {
-		return cast(cell)(data[getIdx(p)] = cast(initcell)val);
+		return data[getIdx(p)] = val;
 	}
 	private size_t getIdx        (Coords p) { return getIdxNoOffset(p - beg); }
 	private size_t getIdxNoOffset(Coords p) {
@@ -215,16 +225,16 @@ private struct AABB(cell dim) {
 	cell getNoOffset(Coords p)
 	in {
 		assert (data !is null);
-		assert (getIdxNoOffset(p) < data.length);
+		assert (getIdxNoOffset(p) < size);
 	} body {
-		return cast(cell)data[getIdxNoOffset(p)];
+		return data[getIdxNoOffset(p)];
 	}
 	cell setNoOffset(Coords p, cell val)
 	in {
 		assert (data !is null);
-		assert (getIdxNoOffset(p) < data.length);
+		assert (getIdxNoOffset(p) < size);
 	} body {
-		return cast(cell)(data[getIdxNoOffset(p)] = cast(initcell)val);
+		return data[getIdxNoOffset(p)] = val;
 	}
 
 	bool rayIntersects(Coords from, Coords dir, out ucell steps, out Coords at)
@@ -461,17 +471,17 @@ private struct AABB(cell dim) {
 	in {
 		assert (this.contains(old));
 	} body {
-		auto oldLength = old.data.length;
+		auto oldLength = old.size;
 
-		old.data.length = size;
-		data = old.data;
+		data = crealloc(old.data, size);
+		data[oldLength..size] = ' ';
 
 		auto oldIdx = this.getIdx(old.beg);
 
 		if (canDirectCopy(old, oldLength)) {
 			if (oldIdx != 0) {
 				if (oldIdx < oldLength) {
-					memmove(&data[oldIdx], data.ptr, oldLength * cell.sizeof);
+					memmove(&data[oldIdx], data, oldLength * cell.sizeof);
 					data[0..oldIdx] = ' ';
 				} else {
 					data[oldIdx..oldIdx + oldLength] = data[0..oldLength];
@@ -540,7 +550,7 @@ private struct AABB(cell dim) {
 	in {
 		assert (this.contains(old));
 	} body {
-		subsumeArea(old, old, old.data);
+		subsumeArea(old, old, old.data[0..old.size]);
 	}
 
 	// This and b should be allocated, area not; copies the cells in the area
@@ -575,7 +585,7 @@ private struct AABB(cell dim) {
 	//
 	// In the above, if we advanced by area.width instead of owner.width we'd be
 	// screwed.
-	void subsumeArea(AABB owner, AABB area, initcell[] data)
+	void subsumeArea(AABB owner, AABB area, cell[] data)
 	in {
 		assert ( this.contains(area));
 		assert (owner.contains(area));
@@ -713,7 +723,7 @@ continuePrev:;
 	}
 
 	bool nonSpaceAlong(size_t start, size_t stride) {
-		return nonSpaceAlong(start, stride, data.length);
+		return nonSpaceAlong(start, stride, size);
 	}
 	bool nonSpaceAlong(size_t start, size_t stride, size_t end) {
 		for (size_t i = start; i < end; i += stride)
@@ -771,11 +781,20 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 		// deep copy space
 		boxen = other.boxen.dup;
-		foreach (i, ref aabb; boxen)
-			aabb.data = aabb.data.dup;
+		foreach (i, ref aabb; boxen) {
+			auto orig = aabb.data;
+			aabb.data = cmalloc(aabb.size);
+			aabb.data[0..aabb.size] = orig[0..aabb.size];
+		}
 
 		// Empty out cursors, they refer to the other space
 		cursors.length = 0;
+	}
+
+	void free() {
+		foreach (box; boxen)
+			.free(box.data);
+		boxen.length = 0;
 	}
 
 	size_t boxCount() { return boxen.length; }
@@ -1163,7 +1182,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		ref size_t usedCells)
 	{
 		auto dg = (AABB b, AABB fodder, size_t usedCells) {
-			return cheaperToAlloc(b.size, usedCells + fodder.data.length);
+			return cheaperToAlloc(b.size, usedCells + fodder.size);
 		};
 
 		auto orig = sLen;
@@ -1199,7 +1218,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				overSize = overlap.size;
 
 			return cheaperToAlloc(
-				b.size, usedCells + fodder.data.length - overSize);
+				b.size, usedCells + fodder.size - overSize);
 		};
 
 		auto orig = sLen;
@@ -1712,9 +1731,9 @@ void minMaxSize(cell dim)
 	 size_t i)
 {
 	auto box = boxen[i];
-	length += box.data.length;
-	if (box.data.length > maxSize) {
-		maxSize = box.data.length;
+	length += box.size;
+	if (box.size > maxSize) {
+		maxSize = box.size;
 		max = i;
 	}
 	if (beg) beg.minWith(box.beg);
@@ -1773,9 +1792,10 @@ AABB!(dim) consumeSubsume(cell dim)
 	// hopes of bug catching.
 	debug subsumes.sort;
 
-	foreach (i; subsumes)
-		if (i != food)
-			aabb.subsume(boxen[i]);
+	foreach (i; subsumes) if (i != food) {
+		aabb.subsume(boxen[i]);
+		free(boxen[i].data);
+	}
 
 	outer: for (size_t i = 0, n = 0; i < boxen.length; ++i) {
 		foreach (s; subsumes) {

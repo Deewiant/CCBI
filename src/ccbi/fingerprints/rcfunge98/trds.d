@@ -336,6 +336,7 @@ Request timeJump(IP ip) {
 		if (ip.jumpedTo < travellers[i].jumpedTo)
 			travellers.removeAt(i--);
 
+	state.free();
 	state = earlyState.deepCopy;
 
 	// TODO: move to Tracer
