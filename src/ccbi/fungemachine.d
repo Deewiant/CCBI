@@ -163,6 +163,23 @@ private:
 			cip = state.ips[j];
 			switch (executeInstruction()) {
 
+				case Request.MOVE:
+					cip.move();
+
+				default: break;
+
+				case Request.FORK:
+					if (j < state.ips.length-2) {
+						// ips[$-1] is new and in the wrong place, position it
+						// immediately after this one
+						auto ip = state.ips[$-1];
+						memmove(
+							&state.ips[j+2], &state.ips[j+1],
+							(state.ips.length - (j+1)) * ip.sizeof);
+						state.ips[j+1] = ip;
+					}
+					goto case Request.MOVE;
+
 				case Request.STOP:
 					if (!stop(j)) {
 				case Request.QUIT:
@@ -175,22 +192,6 @@ private:
 				case Request.TIMEJUMP:
 					return true;
 			}
-
-				case Request.FORK:
-					if (j < state.ips.length-2) {
-						// ips[$-1] is new and in the wrong place, position it
-						// immediately after this one
-						auto ip = state.ips[$-1];
-						memmove(
-							&state.ips[j+2], &state.ips[j+1],
-							(state.ips.length - (j+1)) * ip.sizeof);
-						state.ips[j+1] = ip;
-					}
-
-				case Request.MOVE:
-					cip.move();
-
-				default: break;
 			}
 		}
 		static if (!befunge93)
