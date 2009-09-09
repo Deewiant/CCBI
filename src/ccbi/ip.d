@@ -30,7 +30,6 @@ final class IP(cell dim, bool befunge93, fings...) {
 		FungeSpace!(dim, befunge93) s,
 		ContainerStats* stackStats,
 		ContainerStats* stackStackStats,
-		ContainerStats* dequeStats,
 		ContainerStats* semanticStats)
 	{
 		static if (!befunge93)
