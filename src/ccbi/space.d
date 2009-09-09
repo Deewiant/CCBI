@@ -1634,16 +1634,20 @@ findBox:
 						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
+				if (unsafeGet() == ';') {
 			case ';':
-				bool status = false;
-				while (!box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, status)) {
-					auto p = pos;
-					if (!getBox(p)) {
-						mixin (DetectInfiniteLoop!("jumping over semicolons"));
-						tessellate(space.jumpToBox(p, delta, box, boxIdx));
+					bool status = false;
+					while (
+						!box.skipSemicolonsNoOffset(
+							relPos, delta, ob2b, ob2e, status))
+					{
+						auto p = pos;
+						if (!getBox(p)) {
+							mixin (DetectInfiniteLoop!("jumping over semicolons"));
+							tessellate(space.jumpToBox(p, delta, box, boxIdx));
+						}
 					}
 				}
-
 			} while (unsafeGet() == ' ')
 
 			default: break;
