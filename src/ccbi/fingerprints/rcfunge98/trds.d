@@ -67,7 +67,12 @@ size_t cipIdx = void;
 // "happening")
 typeof(state.tick) ioAfter = 0;
 
+// Bit of optimization for the main execution methods; avoid calling our
+// callbacks until this is true.
+bool usingTRDS = false;
+
 void ctor() {
+	usingTRDS = true;
 	if (loadedTick == loadedTick.max) {
 		loadedTick = state.tick;
 		earlyState = state.deepCopy;

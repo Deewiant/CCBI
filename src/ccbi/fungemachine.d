@@ -198,7 +198,7 @@ private:
 
 		if (normalTime) {
 			static if (GOT_TRDS)
-				if (flags.fingerprintsEnabled)
+				if (usingTRDS)
 					TRDS.newTick();
 
 			++state.tick;
@@ -341,8 +341,8 @@ private:
 
 		Tracer.ipStopped(ip);
 
-		if (flags.fingerprintsEnabled)
-			static if (GOT_TRDS)
+		static if (GOT_TRDS)
+			if (usingTRDS)
 				TRDS.ipStopped(ip);
 
 		static if (befunge93)
@@ -364,19 +364,18 @@ private:
 		if (state.ips.length == 1)
 			return true;
 
-		static if (GOT_TRDS || GOT_IIPC) {
+		static if (GOT_TRDS || GOT_IIPC)
 			if (!flags.fingerprintsEnabled)
 				return true;
-		}
 
-		static if (GOT_TRDS) {
-			if (!TRDS.executable(normalTime, ip))
+		static if (GOT_TRDS)
+			if (usingTRDS && !TRDS.executable(normalTime, ip))
 				return false;
-		}
-		static if (GOT_IIPC) {
+
+		static if (GOT_IIPC)
 			if (!IIPC.executable(ip))
 				return false;
-		}
+
 		return true;
 	}
 
