@@ -917,11 +917,16 @@ final class FungeSpace(cell dim, bool befunge93) {
 				auto last = recents[$-1].finalBox;
 
 				// See if c is at bigSequenceStart except for one axis, along which
-				// it's just past last.end.
+				// it's just past last.end or last.beg.
+				{bool sawEnd = false, sawBeg = false;
 				outer: for (cell i = 0; i < dim; ++i) {
 					if (c.v[i] >  last.end.v[i] &&
 					    c.v[i] <= last.end.v[i] + BIG_SEQUENCE_MAX_SPACING)
 					{
+						if (sawBeg)
+							break;
+						sawEnd = true;
+
 						// We can break here since we want, for any axis i, all other
 						// axes to be at bigSequenceStart. Even if one of the others
 						// is a candidate for this if block, the fact that the
@@ -937,25 +942,62 @@ final class FungeSpace(cell dim, bool befunge93) {
 						end.v[i] += BIGBOX_PAD;
 						return AABB(c, end);
 
+					// First of many places in this function where we need to check
+					// the negative direction separately from the positive.
+					} else if (c.v[i] <  last.beg.v[i] &&
+					           c.v[i] >= last.beg.v[i] - BIG_SEQUENCE_MAX_SPACING)
+					{
+						if (sawEnd)
+							break;
+						sawBeg = true;
+						for (cell j = i + cast(cell)1; j < dim; ++j)
+							if (c.v[j] != bigSequenceStart.v[j])
+								break outer;
+
+						auto beg = last.beg;
+						beg.v[i] -= BIGBOX_PAD;
+						return AABB(beg, c);
+
 					} else if (c.v[i] != bigSequenceStart.v[i])
 						break;
-				}
+				}}
 
 				// Match against firstPlacedBig. This is for the case when we've
 				// made a few non-big boxes and then hit a new dimension for the
 				// first time in a location which doesn't match with the actual
 				// box. E.g.:
 				//
-				// BsBBBBB
-				// BBBc
+				// BsBfBBB
+				// BBBc  b
 				//  n
 				//
-				// B being boxes and c being c.
+				// B being boxes, c being c, and f being firstPlacedBig. The others
+				// are explained below.
 				static if (dim > 1) {
+					bool foundOneMatch = false;
 					for (cell i = 0; i < dim; ++i) {
-						if (c.v[i] >  firstPlacedBig.v[i] &&
-						    c.v[i] <= firstPlacedBig.v[i] + BIG_SEQUENCE_MAX_SPACING)
+						if (
+							(c.v[i] >  firstPlacedBig.v[i] &&
+							 c.v[i] <= firstPlacedBig.v[i] + BIG_SEQUENCE_MAX_SPACING))
 						{
+							// One other axis should match firstPlacedBig exactly, or
+							// we'd match a point like the b in the graphic, which we
+							// do not want.
+							if (!foundOneMatch) {
+								for (cell j = i+cast(cell)1; j < dim; ++j) {
+									if (c.v[j] == firstPlacedBig.v[j]) {
+										foundOneMatch = true;
+										break;
+									}
+								}
+								// We can break instead of continue, since this axis
+								// wasn't equal (in here instead of the else), nor were
+								// any of the previous ones (!foundOneMatch before
+								// this), nor were any of the following ones
+								// (!foundOneMatch after the above loop).
+								if (!foundOneMatch)
+									break;
+							}
 
 							auto end = last.end;
 							end.v[i] += BIGBOX_PAD;
@@ -971,34 +1013,71 @@ final class FungeSpace(cell dim, bool befunge93) {
 							// data in the big box to the resulting different big box
 							// anyway. This way is much better.
 							return AABB(bigSequenceStart, end);
-						}
+
+						// Negative direction
+						} else if (
+							(c.v[i] <  firstPlacedBig.v[i] &&
+							 c.v[i] >= firstPlacedBig.v[i] - BIG_SEQUENCE_MAX_SPACING))
+						{
+							if (!foundOneMatch) {
+								for (cell j = i+cast(cell)1; j < dim; ++j) {
+									if (c.v[j] == firstPlacedBig.v[j]) {
+										foundOneMatch = true;
+										break;
+									}
+								}
+								if (!foundOneMatch)
+									break;
+							}
+
+							auto beg = last.beg;
+							beg.v[i] -= BIGBOX_PAD;
+							return AABB(beg, bigSequenceStart);
+
+						} else if (c.v[i] == firstPlacedBig.v[i])
+							foundOneMatch = true;
 					}
 				}
 
 			} else {
-				bool allAlongLine = true;
+				bool allAlongPosLine = true, allAlongNegLine = true;
 
 				alongLoop: for (size_t i = 0; i < recents.length - 1; ++i) {
 					auto v = recents[i+1].c - recents[i].c;
 
 					for (cell d = 0; d < dim; ++d) {
-						if (v.v[d] >  NEWBOX_PAD &&
+						if (allAlongPosLine &&
+						    v.v[d] >  NEWBOX_PAD &&
 						    v.v[d] <= NEWBOX_PAD + BIG_SEQUENCE_MAX_SPACING)
 						{
 							for (cell j = d + cast(cell)1; j < dim; ++j) {
 								if (v.v[j] != 0) {
-									allAlongLine = false;
-									break alongLoop;
+									allAlongPosLine = false;
+									if (!allAlongNegLine)
+										break alongLoop;
+								}
+							}
+
+						// Negative direction
+						} else if (allAlongNegLine &&
+						           v.v[d] <  -NEWBOX_PAD &&
+						           v.v[d] >= -NEWBOX_PAD - BIG_SEQUENCE_MAX_SPACING)
+						{
+							for (cell j = d + cast(cell)1; j < dim; ++j) {
+								if (v.v[j] != 0) {
+									allAlongNegLine = false;
+									if (!allAlongPosLine)
+										break alongLoop;
 								}
 							}
 						} else if (v.v[d] != 0) {
-							allAlongLine = false;
+							allAlongPosLine = allAlongNegLine = false;
 							break alongLoop;
 						}
 					}
 				}
 
-				if (allAlongLine) {
+				if (allAlongPosLine || allAlongNegLine) {
 					if (!justPlacedBig) {
 						justPlacedBig = true;
 						firstPlacedBig = c;
@@ -1013,9 +1092,16 @@ final class FungeSpace(cell dim, bool befunge93) {
 						}
 					}
 
-					auto end = c;
-					end.v[axis] += BIGBOX_PAD;
-					return AABB(c, end);
+					if (allAlongPosLine) {
+						auto end = c;
+						end.v[axis] += BIGBOX_PAD;
+						return AABB(c, end);
+					} else {
+						assert (allAlongNegLine);
+						auto beg = c;
+						beg.v[axis] -= BIGBOX_PAD;
+						return AABB(beg, c);
+					}
 				}
 			}
 		}
