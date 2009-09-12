@@ -195,7 +195,7 @@ template TERM() {
 			go_down       = tryLoad("cud");
 			go_up         = tryLoad("cuu");
 			go_xy         = tryLoad("cup");
-   		enter_ca_mode = tryLoad("smcup");
+			enter_ca_mode = tryLoad("smcup");
 		}
 
    	putp(enter_ca_mode);
