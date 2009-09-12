@@ -922,9 +922,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 					if (c.v[i] >  last.end.v[i] &&
 					    c.v[i] <= last.end.v[i] + BIG_SEQUENCE_MAX_SPACING)
 					{
+						// We can break here since we want, for any axis i, all other
+						// axes to be at bigSequenceStart. Even if one of the others
+						// is a candidate for this if block, the fact that the
+						// current axis isn't at bigSequenceStart means that that one
+						// wouldn't be correct.
 						for (cell j = i + cast(cell)1; j < dim; ++j)
 							if (c.v[j] != bigSequenceStart.v[j])
-								continue outer;
+								break outer;
 
 						// We're making a line/rectangle/box (depending on the value
 						// of i): extend last along the axis where c was outside it.
