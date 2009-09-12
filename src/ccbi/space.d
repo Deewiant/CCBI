@@ -753,7 +753,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 		// Implicitly defines an ACCEPTABLE_WASTE for BIGBOXes: it's
 		// (BIG_SEQUENCE_MAX_SPACING - 1) * BIGBOX_PAD^(dim-1).
+		//
+		// This is a distance between two cells, not the number of spaces between
+		// them, and thus should always be at least 1.
 		BIG_SEQUENCE_MAX_SPACING = 4;
+
+	static assert (NEWBOX_PAD               >= 0);
+	static assert (BIGBOX_PAD               >  NEWBOX_PAD);
+	static assert (BIG_SEQUENCE_MAX_SPACING >= 1);
 
 	private {
 		struct Memory {
@@ -970,7 +977,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 					auto v = recents[i+1].c - recents[i].c;
 
 					for (cell d = 0; d < dim; ++d) {
-						if (v.v[d] == NEWBOX_PAD + 1) {
+						if (v.v[d] >  NEWBOX_PAD &&
+						    v.v[d] <= NEWBOX_PAD + BIG_SEQUENCE_MAX_SPACING)
+						{
 							for (cell j = d + cast(cell)1; j < dim; ++j) {
 								if (v.v[j] != 0) {
 									allAlongLine = false;
@@ -1005,7 +1014,6 @@ final class FungeSpace(cell dim, bool befunge93) {
 				}
 			}
 		}
-
 		justPlacedBig = false;
 		return AABB(c - NEWBOX_PAD, c + NEWBOX_PAD);
 	}
