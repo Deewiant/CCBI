@@ -752,15 +752,15 @@ final class FungeSpace(cell dim, bool befunge93) {
 		BIGBOX_PAD = 512,
 
 		// Implicitly defines an ACCEPTABLE_WASTE for BIGBOXes: it's
-		// (BIG_SEQUENCE_MAX_SPACING - 1) * BIGBOX_PAD^(dim-1).
+		// (BIG_SEQ_MAX_SPACING - 1) * BIGBOX_PAD^(dim-1).
 		//
 		// This is a distance between two cells, not the number of spaces between
 		// them, and thus should always be at least 1.
-		BIG_SEQUENCE_MAX_SPACING = 4;
+		BIG_SEQ_MAX_SPACING = 4;
 
-	static assert (NEWBOX_PAD               >= 0);
-	static assert (BIGBOX_PAD               >  NEWBOX_PAD);
-	static assert (BIG_SEQUENCE_MAX_SPACING >= 1);
+	static assert (NEWBOX_PAD          >= 0);
+	static assert (BIGBOX_PAD          >  NEWBOX_PAD);
+	static assert (BIG_SEQ_MAX_SPACING >= 1);
 
 	private {
 		struct Memory {
@@ -921,7 +921,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 				{bool sawEnd = false, sawBeg = false;
 				outer: for (cell i = 0; i < dim; ++i) {
 					if (c.v[i] >  last.end.v[i] &&
-					    c.v[i] <= last.end.v[i] + BIG_SEQUENCE_MAX_SPACING)
+					    c.v[i] <= last.end.v[i] + BIG_SEQ_MAX_SPACING)
 					{
 						if (sawBeg)
 							break;
@@ -945,7 +945,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					// First of many places in this function where we need to check
 					// the negative direction separately from the positive.
 					} else if (c.v[i] <  last.beg.v[i] &&
-					           c.v[i] >= last.beg.v[i] - BIG_SEQUENCE_MAX_SPACING)
+					           c.v[i] >= last.beg.v[i] - BIG_SEQ_MAX_SPACING)
 					{
 						if (sawEnd)
 							break;
@@ -978,7 +978,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					for (cell i = 0; i < dim; ++i) {
 						if (
 							(c.v[i] >  firstPlacedBig.v[i] &&
-							 c.v[i] <= firstPlacedBig.v[i] + BIG_SEQUENCE_MAX_SPACING))
+							 c.v[i] <= firstPlacedBig.v[i] + BIG_SEQ_MAX_SPACING))
 						{
 							// One other axis should match firstPlacedBig exactly, or
 							// we'd match a point like the b in the graphic, which we
@@ -1017,7 +1017,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 						// Negative direction
 						} else if (
 							(c.v[i] <  firstPlacedBig.v[i] &&
-							 c.v[i] >= firstPlacedBig.v[i] - BIG_SEQUENCE_MAX_SPACING))
+							 c.v[i] >= firstPlacedBig.v[i] - BIG_SEQ_MAX_SPACING))
 						{
 							if (!foundOneMatch) {
 								for (cell j = i+cast(cell)1; j < dim; ++j) {
@@ -1048,7 +1048,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					for (cell d = 0; d < dim; ++d) {
 						if (allAlongPosLine &&
 						    v.v[d] >  NEWBOX_PAD &&
-						    v.v[d] <= NEWBOX_PAD + BIG_SEQUENCE_MAX_SPACING)
+						    v.v[d] <= NEWBOX_PAD + BIG_SEQ_MAX_SPACING)
 						{
 							for (cell j = d + cast(cell)1; j < dim; ++j) {
 								if (v.v[j] != 0) {
@@ -1061,7 +1061,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 						// Negative direction
 						} else if (allAlongNegLine &&
 						           v.v[d] <  -NEWBOX_PAD &&
-						           v.v[d] >= -NEWBOX_PAD - BIG_SEQUENCE_MAX_SPACING)
+						           v.v[d] >= -NEWBOX_PAD - BIG_SEQ_MAX_SPACING)
 						{
 							for (cell j = d + cast(cell)1; j < dim; ++j) {
 								if (v.v[j] != 0) {
