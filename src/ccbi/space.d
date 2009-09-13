@@ -5,7 +5,6 @@
 // Funge-Space and the Coords struct.
 module ccbi.space;
 
-import tango.core.Array           : mismatch;
 import tango.io.device.Array      : Array;
 import tango.io.model.IConduit    : OutputStream;
 import tango.io.stream.Typed      : TypedOutput;
