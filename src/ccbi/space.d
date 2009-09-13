@@ -841,6 +841,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 	}
 
+private:
 	Coords jumpToBox(Coords pos, Coords delta, out AABB box, out size_t idx) {
 		bool found = tryJumpToBox(pos, delta, idx);
 		assert (found);
@@ -1332,7 +1333,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 	// Takes ownership of the Array, detaching it.
-	void load(Array arr, Coords* end, Coords target, bool binary) {
+	public void load(Array arr, Coords* end, Coords target, bool binary) {
 
 		scope (exit) arr.detach;
 
@@ -1568,7 +1569,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 	// Puts form feeds / line breaks only between rects/lines.
 	// Doesn't trim trailing spaces or anything like that.
 	// Doesn't close the given OutputStream.
-	void binaryPut(OutputStream file, Coords!(3) beg, Coords!(3) end) {
+	public void binaryPut(OutputStream file, Coords!(3) beg, Coords!(3) end) {
 		scope tfile = new TypedOutput!(ubyte)(file);
 		scope (exit) tfile.flush;
 
@@ -1600,7 +1601,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 	}
 
-	void informOf(Cursor* c) { cursors ~= c; }
+	public void informOf(Cursor* c) { cursors ~= c; }
 }
 
 struct Cursor(cell dim, bool befunge93) {
