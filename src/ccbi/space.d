@@ -766,10 +766,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 		Coords bigSequenceStart = void, firstPlacedBig = void;
 
 		Cursor*[] cursors;
+
+		AABB[] boxen;
 	}
 	Stats* stats;
-
-	private AABB[] boxen;
 
 	this(Stats* stats, Array source) {
 		this.stats = stats;
@@ -803,7 +803,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 	cell opIndex(Coords c) {
 		++stats.space.lookups;
 
-		AABB box;
+		AABB box = void;
 		if (findBox(c, box))
 			return box[c];
 		else
@@ -812,10 +812,9 @@ final class FungeSpace(cell dim, bool befunge93) {
 	cell opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
 
-		{AABB box;
+		AABB box = void;
 		if (findBox(c, box))
 			return box[c] = v;
-		}
 
 		return placeBoxFor(c)[c] = v;
 	}
@@ -1780,7 +1779,7 @@ contained:
 						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
-				relPos -= delta;
+				retreat(delta);
 			}
 		} else {
 			auto p = pos;
