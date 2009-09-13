@@ -101,6 +101,13 @@ template Dimension(cell dim) {
 	}
 	template Coords(cell x, cell y) { const Coords = Coords!(x,y,0); }
 	template Coords(cell x)         { const Coords = Coords!(x,0,0); }
+
+	bool contains(.Coords!(dim) pos, .Coords!(dim) beg, .Coords!(dim) end) {
+		foreach (i, x; pos.v)
+			if (!(x >= beg.v[i] && x <= end.v[i]))
+				return false;
+		return true;
+	}
 }
 
 // We use these for AABB data mainly to keep memory usage in check. Using
@@ -119,13 +126,13 @@ private cell* crealloc(cell* p, size_t s) {
 // Various *NoOffset functions exist; their argument Coords is one which is
 // relative to beg, not (0,0,0).
 //
-// If a non-NoOffset version exists, the NoOffset one is typically faster. A
-// notable exception is containsNoOffset.
+// If a non-NoOffset version exists, the NoOffset one is typically faster.
 private struct AABB(cell dim) {
 	static assert (dim >= 1 && dim <= 3);
 
 	alias .Coords   !(dim) Coords;
 	alias .Dimension!(dim).Coords InitCoords;
+	alias .Dimension!(dim).contains contains;
 
 	cell* data;
 	size_t size;
@@ -171,24 +178,12 @@ private struct AABB(cell dim) {
 
 	int opEquals(AABB b) { return beg == b.beg && end == b.end; }
 
-	bool contains(Coords p) {
-		foreach (i, x; p.v)
-			if (!(x >= beg.v[i] && x <= end.v[i]))
-				return false;
-		return true;
-	}
+	bool contains(Coords p) { return contains(p, beg, end); }
 	bool contains(AABB b)
 	out(result) {
 		assert (!result || this.overlaps(b));
 	} body {
 		return contains(b.beg) && contains(b.end);
-	}
-
-	bool containsNoOffset(Coords p, Coords ob2b, Coords ob2e) {
-		foreach (i, x; p.v)
-			if (!(x >= ob2b.v[i] && x <= ob2e.v[i]))
-				return false;
-		return true;
 	}
 
 	cell opIndex(Coords p)
@@ -678,13 +673,13 @@ private struct AABB(cell dim) {
 	// These return false if the skipping couldn't be completed within this box.
 	bool skipSpacesNoOffset(ref Coords p, Coords delta, Coords ob2b, Coords ob2e)
 	in {
-		assert (this.containsNoOffset(p, ob2b, ob2e));
+		assert (contains(p, ob2b, ob2e));
 	} out (done) {
-		assert (done == (containsNoOffset(p, ob2b, ob2e) && getNoOffset(p) != ' '));
+		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ' '));
 	} body {
 		while (getNoOffset(p) == ' ') {
 			p += delta;
-			if (!this.containsNoOffset(p, ob2b, ob2e))
+			if (!contains(p, ob2b, ob2e))
 				return false;
 		}
 		return true;
@@ -695,9 +690,9 @@ private struct AABB(cell dim) {
 	bool skipSemicolonsNoOffset(
 		ref Coords p, Coords delta, Coords ob2b, Coords ob2e, ref bool inMiddle)
 	in {
-		assert (this.containsNoOffset(p, ob2b, ob2e));
+		assert (contains(p, ob2b, ob2e));
 	} out (done) {
-		assert (done == (containsNoOffset(p, ob2b, ob2e) && getNoOffset(p) != ' '));
+		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ' '));
 	} body {
 		if (inMiddle)
 			goto continuePrev;
@@ -705,7 +700,7 @@ private struct AABB(cell dim) {
 		while (getNoOffset(p) == ';') {
 			do {
 				p += delta;
-				if (!this.containsNoOffset(p, ob2b, ob2e)) {
+				if (!contains(p, ob2b, ob2e)) {
 					inMiddle = true;
 					return false;
 				}
@@ -713,7 +708,7 @@ continuePrev:;
 			} while (getNoOffset(p) != ';')
 
 			p += delta;
-			if (!this.containsNoOffset(p, ob2b, ob2e)) {
+			if (!contains(p, ob2b, ob2e)) {
 				inMiddle = false;
 				return false;
 			}
@@ -1612,6 +1607,7 @@ struct Cursor(cell dim, bool befunge93) {
 private:
 	alias .Coords    !(dim)            Coords;
 	alias .Dimension !(dim).Coords     InitCoords;
+	alias .Dimension !(dim).contains   contains;
 	alias .AABB      !(dim)            AABB;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
@@ -1622,7 +1618,7 @@ private:
 public:
 	FungeSpace space;
 
-	private bool inBox() { return box.containsNoOffset(relPos, ob2b, ob2e); }
+	private bool inBox() { return contains(relPos, ob2b, ob2e); }
 
 	cell get() {
 		if (!inBox()) {
