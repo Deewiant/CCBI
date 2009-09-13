@@ -12,6 +12,7 @@ import tango.math.Math            : min, max;
 import tango.stdc.stdlib          : malloc, realloc, free;
 import tango.stdc.string          : memmove;
 import tango.text.convert.Integer : format;
+import tango.util.container.HashMap;
 
 public import ccbi.cell;
        import ccbi.templateutils;
@@ -616,60 +617,6 @@ private struct AABB(cell dim) {
 		}
 	}
 
-	// Gives an AABB from within this box which contains the given coordinates
-	// and overlaps with none of the given boxes.
-	//
-	// The AABB returned by this function is only a view: it shares its data
-	// with this AABB. Be careful! Only contains and the *NoOffset functions in
-	// it work properly, since the others (notably, getIdx and thereby
-	// opIndex[Assign]) tend to depend on beg and end matching data.
-	//
-	// In addition, it is weird: its width and height are not its own, so that
-	// its getNoOffsets work.
-	AABB tessellationAt(Coords p, AABB[] bs)
-	in {
-		assert (this.contains(p));
-	} out (tes) {
-		foreach (b; bs)
-			assert (!tes.overlaps(b));
-	} body {
-		auto tes = *this;
-		foreach (b; bs) foreach (i, x; p.v) {
-			// This could be improved, consider for instance the bottommost box in
-			// the following graphic and its current tessellation:
-			//
-			// +-------+    +--*--*-+
-			// |       |    |X .  . |
-			// |       |    |  .  . |
-			// |     +---   *..*..+---
-			// |     |      |  .  |
-			// |  +--|      *..+--|
-			// |  |  |      |  |  |
-			// |  |  |      |  |  |
-			// +--|  |      +--|  |
-			//
-			// (Note that this isn't actually a tessellation: all points will get
-			// a rectangle containing the rectangle at X.)
-			//
-			// Any of the following three would be an improvement (and they would
-			// actually be tessellations):
-			//
-			// +--*--*-+    +-------+    +-----*-+
-			// |  .  . |    |       |    |     . |
-			// |  .  . |    |       |    |     . |
-			// |  .  +---   *.....+---   |     +---
-			// |  .  |      |     |      |     |
-			// |  +--|      *..+--|      *..+--|
-			// |  |  |      |  |  |      |  |  |
-			// |  |  |      |  |  |      |  |  |
-			// +--|  |      +--|  |      +--|  |
-			const cell l = 1;
-			if (b.end.v[i] < x) tes.beg.v[i] = max(tes.beg.v[i], b.end.v[i]+l);
-			if (b.beg.v[i] > x) tes.end.v[i] = min(b.beg.v[i]-l, tes.end.v[i]);
-		}
-		return tes;
-	}
-
 	// These return false if the skipping couldn't be completed within this box.
 	bool skipSpacesNoOffset(ref Coords p, Coords delta, Coords ob2b, Coords ob2e)
 	in {
@@ -727,6 +674,32 @@ continuePrev:;
 	}
 }
 
+private struct BakAABB(cell dim) {
+	alias .Coords   !(dim) Coords;
+	alias .Dimension!(dim).Coords InitCoords;
+
+	HashMap!(Coords, cell) data;
+	Coords beg = void, end = void;
+
+	void initialize(Coords c) {
+		beg = c;
+		end = c;
+		data = new typeof(data);
+	}
+
+	cell opIndex(Coords p) {
+		auto c = p in data;
+		return c ? *c : ' ';
+	}
+	cell opIndexAssign(cell c, Coords p) {
+		beg.minWith(p);
+		end.maxWith(p);
+		data[p] = c;
+		return c;
+	}
+	bool contains(Coords p) { return Dimension!(dim).contains(p, beg, end); }
+}
+
 final class FungeSpace(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
 	static assert (!befunge93 || dim == 2);
@@ -750,7 +723,11 @@ final class FungeSpace(cell dim, bool befunge93) {
 		//
 		// This is a distance between two cells, not the number of spaces between
 		// them, and thus should always be at least 1.
-		BIG_SEQ_MAX_SPACING = 4;
+		BIG_SEQ_MAX_SPACING = 4,
+
+		// Threshold for switching to BakAABB. Only limits opIndexAssign, not
+		// load().
+		MAX_PLACED_BOXEN = 64;
 
 	static assert (NEWBOX_PAD          >= 0);
 	static assert (BIGBOX_PAD          >  NEWBOX_PAD);
@@ -768,6 +745,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		Cursor*[] cursors;
 
 		AABB[] boxen;
+		BakAABB!(dim) bak;
 	}
 	Stats* stats;
 
@@ -807,16 +785,16 @@ final class FungeSpace(cell dim, bool befunge93) {
 		if (findBox(c, box))
 			return box[c];
 		else
-			return ' ';
+			return bak[c];
 	}
 	cell opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
 
 		AABB box = void;
-		if (findBox(c, box))
+		if (findBox(c, box) || placeBoxFor(c, box))
 			return box[c] = v;
-
-		return placeBoxFor(c)[c] = v;
+		else
+			return bak[c] = v;
 	}
 
 	static if (befunge93) {
@@ -841,6 +819,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 
 private:
+	bool usingBak() { return bak.data !is null; }
+
 	Coords jumpToBox(Coords pos, Coords delta, out AABB box, out size_t idx) {
 		bool found = tryJumpToBox(pos, delta, idx);
 		assert (found);
@@ -894,11 +874,18 @@ private:
 		return findBox(pos, aabb, _);
 	}
 
-	AABB placeBoxFor(Coords c) {
+	bool placeBoxFor(Coords c, out AABB aabb) {
+		if (boxen.length >= MAX_PLACED_BOXEN) {
+			if (bak.data is null)
+				bak.initialize(c);
+			return false;
+		}
+
 		auto box = getBoxFor(c);
 		auto pox = reallyPlaceBox(box);
 		recentBuf.push(Memory(box, pox, c));
-		return pox;
+		aabb = pox;
+		return true;
 	}
 	AABB getBoxFor(Coords c) {
 		if (recentBuf.size() == recentBuf.CAPACITY) {
@@ -1611,14 +1598,25 @@ private:
 	alias .AABB      !(dim)            AABB;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
-	Coords relPos = void, oBeg = void, ob2b = void, ob2e = void;
-	AABB box = void;
-	size_t boxIdx = void;
+	bool bak = false;
+	union {
+		// bak = false
+		struct {
+			Coords relPos = void, oBeg = void, ob2b = void, ob2e = void;
+			AABB box = void;
+			size_t boxIdx = void;
+		}
+		// bak = true
+		struct { Coords actualPos = void, beg = void, end = void; }
+	}
 
 public:
 	FungeSpace space;
 
-	private bool inBox() { return contains(relPos, ob2b, ob2e); }
+	private bool inBox() {
+		return bak ? contains(pos, beg, end)
+		           : contains(relPos, ob2b, ob2e);
+	}
 
 	cell get() {
 		if (!inBox()) {
@@ -1629,7 +1627,8 @@ public:
 		return unsafeGet();
 	}
 	cell unsafeGet() in { assert (inBox()); }
-	               body { return  box.getNoOffset(relPos); }
+	               body { return bak ? space.bak[pos]
+	                                 : box.getNoOffset(relPos); }
 
 	void set(cell c) {
 		if (!inBox()) {
@@ -1640,10 +1639,11 @@ public:
 		unsafeSet(c);
 	}
 	void unsafeSet(cell c) in { assert (inBox()); }
-	                     body { box.setNoOffset(relPos, c); }
+	                     body { bak ? space.bak[pos] = c
+	                                : box.setNoOffset(relPos, c); }
 
-	Coords pos()         { return relPos + oBeg; }
-	void   pos(Coords c) { relPos = c - oBeg; }
+	Coords pos()         { return bak ? actualPos : relPos + oBeg; }
+	void   pos(Coords c) { bak ? actualPos = c : (relPos = c - oBeg); }
 
 	static typeof(*this) opCall(Coords c, Coords* delta, FungeSpace s) {
 
@@ -1657,6 +1657,9 @@ public:
 
 				if (space.tryJumpToBox(c, *delta, boxIdx))
 					box = space.boxen[boxIdx];
+
+				else if (space.usingBak && space.bak.contains(c))
+					bak = true;
 
 				else version (detectInfiniteLoops)
 					throw new InfiniteLoopException(
@@ -1679,30 +1682,53 @@ public:
 	}
 
 	private void tessellate(Coords p) {
-		// Care only about boxes that are above box
-		auto overlaps = new AABB[boxIdx];
-		size_t i = 0;
-		foreach (b; space.boxen[0..boxIdx])
-			if (b.overlaps(box))
-				overlaps[i++] = b;
+		if (bak) {
+			beg = space.bak.beg;
+			end = space.bak.end;
+			tessellateAt(p, space.boxen, beg, end);
+			actualPos = p;
+		} else {
+			// Care only about boxes that are above box
+			auto overlaps = new AABB[boxIdx];
+			size_t i = 0;
+			foreach (b; space.boxen[0..boxIdx])
+				if (b.overlaps(box))
+					overlaps[i++] = b;
 
-		oBeg = box.beg;
-		relPos = p - oBeg;
-		box = box.tessellationAt(p, overlaps[0..i]);
-		ob2b = box.beg - oBeg;
-		ob2e = box.end - oBeg;
+			oBeg = box.beg;
+			relPos = p - oBeg;
+
+			// box is now only a view: it shares its data with the original box.
+			// Be careful! Only contains and the *NoOffset functions in it work
+			// properly, since the others (notably, getIdx and thereby
+			// opIndex[Assign]) tend to depend on beg and end matching data.
+			//
+			// In addition, it is weird: its width and height are not its own, so
+			// that its getNoOffsets work.
+			tessellateAt(p, overlaps[0..i], box.beg, box.end);
+
+			ob2b = box.beg - oBeg;
+			ob2e = box.end - oBeg;
+		}
 	}
 
-	private bool getBox(ref Coords p) {
+	private bool getBox(Coords p) {
 		if (space.findBox(p, box, boxIdx)) {
+			bak = false;
 			tessellate(p);
 			return true;
+
+		} else if (space.usingBak && space.bak.contains(p)) {
+			bak = true;
+			tessellate(p);
+			return true;
+
 		} else
 			return false;
 	}
 
-	void advance(Coords delta) { relPos += delta; }
-	void retreat(Coords delta) { relPos -= delta; }
+	void advance(Coords delta) { bak ? actualPos += delta : (relPos += delta); }
+	void retreat(Coords delta) { bak ? actualPos -= delta : (relPos -= delta); }
 
 	template DetectInfiniteLoopDecls() {
 		version (detectInfiniteLoops) {
@@ -1739,7 +1765,7 @@ public:
 		switch (unsafeGet()) {
 			do {
 			case ' ':
-				while (!box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e)) {
+				while (!skipSpaces(delta)) {
 findBox:
 					auto p = pos;
 					if (!getBox(p)) {
@@ -1750,9 +1776,7 @@ findBox:
 				if (unsafeGet() == ';') {
 			case ';':
 					bool status = false;
-					while (
-						!box.skipSemicolonsNoOffset(
-							relPos, delta, ob2b, ob2e, status))
+					while (!skipSemicolons(delta, status))
 					{
 						auto p = pos;
 						if (!getBox(p)) {
@@ -1766,13 +1790,49 @@ findBox:
 			default: break;
 		}
 	}
+	bool skipSpaces(Coords delta) {
+		if (bak) {
+			while (space.bak[pos] == ' ') {
+				advance(delta);
+				if (!inBox())
+					return false;
+			}
+			return true;
+		} else
+			return box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e);
+	}
+	bool skipSemicolons(Coords delta, ref bool inMid) {
+		if (bak) {
+			if (inMid)
+				goto continuePrev;
+
+			while (space.bak[pos] == ';') {
+				do {
+					advance(delta);
+					if (!inBox()) {
+						inMid = true;
+						return false;
+					}
+continuePrev:;
+				} while (space.bak[pos] != ';')
+
+				advance(delta);
+				if (!inBox()) {
+					inMid = false;
+					return false;
+				}
+			}
+			return true;
+		} else
+			return box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, inMid);
+	}
 	void skipToLastSpace(Coords delta) {
 		if (inBox()) {
 contained:
 			if (unsafeGet() == ' ') {
 				mixin DetectInfiniteLoopDecls!();
 
-				while (!box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e)) {
+				while (!skipSpaces(delta)) {
 					auto p = pos;
 					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
@@ -1785,6 +1845,11 @@ contained:
 			auto p = pos;
 			if (space.tryJumpToBox(p, delta, boxIdx)) {
 				box = space.boxen[boxIdx];
+				tessellate(p);
+				goto contained;
+
+			} else if (space.usingBak && space.bak.contains(p)) {
+				bak = true;
 				tessellate(p);
 				goto contained;
 
@@ -1969,6 +2034,52 @@ I1D intersect1D(cell b, cell e, cell boxB, cell boxE) {
 		}
 	}
 	return I1D.NONE;
+}
+
+// Modifies the given beg/end pair to give a box which contains the given
+// coordinates and overlaps with none of the given boxes. The coordinates
+// should, of course, be already contained between the beg and end.
+void tessellateAt(cell dim)(
+	Coords!(dim) p, AABB!(dim)[] bs, ref Coords!(dim) beg, ref Coords!(dim) end)
+in {
+	assert (AABB!(dim).unsafe(beg,end).contains(p));
+} out {
+	foreach (b; bs)
+		assert (!AABB!(dim).unsafe(beg,end).overlaps(b));
+} body {
+	foreach (b; bs) foreach (i, x; p.v) {
+		// This could be improved, consider for instance the bottommost box in
+		// the following graphic and its current tessellation:
+		//
+		// +-------+    +--*--*-+
+		// |       |    |X .  . |
+		// |       |    |  .  . |
+		// |     +---   *..*..+---
+		// |     |      |  .  |
+		// |  +--|      *..+--|
+		// |  |  |      |  |  |
+		// |  |  |      |  |  |
+		// +--|  |      +--|  |
+		//
+		// (Note that this isn't actually a tessellation: all points will get
+		// a rectangle containing the rectangle at X.)
+		//
+		// Any of the following three would be an improvement (and they would
+		// actually be tessellations):
+		//
+		// +--*--*-+    +-------+    +-----*-+
+		// |  .  . |    |       |    |     . |
+		// |  .  . |    |       |    |     . |
+		// |  .  +---   *.....+---   |     +---
+		// |  .  |      |     |      |     |
+		// |  +--|      *..+--|      *..+--|
+		// |  |  |      |  |  |      |  |  |
+		// |  |  |      |  |  |      |  |  |
+		// +--|  |      +--|  |      +--|  |
+		const cell l = 1;
+		if (b.end.v[i] < x) beg.v[i] = max(  beg.v[i], b.end.v[i]+l);
+		if (b.beg.v[i] > x) end.v[i] = min(b.beg.v[i]-l, end.v[i]);
+	}
 }
 
 final class InfiniteLoopException : Exception {
