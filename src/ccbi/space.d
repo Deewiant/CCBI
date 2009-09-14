@@ -86,12 +86,23 @@ struct Coords(cell dim) {
 				}"
 				~ Ops!(T[2..$]);
 	}
-
 	mixin (Ops!(
 		"Mul", "*",
 		"Add", "+",
 		"Sub", "-"
 	));
+
+	template Any(char[] s, char[] op) {
+		const Any =
+			`bool any` ~s~ `(Coords o) {
+				foreach (i, c; v)
+					if (c ` ~op~ ` o.v[i])
+						return true;
+				return false;
+			}`;
+	}
+	mixin (Any!("Less",    "<"));
+	mixin (Any!("Greater", ">"));
 }
 
 template Dimension(cell dim) {
@@ -742,6 +753,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 
 		AABB[] boxen;
 		BakAABB!(dim) bak;
+
+		Coords lastBeg = void, lastEnd = void;
 	}
 	Stats* stats;
 
@@ -749,6 +762,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		this.stats = stats;
 
 		load(source, null, InitCoords!(0), false);
+		lastBeg = boxen[0].beg;
+		lastEnd = boxen[0].end;
 	}
 
 	this(FungeSpace other) {
@@ -795,24 +810,163 @@ final class FungeSpace(cell dim, bool befunge93) {
 			bak[c] = v;
 	}
 
-	static if (befunge93) {
-		Coords getBeg() { return InitCoords!( 0, 0); }
-		Coords getEnd() { return InitCoords!(79,24); }
-	} else {
-		// FIXME: these are imprecise
-		Coords getBeg() {
-			auto beg = boxen[0].beg;
-			foreach (box; boxen[1..$])
-				foreach (i, c; box.beg.v)
-					beg.v[i] = min(beg.v[i], c);
-			return beg;
+	static if (!befunge93) {
+		void getLooseBounds(out Coords beg, out Coords end) {
+			beg = lastBeg;
+			end = lastEnd;
+			foreach (box; boxen) {
+				beg.minWith(box.beg);
+				end.maxWith(box.end);
+			}
+			if (usingBak) {
+				beg.minWith(bak.beg);
+				end.maxWith(bak.end);
+			}
 		}
-		Coords getEnd() {
-			auto end = boxen[0].end;
-			foreach (box; boxen[1..$])
-				foreach (i, c; box.end.v)
-					end.v[i] = max(end.v[i], c);
-			return end;
+		void getTightBounds(out Coords beg, out Coords end) {
+			bool begSp = this[lastBeg] == ' ',
+			     endSp = this[lastEnd] == ' ';
+
+			if (begSp && endSp) {
+				beg = InitCoords!(cell.max,cell.max,cell.max);
+				end = InitCoords!(cell.min,cell.min,cell.min);
+			} else if (!begSp && !endSp) {
+				beg = lastBeg;
+				end = lastEnd;
+			} else if (!endSp)
+				beg = end = lastEnd;
+			else {
+				assert (!begSp);
+				beg = end = lastBeg;
+			}
+
+			findBeg!(0)(&beg);
+			findEnd!(0)(&end);
+			static if (dim > 1) {
+				findBeg!(1)(&beg);
+				findEnd!(1)(&end);
+			}
+			static if (dim > 2) {
+				findBeg!(2)(&beg);
+				findEnd!(2)(&end);
+			}
+
+			if (usingBak) {
+				auto bakBeg = bak.beg;
+				auto bakEnd = bak.end;
+				foreach (c, v; bak.data) {
+					assert (v != ' ');
+					bakBeg.minWith(c);
+					bakEnd.maxWith(c);
+				}
+				// Might as well improve these approximate bounds while we're at it
+				bak.beg = bakBeg;
+				bak.end = bakEnd;
+
+				beg.minWith(bak.beg);
+				end.maxWith(bak.end);
+			}
+			lastBeg = beg;
+			lastEnd = end;
+		}
+		void findBeg(ubyte axis)(Coords* beg) {
+			nextBox: foreach (box; boxen) {
+				if (box.getNoOffset(InitCoords!(0)) != ' ')
+					beg.minWith(box.beg);
+
+				else if (box.beg.anyLess(*beg)) {
+					auto last = *beg;
+					last.minWith(box.end);
+					last -= box.beg;
+
+					Coords c = void;
+
+					bool check() {
+						if (box.getNoOffset(c) != ' ') {
+							beg.minWith(c + box.beg);
+							if (beg.v[axis] <= box.beg.v[axis])
+								return true;
+							last.v[axis] = min(last.v[axis], c.v[axis]);
+						}
+						return false;
+					}
+
+					const start = InitCoords!(0);
+
+					static if (axis == 0) {
+						mixin (CoordsLoop!(
+							dim, "c", "start", "last", "<=", "+= 1",
+							"if (check) continue nextBox;"));
+
+					} else static if (axis == 1) {
+						mixin (
+							(dim==3 ? OneCoordsLoop!(
+								         3, "c", "start", "last", "<=", "+= 1","")
+								     : "") ~ `
+							for (c.x = 0; c.x <= last.x; ++c.x)
+							for (c.y = 0; c.y <= last.y; ++c.y)
+								if (check)
+									continue nextBox;`);
+
+					} else static if (axis == 2) {
+						for (c.y = 0; c.y <= last.y; ++c.y)
+						for (c.x = 0; c.x <= last.x; ++c.x)
+						for (c.z = 0; c.z <= last.z; ++c.z)
+							if (check)
+								continue nextBox;
+					} else
+						static assert (false);
+				}
+			}
+		}
+		void findEnd(ubyte axis)(Coords* end) {
+			nextBox: foreach (box; boxen) {
+				if (box[box.end] != ' ')
+					end.maxWith(box.end);
+
+				else if (box.end.anyGreater(*end)) {
+					auto last = *end - box.beg;
+					last.maxWith(InitCoords!(0));
+
+					Coords c = void;
+
+					bool check() {
+						if (box.getNoOffset(c) != ' ') {
+							end.maxWith(c + box.beg);
+							if (end.v[axis] >= box.end.v[axis])
+								return true;
+							last.v[axis] = max(last.v[axis], c.v[axis]);
+						}
+						return false;
+					}
+
+					auto start = box.end - box.beg;
+
+					static if (axis == 0)
+						mixin (CoordsLoop!(
+							dim, "c", "start", "last", ">=", "-= 1",
+							"if (check) continue nextBox;"));
+
+					else static if (axis == 1) {
+						mixin (
+							(dim==3 ? OneCoordsLoop!(
+								         3, "c", "start", "last", ">=", "-= 1","")
+								     : "") ~ `
+							for (c.x = start.x; c.x >= last.x; --c.x)
+							for (c.y = start.y; c.y >= last.y; --c.y)
+								if (check)
+									continue nextBox;`);
+
+					} else static if (axis == 2) {
+						for (c.y = start.y; c.y >= last.y; --c.y)
+						for (c.x = start.x; c.x >= last.x; --c.x)
+						for (c.z = start.z; c.z >= last.z; --c.z)
+							if (check)
+								continue nextBox;
+					} else
+						static assert (false);
+				}
+			}
 		}
 	}
 
@@ -1394,7 +1548,7 @@ private:
 
 	static if (befunge93)
 	void befunge93Load(ubyte[] input) {
-		auto aabb = AABB(getBeg(), getEnd());
+		auto aabb = AABB(InitCoords!(0,0), InitCoords!(79,24));
 		aabb.alloc;
 		boxen ~= aabb;
 
@@ -2085,6 +2239,38 @@ in {
 		if (b.end.v[i] < x) beg.v[i] = max(  beg.v[i], b.end.v[i]+l);
 		if (b.beg.v[i] > x) end.v[i] = min(b.beg.v[i]-l, end.v[i]);
 	}
+}
+
+template OneCoordsLoop(
+	cell dim,
+	char[] c, char[] begC, char[] endC,
+	char[] cmp, char[] op,
+	char[] f)
+{
+	static if (dim == 1)
+		const OneCoordsLoop =
+			`for (`~c~`.x = `~begC~`.x; `~c~`.x `~cmp~endC~`.x; `~c~`.x `~op~`) {`
+				~f~
+			`}`;
+	else static if (dim == 2)
+		const OneCoordsLoop =
+			`for (`~c~`.y = `~begC~`.y; `~c~`.y `~cmp~endC~`.y; `~c~`.y `~op~`)`;
+	else static if (dim == 3)
+		const OneCoordsLoop =
+			`for (`~c~`.z = `~begC~`.z; `~c~`.z `~cmp~endC~`.z; `~c~`.z `~op~`)`;
+}
+
+template CoordsLoop(
+	cell dim,
+	char[] c, char[] begC, char[] endC,
+	char[] cmp, char[] op,
+	char[] f)
+{
+	static if (dim == 0)
+		const CoordsLoop = "";
+	else
+		const CoordsLoop = OneCoordsLoop!(dim,   c, begC, endC, cmp, op, f)
+		                 ~    CoordsLoop!(dim-1, c, begC, endC, cmp, op, f);
 }
 
 final class InfiniteLoopException : Exception {

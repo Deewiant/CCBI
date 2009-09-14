@@ -216,8 +216,8 @@ void fishhook() {
 		Coords c  = cip.pos;
 		Coords c2 = c;
 
-		auto beg = state.space.getBeg();
-		auto end = state.space.getEnd();
+		Coords beg, end;
+		state.space.getLooseBounds(beg, end);
 
 		if (n < 0) {
 			c.y = beg.y;
@@ -243,8 +243,8 @@ void boulder() {
 		Coords c  = cip.pos;
 		Coords c2 = c;
 
-		auto beg = state.space.getBeg();
-		auto end = state.space.getEnd();
+		Coords beg, end;
+		state.space.getLooseBounds(beg, end);
 
 		if (n < 0) {
 			c.x = beg.x;
