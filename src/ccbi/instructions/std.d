@@ -947,10 +947,10 @@ void getSysInfo() {
 
 		// the rest
 
-		auto beg    = state.space.getBeg();
-		auto relEnd = state.space.getEnd() - beg;
+		Coords beg, end;
+		state.space.getTightBounds(beg, end);
 
-		pushVector(relEnd);
+		pushVector(end - beg);
 		pushVector(beg);
 		pushVector(cip.offset);
 		pushVector(cip.delta);
