@@ -780,8 +780,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 		AABB box = void;
 		if (findBox(c, box))
 			return box[c];
-		else
+		else if (usingBak)
 			return bak[c];
+		else
+			return ' ';
 	}
 	void opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
