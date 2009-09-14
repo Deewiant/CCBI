@@ -632,8 +632,8 @@ private struct AABB(cell dim) {
 		return true;
 	}
 
-	// The bool argument should start at false and thereafter just be passed
-	// back unmodified.
+	// inMiddle should start at false and thereafter just be passed back
+	// unmodified.
 	bool skipSemicolonsNoOffset(
 		ref Coords p, Coords delta, Coords ob2b, Coords ob2e, ref bool inMiddle)
 	in {
@@ -661,16 +661,6 @@ continuePrev:;
 			}
 		}
 		return true;
-	}
-
-	bool nonSpaceAlong(size_t start, size_t stride) {
-		return nonSpaceAlong(start, stride, size);
-	}
-	bool nonSpaceAlong(size_t start, size_t stride, size_t end) {
-		for (size_t i = start; i < end; i += stride)
-			if (data[i] != ' ')
-				return true;
-		return false;
 	}
 }
 
@@ -1786,9 +1776,8 @@ findBox:
 				}
 				if (unsafeGet() == ';') {
 			case ';':
-					bool status = false;
-					while (!skipSemicolons(delta, status))
-					{
+					bool inMiddle = false;
+					while (!skipSemicolons(delta, inMiddle)) {
 						auto p = pos;
 						if (!getBox(p)) {
 							mixin (DetectInfiniteLoop!("jumping over semicolons"));
@@ -1838,38 +1827,34 @@ continuePrev:;
 			return box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, inMid);
 	}
 	void skipToLastSpace(Coords delta) {
-		if (inBox()) {
-contained:
-			if (unsafeGet() == ' ') {
-				mixin DetectInfiniteLoopDecls!();
-
-				while (!skipSpaces(delta)) {
-					auto p = pos;
-					if (!getBox(p)) {
-						mixin (DetectInfiniteLoop!("processing spaces"));
-						tessellate(space.jumpToBox(p, delta, box, boxIdx));
-					}
-				}
-				retreat(delta);
-			}
-		} else {
+		if (!inBox()) {
 			auto p = pos;
 			if (space.tryJumpToBox(p, delta, boxIdx)) {
 				box = space.boxen[boxIdx];
-				tessellate(p);
-				goto contained;
 
-			} else if (space.usingBak && space.bak.contains(p)) {
+			} else if (space.usingBak && space.bak.contains(p))
 				bak = true;
-				tessellate(p);
-				goto contained;
 
-			} else version (detectInfiniteLoops)
+			else version (detectInfiniteLoops)
 				throw new InfiniteLoopException(
 					"Never meets an allocated area",
 					p.toString(), delta.toString());
 			else
 				for (;;){}
+
+			tessellate(p);
+		}
+		if (unsafeGet() == ' ') {
+			mixin DetectInfiniteLoopDecls!();
+
+			while (!skipSpaces(delta)) {
+				auto p = pos;
+				if (!getBox(p)) {
+					mixin (DetectInfiniteLoop!("processing spaces"));
+					tessellate(space.jumpToBox(p, delta, box, boxIdx));
+				}
+			}
+			retreat(delta);
 		}
 	}
 }
