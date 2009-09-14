@@ -22,30 +22,25 @@ mixin (Fingerprint!(
 template MODE() {
 
 void ctor() {
-	foreach (inout ip; state.ips) {
-		foreach (inout s; ip.stackStack) {
-			auto st = cast(Stack!(cell))s;
-			if (st)
-				s = new Deque(&dequeStats, st);
-		}
-		ip.stack = ip.stackStack.top;
+	foreach (inout s; cip.stackStack) {
+		auto st = cast(Stack!(cell))s;
+		if (st)
+			s = new Deque(&dequeStats, st);
 	}
+	cip.stack = cip.stackStack.top;
 }
 
 void dtor() {
 	// Leaving modes on after unloading is bad practice IMHO, but it could
 	// happen...
-	foreach (ip; state.ips)
-	if (ip.stack.mode & (INVERT_MODE | QUEUE_MODE))
+	if (cip.stack.mode & (INVERT_MODE | QUEUE_MODE))
 		return;
 
-	foreach (inout ip; state.ips) {
-		foreach (inout s; ip.stackStack) {
-			assert (cast(Deque)s);
-			s = new Stack!(cell)(&stackStats, cast(Deque)s);
-		}
-		ip.stack = ip.stackStack.top;
+	foreach (inout s; cip.stackStack) {
+		assert (cast(Deque)s);
+		s = new Stack!(cell)(&stackStats, cast(Deque)s);
 	}
+	cip.stack = cip.stackStack.top;
 }
 
 // Toggle Hovermode, Toggle Switchmode, Toggle Invertmode, Toggle Queuemode
