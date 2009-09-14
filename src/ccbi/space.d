@@ -1499,9 +1499,11 @@ private:
 			auto cursor = Cursor(target, null, this);
 
 			if (binary) {
-				foreach (b; input)
+				foreach (b; input) {
 					if (b != ' ')
 						cursor.set(cast(cell)b);
+					++cursor.relPos.x;
+				}
 			} else {
 				static if (dim >= 2) {
 					bool gotCR = false;
