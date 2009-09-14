@@ -1621,14 +1621,21 @@ public:
 	cell get() {
 		if (!inBox()) {
 			auto p = pos;
-			if (!getBox(p))
+			if (!getBox(p)) {
+				++space.stats.space.lookups;
 				return ' ';
+			}
 		}
 		return unsafeGet();
 	}
-	cell unsafeGet() in { assert (inBox()); }
-	               body { return bak ? space.bak[pos]
-	                                 : box.getNoOffset(relPos); }
+	cell unsafeGet()
+	in {
+		assert (inBox());
+	} body {
+		++space.stats.space.lookups;
+		return bak ? space.bak[pos]
+		           : box.getNoOffset(relPos);
+	}
 
 	void set(cell c) {
 		if (!inBox()) {
@@ -1638,9 +1645,14 @@ public:
 		}
 		unsafeSet(c);
 	}
-	void unsafeSet(cell c) in { assert (inBox()); }
-	                     body { bak ? space.bak[pos] = c
-	                                : box.setNoOffset(relPos, c); }
+	void unsafeSet(cell c)
+	in {
+		assert (inBox());
+	} body {
+		++space.stats.space.assignments;
+		bak ? space.bak[pos] = c
+		    : box.setNoOffset(relPos, c);
+	}
 
 	Coords pos()         { return bak ? actualPos : relPos + oBeg; }
 	void   pos(Coords c) { bak ? actualPos = c : (relPos = c - oBeg); }
