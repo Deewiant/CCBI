@@ -1612,6 +1612,34 @@ private:
 public:
 	FungeSpace space;
 
+	static typeof(*this) opCall(Coords c, Coords* delta, FungeSpace s) {
+
+		typeof(*this) cursor;
+		with (cursor) {
+			space = s;
+
+			if (!space.findBox(c, box, boxIdx)) {
+
+				assert (delta !is null);
+
+				if (space.tryJumpToBox(c, *delta, boxIdx))
+					box = space.boxen[boxIdx];
+
+				else if (space.usingBak && space.bak.contains(c))
+					bak = true;
+
+				else version (detectInfiniteLoops)
+					throw new InfiniteLoopException(
+						"IP diverged while being placed",
+						c.toString(), delta.toString());
+				else
+					for (;;){}
+			}
+			tessellate(c);
+		}
+		return cursor;
+	}
+
 	private bool inBox() {
 		return bak ? contains(pos, beg, end)
 		           : contains(relPos, ob2b, ob2e);
@@ -1655,34 +1683,6 @@ public:
 
 	Coords pos()         { return bak ? actualPos : relPos + oBeg; }
 	void   pos(Coords c) { bak ? actualPos = c : (relPos = c - oBeg); }
-
-	static typeof(*this) opCall(Coords c, Coords* delta, FungeSpace s) {
-
-		typeof(*this) cursor;
-		with (cursor) {
-			space = s;
-
-			if (!space.findBox(c, box, boxIdx)) {
-
-				assert (delta !is null);
-
-				if (space.tryJumpToBox(c, *delta, boxIdx))
-					box = space.boxen[boxIdx];
-
-				else if (space.usingBak && space.bak.contains(c))
-					bak = true;
-
-				else version (detectInfiniteLoops)
-					throw new InfiniteLoopException(
-						"IP diverged while being placed",
-						c.toString(), delta.toString());
-				else
-					for (;;){}
-			}
-			tessellate(c);
-		}
-		return cursor;
-	}
 
 	private void invalidate() {
 		auto p = pos;
