@@ -23,6 +23,8 @@ template IMAP() {
 void ctor() {
 	// Support mapping 0 through 255
 	cip.mapping = new typeof(cip.mapping)(256);
+	foreach (j, inout i; cip.mapping)
+		i = cast(cell)j;
 }
 
 void remap() {
