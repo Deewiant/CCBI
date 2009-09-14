@@ -639,7 +639,7 @@ private struct AABB(cell dim) {
 	in {
 		assert (contains(p, ob2b, ob2e));
 	} out (done) {
-		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ' '));
+		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ';'));
 	} body {
 		if (inMiddle)
 			goto continuePrev;
