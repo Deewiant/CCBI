@@ -197,7 +197,7 @@ private struct AABB(cell dim) {
 	} body {
 		return data[getIdx(p)];
 	}
-	cell opIndexAssign(cell val, Coords p)
+	void opIndexAssign(cell val, Coords p)
 	in {
 		assert (this.contains(p));
 
@@ -205,7 +205,7 @@ private struct AABB(cell dim) {
 		assert (data !is null);
 		assert (getIdx(p) < size);
 	} body {
-		return data[getIdx(p)] = val;
+		data[getIdx(p)] = val;
 	}
 	private size_t getIdx        (Coords p) { return getIdxNoOffset(p - beg); }
 	private size_t getIdxNoOffset(Coords p) {
@@ -691,11 +691,10 @@ private struct BakAABB(cell dim) {
 		auto c = p in data;
 		return c ? *c : ' ';
 	}
-	cell opIndexAssign(cell c, Coords p) {
+	void opIndexAssign(cell c, Coords p) {
 		beg.minWith(p);
 		end.maxWith(p);
 		data[p] = c;
-		return c;
 	}
 	bool contains(Coords p) { return Dimension!(dim).contains(p, beg, end); }
 }
@@ -787,14 +786,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 		else
 			return bak[c];
 	}
-	cell opIndexAssign(cell v, Coords c) {
+	void opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
 
 		AABB box = void;
 		if (findBox(c, box) || placeBoxFor(c, box))
-			return box[c] = v;
+			box[c] = v;
 		else
-			return bak[c] = v;
+			bak[c] = v;
 	}
 
 	static if (befunge93) {
