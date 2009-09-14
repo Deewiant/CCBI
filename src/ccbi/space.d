@@ -682,9 +682,16 @@ private struct BakAABB(cell dim) {
 		return c ? *c : ' ';
 	}
 	void opIndexAssign(cell c, Coords p) {
-		beg.minWith(p);
-		end.maxWith(p);
-		data[p] = c;
+		if (c == ' ')
+			// If we call data.removeKey(p) instead, we trigger some kind of
+			// codegen bug which I couldn't track down. Fortunately, its
+			// definition is to just call take, and this works, so we're good.
+			data.take(p, c);
+		else {
+			beg.minWith(p);
+			end.maxWith(p);
+			data[p] = c;
+		}
 	}
 	bool contains(Coords p) { return Dimension!(dim).contains(p, beg, end); }
 }
