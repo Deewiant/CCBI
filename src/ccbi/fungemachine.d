@@ -206,7 +206,7 @@ private:
 		} catch (Exception e) {
 			Sout.flush;
 			Serr
-				("Exited due to an error: ")(e.toString)
+				("CCBI :: Exited due to an error: ")(e.toString)
 				(" at ")(e.file)(':')(e.line)
 				.newline;
 			returnVal = 1;
