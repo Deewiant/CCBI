@@ -64,18 +64,53 @@ void ctor() { buf = new char[80]; }
 void get() {
 	Coords c = popOffsetVector();
 
+	Coords beg, end;
+	state.space.getLooseBounds(beg, end);
+
+	auto start = c;
+
 	size_t i = 0;
-	do {
+	for (;;) {
+		auto ch = cast(char)state.space[c];
+
+		if (ch == 0)
+			break;
+
 		if (i == buf.length)
 			buf.length = buf.length * 2;
 
-		// TODO: should check for and throw an InfiniteLoopException
-
-		buf[i] = cast(char)state.space[c];
+		buf[i++] = ch;
 		++c.x;
 
-	} while (buf[i++] != 0);
+		version (detectInfiniteLoops) if (c.x > end.x) {
+			bool zeroLeft = false;
+			auto c2 = c;
+			for (c2.x = beg.x; c2.x < start.x; ++c2.x) {
+				if (state.space[c2] == 0) {
+					zeroLeft = true;
+					break;
+				}
+			}
 
+			if (zeroLeft) {
+				auto toEnd   = cast(ucell)(cell.max - c.x + 1);
+				auto fromBeg = cast(ucell)(c2.x - cell.min);
+
+				size_t neededLen = toEnd + fromBeg;
+
+				// Wishful thinking...
+				if (buf.length < i + neededLen)
+					buf.length = buf.length + neededLen;
+
+				buf[i .. i+neededLen] = ' ';
+				i += neededLen;
+				c.x = beg.x;
+			} else
+				throw new SpaceInfiniteLoopException(
+					"STRN instruction G", c.toString(), InitCoords!(1).toString(),
+					"String starting at " ~start.toString()~ " never terminates.");
+		}
+	}
 	pushStringz(buf[0..i]);
 }
 
