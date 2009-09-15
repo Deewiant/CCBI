@@ -977,12 +977,12 @@ private:
 	bool usingBak() { return bak.data !is null; }
 
 	Coords jumpToBox(Coords pos, Coords delta, out AABB box, out size_t idx) {
-		bool found = tryJumpToBox(pos, delta, idx);
+		bool found = tryJumpToBox(pos, delta, box, idx);
 		assert (found);
-		box = boxen[idx];
 		return pos;
 	}
-	bool tryJumpToBox(ref Coords pos, Coords delta, out size_t boxIdx)
+	bool tryJumpToBox(
+		ref Coords pos, Coords delta, out AABB aabb, out size_t boxIdx)
 	in {
 		AABB _;
 		assert (!findBox(pos, _));
@@ -1002,6 +1002,7 @@ private:
 		if (moves) {
 			pos    = pos2;
 			boxIdx = idx;
+			aabb   = boxen[idx];
 			return true;
 		} else
 			return false;
@@ -1780,18 +1781,17 @@ public:
 
 				assert (delta !is null);
 
-				if (space.tryJumpToBox(c, *delta, boxIdx))
-					box = space.boxen[boxIdx];
+				if (!space.tryJumpToBox(c, *delta, box, boxIdx)) {
+					if (space.usingBak && space.bak.contains(c))
+						bak = true;
 
-				else if (space.usingBak && space.bak.contains(c))
-					bak = true;
-
-				else version (detectInfiniteLoops)
-					infLoop(
-						"IP diverged while being placed",
-						c.toString(), delta.toString());
-				else
-					for (;;){}
+					else version (detectInfiniteLoops)
+						infLoop(
+							"IP diverged while being placed",
+							c.toString(), delta.toString());
+					else
+						for (;;){}
+				}
 			}
 			tessellate(c);
 		}
