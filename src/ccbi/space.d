@@ -1939,7 +1939,13 @@ findBox:
 					auto p = pos;
 					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("processing spaces"));
-						tessellate(space.jumpToBox(p, delta, box, boxIdx));
+						if (space.tryJumpToBox(p, delta, box, boxIdx))
+							tessellate(p);
+						else
+							infLoop(
+								"IP journeys forever in the void, "
+								"futilely seeking a nonspace...",
+								p.toString(), delta.toString());
 					}
 				}
 				if (unsafeGet() == ';') {
@@ -2007,7 +2013,13 @@ findBox:
 				auto p = pos;
 				if (!getBox(p)) {
 					mixin (DetectInfiniteLoop!("processing spaces in a string"));
-					tessellate(space.jumpToBox(p, delta, box, boxIdx));
+					if (space.tryJumpToBox(p, delta, box, boxIdx))
+						tessellate(p);
+					else
+						infLoop(
+							"IP journeys forever in the void, "
+							"futilely seeking an end to the infinity...",
+							p.toString(), delta.toString());
 				}
 			}
 			retreat(delta);
