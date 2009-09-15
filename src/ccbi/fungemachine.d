@@ -15,6 +15,7 @@ import tango.stdc.string          : memmove;
 import tango.text.convert.Integer : format;
 
 import ccbi.container;
+import ccbi.exceptions;
 import ccbi.fingerprint;
 import ccbi.flags;
 import ccbi.fungestate;
@@ -187,6 +188,14 @@ private:
 
 				++state.tick;
 			}
+		} catch (InfiniteLoopException e) {
+			Sout.flush;
+			Serr
+				("CCBI :: Infinite loop detected!").newline
+				.print("  ")  (e.preamble).newline
+				.print("    ")(e.toString).newline;
+			returnVal = 2;
+
 		} catch (Exception e) {
 			Sout.flush;
 			Serr
