@@ -763,8 +763,10 @@ final class FungeSpace(cell dim, bool befunge93) {
 		this.stats = stats;
 
 		load(source, null, InitCoords!(0), false);
-		lastBeg = boxen[0].beg;
-		lastEnd = boxen[0].end;
+		if (boxen.length) {
+			lastBeg = boxen[0].beg;
+			lastEnd = boxen[0].end;
+		}
 	}
 
 	this(FungeSpace other) {
