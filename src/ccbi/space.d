@@ -5,6 +5,7 @@
 // Funge-Space and the Coords struct.
 module ccbi.space;
 
+import tango.core.Exception       : onOutOfMemoryError;
 import tango.io.device.Array      : Array;
 import tango.io.model.IConduit    : OutputStream;
 import tango.io.stream.Typed      : TypedOutput;
@@ -130,10 +131,16 @@ template Dimension(cell dim) {
 // memory usage by up to 50% in some cases. We weren't really utilizing the
 // advantages of the GC anyway.
 private cell* cmalloc(size_t s) {
-	return cast(cell*)malloc(s * cell.sizeof);
+	auto p = cast(cell*)malloc(s * cell.sizeof);
+	if (!p)
+		onOutOfMemoryError();
+	return p;
 }
 private cell* crealloc(cell* p, size_t s) {
-	return cast(cell*)realloc(p, s * cell.sizeof);
+	p = cast(cell*)realloc(p, s * cell.sizeof);
+	if (!p)
+		onOutOfMemoryError();
+	return p;
 }
 
 // Various *NoOffset functions exist; their argument Coords is one which is
