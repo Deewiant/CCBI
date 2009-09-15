@@ -98,7 +98,11 @@ private:
 			fungeArgs = args;
 
 		state.space = new FungeSpace(&stats, source);
+	}
 
+	// Moved out of the constructor so that we can handle any initial
+	// InfiniteLoopExceptions with the catch in run()
+	void initialize() {
 		auto pos = InitCoords!(0);
 
 		static if (dim >= 2)
@@ -123,70 +127,73 @@ private:
 	}
 
 	public int run() {
-		try mainLoop: for (;;) {
-			static if (GOT_TRDS)
-				bool normalTime = TRDS.isNormalTime();
-			else
-				const bool normalTime = true;
-
-			if (flags.tracing && !Tracer.doTrace())
-				break mainLoop;
-
-			static if (befunge93) {
-				switch (executeInstruction()) {
-					case Request.STOP: stop(0); break mainLoop;
-					case Request.MOVE: cip.move;
-					default:           break;
-				}
-			} else for (auto j = state.startIdx; j-- > 0;)
-			if (executable(normalTime, state.ips[j])) {
-
+		try {
+			initialize();
+			mainLoop: for (;;) {
 				static if (GOT_TRDS)
-					TRDS.cipIdx = j;
+					bool normalTime = TRDS.isNormalTime();
+				else
+					const bool normalTime = true;
 
-				cip = state.ips[j];
-				switch (executeInstruction()) {
+				if (flags.tracing && !Tracer.doTrace())
+					break mainLoop;
 
-					case Request.MOVE:
-						cip.move();
+				static if (befunge93) {
+					switch (executeInstruction()) {
+						case Request.STOP: stop(0); break mainLoop;
+						case Request.MOVE: cip.move;
+						default:           break;
+					}
+				} else for (auto j = state.startIdx; j-- > 0;)
+				if (executable(normalTime, state.ips[j])) {
 
-					default: break;
+					static if (GOT_TRDS)
+						TRDS.cipIdx = j;
 
-					case Request.FORK:
-						if (j < state.ips.length-2) {
-							// ips[$-1] is new and in the wrong place, position it
-							// immediately after this one
-							auto ip = state.ips[$-1];
-							memmove(
-								&state.ips[j+2], &state.ips[j+1],
-								(state.ips.length - (j+1)) * ip.sizeof);
-							state.ips[j+1] = ip;
-						}
-						goto case Request.MOVE;
+					cip = state.ips[j];
+					switch (executeInstruction()) {
 
-					case Request.STOP:
-						if (!stop(j)) {
-					case Request.QUIT:
-							stats.ipStopped += state.ips.length;
-							break mainLoop;
-						}
-						break;
+						case Request.MOVE:
+							cip.move();
 
-				static if (GOT_TRDS) {
-					case Request.RETICK:
-						continue mainLoop;
+						default: break;
+
+						case Request.FORK:
+							if (j < state.ips.length-2) {
+								// ips[$-1] is new and in the wrong place, position it
+								// immediately after this one
+								auto ip = state.ips[$-1];
+								memmove(
+									&state.ips[j+2], &state.ips[j+1],
+									(state.ips.length - (j+1)) * ip.sizeof);
+								state.ips[j+1] = ip;
+							}
+							goto case Request.MOVE;
+
+						case Request.STOP:
+							if (!stop(j)) {
+						case Request.QUIT:
+								stats.ipStopped += state.ips.length;
+								break mainLoop;
+							}
+							break;
+
+					static if (GOT_TRDS) {
+						case Request.RETICK:
+							continue mainLoop;
+					}
+					}
 				}
+				static if (!befunge93)
+					state.startIdx = state.ips.length;
+
+				if (normalTime) {
+					static if (GOT_TRDS)
+						if (usingTRDS)
+							TRDS.newTick();
+
+					++state.tick;
 				}
-			}
-			static if (!befunge93)
-				state.startIdx = state.ips.length;
-
-			if (normalTime) {
-				static if (GOT_TRDS)
-					if (usingTRDS)
-						TRDS.newTick();
-
-				++state.tick;
 			}
 		} catch (InfiniteLoopException e) {
 			Sout.flush;
