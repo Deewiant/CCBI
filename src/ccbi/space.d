@@ -15,6 +15,7 @@ import tango.text.convert.Integer : format;
 import tango.util.container.HashMap;
 
 public import ccbi.cell;
+       import ccbi.exceptions;
        import ccbi.templateutils;
        import ccbi.stats;
        import ccbi.stdlib;
@@ -1784,7 +1785,7 @@ public:
 					bak = true;
 
 				else version (detectInfiniteLoops)
-					throw new InfiniteLoopException(
+					infLoop(
 						"IP diverged while being placed",
 						c.toString(), delta.toString());
 				else
@@ -1907,8 +1908,8 @@ public:
 			version (detectInfiniteLoops) {
 				if (gotFirstExit) {
 					if (relPos == firstExit)
-						throw new InfiniteLoopException(
-							"Found itself whilst ` ~doing~ `",
+						infLoop(
+							"IP found itself whilst ` ~doing~ `",
 							(relPos + oBeg).toString(), delta.toString());
 				} else {
 					firstExit    = relPos;
@@ -2015,7 +2016,7 @@ continuePrev:;
 			while (!skipSpaces(delta)) {
 				auto p = pos;
 				if (!getBox(p)) {
-					mixin (DetectInfiniteLoop!("processing spaces"));
+					mixin (DetectInfiniteLoop!("processing spaces in a string"));
 					tessellate(space.jumpToBox(p, delta, box, boxIdx));
 				}
 			}
@@ -2275,11 +2276,19 @@ template CoordsLoop(
 		                 ~    CoordsLoop!(dim-1, c, begC, endC, cmp, op, f);
 }
 
-final class InfiniteLoopException : Exception {
-	this(char[] msg, char[] pos, char[] delta) {
+version (detectInfiniteLoops)
+final class SpaceInfiniteLoopException : InfiniteLoopException {
+	this(char[] src, char[] pos, char[] delta, char[] msg) {
 		super(
-			"Funge-Space detected eternal loop from " ~ pos ~
+			"Detected by " ~ src ~ " at " ~ pos ~
 			" with delta " ~ delta ~
-			": " ~ msg);
+			":", msg);
 	}
+}
+
+void infLoop(char[] msg, char[] pos, char[] delta) {
+	version (detectInfiniteLoops)
+		throw new SpaceInfiniteLoopException("Funge-Space", pos, delta, msg);
+	else
+		for (;;){}
 }
