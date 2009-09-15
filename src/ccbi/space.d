@@ -1784,13 +1784,10 @@ public:
 				if (!space.tryJumpToBox(c, *delta, box, boxIdx)) {
 					if (space.usingBak && space.bak.contains(c))
 						bak = true;
-
-					else version (detectInfiniteLoops)
+					else
 						infLoop(
 							"IP diverged while being placed",
 							c.toString(), delta.toString());
-					else
-						for (;;){}
 				}
 			}
 			tessellate(c);
