@@ -1911,7 +1911,7 @@ public:
 				if (gotFirstExit) {
 					if (relPos == firstExit)
 						infLoop(
-							"IP found itself whilst ` ~doing~ `",
+							"IP found itself whilst ` ~doing~ `.",
 							(relPos + oBeg).toString(), delta.toString());
 				} else {
 					firstExit    = relPos;
