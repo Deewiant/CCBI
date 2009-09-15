@@ -1995,27 +1995,15 @@ continuePrev:;
 			return box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, inMid);
 	}
 	void skipToLastSpace(Coords delta) {
-		if (!inBox()) {
-			auto p = pos;
-			if (space.tryJumpToBox(p, delta, boxIdx)) {
-				box = space.boxen[boxIdx];
 
-			} else if (space.usingBak && space.bak.contains(p))
-				bak = true;
+		mixin DetectInfiniteLoopDecls!();
 
-			else version (detectInfiniteLoops)
-				throw new InfiniteLoopException(
-					"Never meets an allocated area",
-					p.toString(), delta.toString());
-			else
-				for (;;){}
+		if (!inBox())
+			goto findBox;
 
-			tessellate(p);
-		}
 		if (unsafeGet() == ' ') {
-			mixin DetectInfiniteLoopDecls!();
-
 			while (!skipSpaces(delta)) {
+findBox:
 				auto p = pos;
 				if (!getBox(p)) {
 					mixin (DetectInfiniteLoop!("processing spaces in a string"));
