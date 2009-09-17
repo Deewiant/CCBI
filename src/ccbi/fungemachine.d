@@ -172,7 +172,7 @@ private:
 						break;
 
 				static if (GOT_TRDS) {
-					case Request.TIMEJUMP:
+					case Request.RETICK:
 						continue mainLoop;
 				}
 				}

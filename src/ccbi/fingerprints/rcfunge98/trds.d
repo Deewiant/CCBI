@@ -275,12 +275,11 @@ Request jump() {
 			cip.jumpedAt = state.tick;
 		}
 
-		timeJump(cip);
-		return Request.TIMEJUMP;
+		return timeJump(cip);
 	}
 	return Request.NONE;
 }
-void timeJump(IP ip) {
+Request timeJump(IP ip) {
 	// Nothing special if jumping to the future, just don't trace it.
 	// Be careful not to compare against ip.jumpedAt: see HACKINESS above
 	if (ip.jumpedTo >= state.tick) {
@@ -291,7 +290,8 @@ void timeJump(IP ip) {
 		// TODO: move this to Tracer
 		if (ip is tip)
 			tip = null;
-		return;
+
+		return Request.NONE;
 	}
 
 	++stats.ipTravelledToPast;
@@ -340,6 +340,8 @@ void timeJump(IP ip) {
 
 	// TODO: move to Tracer
 	tip = null;
+
+	return Request.RETICK;
 }
 
 void stop  () { ++stats.timeStopped; state.timeStopper = cipIdx;     }
