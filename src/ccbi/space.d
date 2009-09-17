@@ -1979,6 +1979,12 @@ findBox:
 		}
 	}
 	bool skipSpaces(Coords delta) {
+		version (detectInfiniteLoops)
+			if (delta == 0)
+				infLoop(
+					"Delta is zero: skipping spaces forever...",
+					pos.toString(), delta.toString());
+
 		if (bak) {
 			while (space.bak[pos] == ' ') {
 				advance(delta);
@@ -1990,6 +1996,12 @@ findBox:
 			return box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e);
 	}
 	bool skipSemicolons(Coords delta, ref bool inMid) {
+		version (detectInfiniteLoops)
+			if (delta == 0)
+				infLoop(
+					"Delta is zero: skipping semicolons forever...",
+					pos.toString(), delta.toString());
+
 		if (bak) {
 			if (inMid)
 				goto continuePrev;
