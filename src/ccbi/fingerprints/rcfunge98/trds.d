@@ -102,9 +102,7 @@ void newTick() {
 	// Must be appended: preserves correct execution order
 	foreach (ip; travellers) if (state.tick == ip.jumpedTo) {
 		++stats.travellerArrived;
-		auto i = new IP(ip);
-		i.cursor.space = state.space;
-		state.ips ~= i;
+		state.ips ~= new IP(ip, true, state.space);
 	}
 }
 
@@ -309,7 +307,7 @@ Request timeJump(IP ip) {
 	}
 	if (!found) {
 		ip.mode |= IP.FROM_FUTURE;
-		travellers ~= new IP(ip);
+		travellers ~= new IP(ip, false);
 	}
 
 	/+
@@ -339,7 +337,7 @@ Request timeJump(IP ip) {
 			travellers.removeAt(i--);
 
 	state.free();
-	state = earlyState.deepCopy;
+	state = earlyState.deepCopy(true);
 
 	// TODO: move to Tracer
 	tip = null;

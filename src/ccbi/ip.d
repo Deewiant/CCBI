@@ -18,8 +18,9 @@ public import ccbi.cell;
        import ccbi.utils;
 
 final class IP(cell dim, bool befunge93, fings...) {
-	alias   .Coords!(dim) Coords;
-	alias Dimension!(dim).Coords InitCoords;
+	alias     .Coords!(dim)            Coords;
+	alias   Dimension!(dim).Coords     InitCoords;
+	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
 	mixin (EmitGot!("HRTI", fings));
 	mixin (EmitGot!("IIPC", fings));
@@ -28,7 +29,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 
 	this(
 		Coords pos,
-		FungeSpace!(dim, befunge93) s,
+		FungeSpace s,
 		ContainerStats* stackStats,
 		ContainerStats* stackStackStats,
 		ContainerStats* semanticStats)
@@ -50,10 +51,11 @@ final class IP(cell dim, bool befunge93, fings...) {
 				sem = new typeof(sem)(semanticStats);
 
 		cursor = typeof(cursor)(pos, &delta, s);
-		s.informOf(&cursor);
+
+		informSpace();
 	}
 
-	static if (!befunge93) this(IP o) {
+	static if (!befunge93) this(IP o, bool active = true, FungeSpace s = null) {
 		shallowCopy(this, o);
 
 		// deep copy stack stack
@@ -79,6 +81,18 @@ final class IP(cell dim, bool befunge93, fings...) {
 		// deep copy mapping
 		static if (GOT_IMAP)
 			mapping = o.mapping.dup;
+
+		if (s)
+			cursor.space = s;
+
+		if (active) {
+			cursor.invalidate;
+			informSpace();
+		}
+	}
+
+	private void informSpace() {
+		cursor.space.informOf(&cursor);
 	}
 
 	void   move()         { cursor.advance(delta); }

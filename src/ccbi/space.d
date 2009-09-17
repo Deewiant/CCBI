@@ -1856,7 +1856,7 @@ public:
 	Coords pos()         { return bak ? actualPos : relPos + oBeg; }
 	void   pos(Coords c) { bak ? actualPos = c : (relPos = c - oBeg); }
 
-	private void invalidate() {
+	void invalidate() {
 		auto p = pos;
 		if (!getBox(p))
 			// Just grab a box which we aren't contained in; skipMarkers will sort

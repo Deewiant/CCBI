@@ -47,7 +47,7 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 	static if (GOT_TRDS)
 		auto timeStopper = size_t.max;
 
-	typeof(*this) deepCopy() {
+	typeof(*this) deepCopy(bool active = false) {
 		typeof(*this) copy = *this;
 
 		with (copy) {
@@ -55,13 +55,8 @@ struct FungeState(cell dim, bool befunge93, fings...) {
 
 			static if (!befunge93) {
 				ips = ips.dup;
-				foreach (ref ip; ips) {
-					ip = new IP(ip);
-					ip.cursor.space = space;
-
-					// Cursor is a value type so inform space of this new copy
-					space.informOf(&ip.cursor);
-				}
+				foreach (ref ip; ips)
+					ip = new IP(ip, active, space);
 			}
 
 			static if (GOT_REFC) references = references.dup;
