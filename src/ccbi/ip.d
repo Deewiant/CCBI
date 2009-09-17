@@ -51,6 +51,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 				sem = new typeof(sem)(semanticStats);
 
 		cursor = typeof(cursor)(pos, &delta, s);
+		pg = typeof(pg)(s);
 
 		informSpace();
 	}
@@ -83,16 +84,20 @@ final class IP(cell dim, bool befunge93, fings...) {
 			mapping = o.mapping.dup;
 
 		if (s)
-			cursor.space = s;
+			cursor.space = pg.space = s;
 
 		if (active) {
 			cursor.invalidate;
+			pg.invalidate;
 			informSpace();
 		}
 	}
 
 	private void informSpace() {
-		cursor.space.informOf(&cursor);
+		assert (cursor.space == pg.space);
+
+		cursor.space.informOf(&cursor.invalidate);
+		cursor.space.informOf(&pg.invalidate);
 	}
 
 	void   move()         { cursor.advance(delta); }
@@ -123,6 +128,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 	void  unsafeCell(.cell c) { return cursor.unsafeSet(c); }
 
 	Cursor!(dim, befunge93) cursor;
+	Jumper!(dim, befunge93) pg;
 	Coords delta = InitCoords!(1);
 
 	static if (!befunge93)

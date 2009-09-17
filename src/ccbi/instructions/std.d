@@ -582,13 +582,13 @@ void stackUnderStack() {
 
 // Get
 void get() {
-	cip.stack.push(state.space[popOffsetVector()]);
+	cip.stack.push(cip.pg[popOffsetVector()]);
 }
 
 // Put
 void put() {
-	auto c = popOffsetVector();
-	state.space[c] = cip.stack.pop;
+	auto pos = popOffsetVector();
+	cip.pg[pos] = cip.stack.pop;
 }
 
 // Standard Input/Output

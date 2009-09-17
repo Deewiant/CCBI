@@ -757,7 +757,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		bool justPlacedBig = void;
 		Coords bigSequenceStart = void, firstPlacedBig = void;
 
-		Cursor*[] cursors;
+		void delegate()[] invalidatees;
 
 		AABB[] boxen;
 		BakAABB!(dim) bak;
@@ -787,8 +787,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			aabb.data[0..aabb.size] = orig[0..aabb.size];
 		}
 
-		// Empty out cursors, they refer to the other space
-		cursors.length = 0;
+		// Empty out invalidatees, they refer to the other space
+		invalidatees.length = 0;
 	}
 
 	void free() {
@@ -1323,8 +1323,8 @@ private:
 		boxen ~= aabb;
 		stats.newMax(stats.space.maxBoxesLive, boxen.length);
 
-		foreach (c; cursors)
-			c.invalidate();
+		foreach (i; invalidatees)
+			i();
 
 		return aabb;
 	}
@@ -1752,7 +1752,7 @@ private:
 		}
 	}
 
-	public void informOf(Cursor* c) { cursors ~= c; }
+	public void informOf(void delegate() i) { invalidatees ~= i; }
 }
 
 struct Cursor(cell dim, bool befunge93) {
@@ -2049,6 +2049,127 @@ findBox:
 				}
 			}
 			retreat(delta);
+		}
+	}
+}
+
+struct Jumper(cell dim, bool befunge93) {
+	alias .Coords    !(dim)            Coords;
+	alias .Dimension !(dim).Coords     InitCoords;
+	alias .Dimension !(dim).contains   contains;
+	alias .AABB      !(dim)            AABB;
+	alias .FungeSpace!(dim, befunge93) FungeSpace;
+
+private:
+	bool bak = false;
+	AABB box = void;
+	size_t boxIdx = void;
+	Coords beg = void, end = void;
+
+public:
+	FungeSpace space;
+
+	static typeof(*this) opCall(FungeSpace s) {
+		typeof(*this) j;
+		with (j) {
+			space = s;
+			invalidate();
+		}
+		return j;
+	}
+	cell opIndex(Coords pos)
+	out (c) {
+		assert (space[pos] == c);
+	} body {
+		++space.stats.space.lookups;
+
+		return requireBox(pos) ? (bak ? space.bak[pos] : box[pos]) : ' ';
+	}
+	void opIndexAssign(cell c, Coords pos)
+	out {
+		assert (space[pos] == c);
+	} body {
+		if (requireBox(pos)) {
+			++space.stats.space.assignments;
+			if (bak)
+				space.bak[pos] = c;
+			else
+				box[pos] = c;
+		} else
+			space[pos] = c;
+	}
+	void invalidate() {
+		// Nothing is contained in this
+		beg = InitCoords!(1);
+		end = InitCoords!(0);
+
+		// Try all boxen first
+		bak = true;
+	}
+
+private:
+	byte getBox(Coords pos) {
+		if (contains(pos, beg, end))
+			return 0;
+
+		for (auto i = bak ? 0 : boxIdx+1; i < space.boxen.length; ++i) {
+			if (space.boxen[i].contains(pos)) {
+				box = space.boxen[boxIdx = i];
+				bak = false;
+				return 1;
+			}
+		}
+		if (space.usingBak && space.bak.contains(pos)) {
+			bak = true;
+			return 1;
+		}
+		// if bak, we already went through all boxen
+		if (!bak) {
+			foreach (i, b; space.boxen[0..boxIdx]) {
+				if (b.contains(pos)) {
+					boxIdx = i;
+					box = b;
+					bak = false;
+					return 1;
+				}
+			}
+		}
+		return 2;
+	}
+
+	bool requireBox(Coords pos)
+	out (inBox) {
+		if (inBox) {
+			assert (AABB.unsafe(beg,end).contains(pos));
+			if (bak)
+				assert (space.bak.contains(pos));
+			else
+				assert (box.contains(pos));
+		}
+	} body {
+		switch (getBox(pos)) {
+			case 0: return true;
+			case 1:
+				if (bak) {
+					// Maximize the size here: if stuff is constantly being added,
+					// expanding the bounds, we'd fall out a lot if we used
+					// space.bak's current bounds
+					beg = InitCoords!(cell.min,cell.min,cell.min);
+					end = InitCoords!(cell.max,cell.max,cell.max);
+					tessellateAt(pos, space.boxen, beg, end);
+				} else {
+					auto overlaps = new AABB[boxIdx];
+					size_t i = 0;
+					foreach (b; space.boxen[0..boxIdx])
+						if (b.overlaps(box))
+							overlaps[i++] = b;
+
+					beg = box.beg;
+					end = box.end;
+					tessellateAt(pos, overlaps[0..i], beg, end);
+				}
+				return true;
+			case 2: return false;
 		}
 	}
 }
