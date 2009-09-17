@@ -1807,7 +1807,10 @@ public:
 		           : contains(relPos, ob2b, ob2e);
 	}
 
-	cell get() {
+	cell get()
+	out (c) {
+		assert (space[pos] == c);
+	} body {
 		if (!inBox()) {
 			auto p = pos;
 			if (!getBox(p)) {
@@ -1820,13 +1823,18 @@ public:
 	cell unsafeGet()
 	in {
 		assert (inBox());
+	} out (c) {
+		assert (space[pos] == c);
 	} body {
 		++space.stats.space.lookups;
 		return bak ? space.bak[pos]
 		           : box.getNoOffset(relPos);
 	}
 
-	void set(cell c) {
+	void set(cell c)
+	out {
+		assert (space[pos] == c);
+	} body {
 		if (!inBox()) {
 			auto p = pos;
 			if (!getBox(p))
@@ -1837,6 +1845,8 @@ public:
 	void unsafeSet(cell c)
 	in {
 		assert (inBox());
+	} out {
+		assert (space[pos] == c);
 	} body {
 		++space.stats.space.assignments;
 		bak ? space.bak[pos] = c
