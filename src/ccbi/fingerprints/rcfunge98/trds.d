@@ -167,7 +167,7 @@ Request jump() {
 				// The vars are unsigned and state.tick >= loadedTick so we won't
 				// underflow lіke this.
 				if (cip.jumpedTo <= state.tick - loadedTick)
-					cip.jumpedTo -= state.tick;
+					cip.jumpedTo = state.tick - cip.jumpedTo;
 				else
 					cip.jumpedTo = loadedTick;
 			} else
@@ -380,7 +380,7 @@ void relSpace() {
 void absTime() {
 	cip.mode |= IP.ABS_TIME | IP.TIME_SET;
 
-	cip.tardisTick = max(cip.stack.pop, loadedTick);
+	cip.tardisTick = max(max(cip.stack.pop, 0), loadedTick);
 }
 void relTime() {
 	cip.mode &= ~IP.ABS_TIME;
