@@ -677,6 +677,61 @@ continuePrev:;
 		}
 		return true;
 	}
+
+	cell[] getContiguousRange(
+		ref Coords from, Coords to, Coords origBeg, ref bool reachedTo)
+	in {
+		assert (this.contains(from));
+		foreach (i, x; from.v)
+			assert (x <= to.v[i]);
+	} out {
+		foreach (i, x; from.v) {
+			if (!reachedTo)
+				assert (x <= to.v[i]);
+			assert (x >= origBeg.v[i]);
+		}
+	} body {
+		auto fromIdx = getIdx(from);
+
+		auto endPt = this.end;
+
+		for (ubyte i = 0; i < dim-1; ++i) {
+			if (endPt.v[i] == to.v[i])
+				from.v[i] = origBeg.v[i];
+			else {
+				endPt.v[i+1..$] = from.v[i+1..$];
+
+				if (endPt.v[i] < to.v[i])
+					from.v[i] = endPt.v[i] + cast(cell)1;
+				else {
+					endPt.v[i] = to.v[i];
+
+					if (endPt.v[i+1..$] == to.v[i+1..$])
+						reachedTo = true;
+					else {
+						from.v[i] = origBeg.v[i];
+						++from.v[i+1];
+					}
+				}
+
+				goto end;
+			}
+		}
+		// All the coords but the last were the same: check the last one too
+		if (endPt.v[$-1] == to.v[$-1])
+			reachedTo = true;
+		else {
+			if (endPt.v[$-1] < to.v[$-1])
+				from.v[$-1] = endPt.v[$-1] + cast(cell)1;
+			else {
+				endPt.v[$-1] = to.v[$-1];
+				from.v[$-1] = origBeg.v[$-1];
+			}
+		}
+
+end:
+		return data[fromIdx .. getIdx(endPt)+1];
+	}
 }
 
 private struct BakAABB(cell dim) {
@@ -1477,6 +1532,91 @@ private:
 		return sLen > orig;
 	}
 
+	// Gives a contiguous area of Funge-Space to the given delegate.
+	// Additionally guarantees that the successive areas passed are consecutive.
+	void map(AABB aabb, void delegate(cell[]) f) {
+		placeBox(aabb);
+
+		auto beg = aabb.beg;
+
+		for (bool hitEnd = false;;) foreach (box; boxen) {
+			if (box.overlaps(AABB.unsafe(beg, aabb.end))) {
+				f(box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd));
+				if (hitEnd)
+					return;
+				else
+					break;
+			}
+		}
+	}
+	// Passes some extra data to the delegate, for matching array index
+	// calculations with the location of the cell[] (probably quite specific to
+	// file loading, where this is used):
+	//
+	// - The width and area of the enclosing box.
+	//
+	// - The indices in the cell[] of the previous line and page (note: always
+	//   zero or negative (thus big numbers, since unsigned)).
+	//
+	// - Whether a new line or page was just reached, with one bit for each
+	//   boolean (LSB for line, next-most for page).
+	void map(
+		AABB aabb, void delegate(cell[], size_t,size_t,size_t,size_t, ubyte) f)
+	{
+		// This ensures we don't have to worry about bak, but also means that we
+		// can't use this as much as we might like since we risk box count
+		// explosion
+		placeBox(aabb);
+
+		auto beg = aabb.beg;
+
+		for (bool hitEnd = false;;) foreach (box; boxen) {
+
+			if (box.overlaps(AABB.unsafe(beg, aabb.end))) {
+				size_t
+					width = void,
+					area = void,
+					lineStart = void,
+					pageStart = void;
+
+				// These depend on the original beg and thus have to be initialized
+				// before the call to getContiguousRange
+				static if (dim >= 2) {
+					Coords ls = beg;
+					ls.x = box.beg.x;
+				}
+				static if (dim >= 3) {
+					Coords ps = box.beg;
+					ps.z = beg.z;
+				}
+
+				auto arr = box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd);
+
+				ubyte hit = 0;
+
+				static if (dim >= 2) {
+					width = box.width;
+					lineStart = box.getIdx(ls) - (arr.ptr - box.data);
+
+					hit |= (beg.x == aabb.beg.x) << 0;
+				}
+				static if (dim >= 3) {
+					area = box.area;
+					pageStart = box.getIdx(ps) - (arr.ptr - box.data);
+
+					hit |= (beg.y == aabb.beg.y) << 1;
+				}
+
+				f(arr, width, area, lineStart, pageStart, hit);
+
+				if (hitEnd)
+					return;
+				else
+					break;
+			}
+		}
+	}
+
 	// Takes ownership of the Array, detaching it.
 	public void load(Array arr, Coords* end, Coords target, bool binary) {
 
@@ -1501,57 +1641,71 @@ private:
 			if (end)
 				end.maxWith(aabb.end);
 
-			placeBox(aabb);
+			auto p = input.ptr;
 
-			auto cursor = Cursor(target, null, this);
+			auto pEnd = input.ptr + input.length;
 
 			if (binary) {
-				foreach (b; input) {
-					if (b != ' ')
-						cursor.set(cast(cell)b);
-					++cursor.relPos.x;
-				}
-			} else {
-				static if (dim >= 2) {
-					bool gotCR = false;
-
-					void newLine() {
-						gotCR = false;
-						cursor.relPos.x = target.x - cursor.oBeg.x;
-						cursor.relPos.y++;
+				map(aabb, (cell[] arr) {
+					foreach (ref x; arr) {
+						ubyte b = *p++;
+						if (b != ' ')
+							x = cast(cell)b;
 					}
-				}
+				});
+			} else {
+				map(aabb, (cell[] arr, size_t width,     size_t area,
+				                       size_t lineStart, size_t pageStart,
+				                       ubyte hit)
+				{
+					size_t i = 0;
+					while (i < arr.length) {
+						ubyte b = *p++;
+						switch (b) {
+							default:
+								arr[i] = cast(cell)b;
+							case ' ':
+								++i;
 
-				foreach (b; input) switch (b) {
-					case '\r': static if (dim >= 2) gotCR = true; break;
-					case '\n': static if (dim >= 2) newLine();    break;
-					case '\f':
-						static if (dim >= 2)
-							if (gotCR)
-								newLine();
+							static if (dim < 2) { case '\r','\n': }
+							static if (dim < 3) { case '\f': }
+								break;
 
-						static if (dim >= 3) {
-							cursor.relPos.x = target.x - cursor.oBeg.x;
-							cursor.relPos.y = target.y - cursor.oBeg.y;
-							cursor.relPos.z++;
+							static if (dim >= 2) {
+							case '\r':
+								if (p < pEnd && *p == '\n')
+									++p;
+							case '\n':
+								i = lineStart += width;
+								break;
+							}
+							static if (dim >= 3) {
+							case '\f':
+								i = lineStart = pageStart += area;
+								break;
+							}
 						}
-						break;
-					case ' ':
-						static if (dim >= 2)
-							if (gotCR)
-								newLine();
-						cursor.relPos.x++;
-						break;
-					default:
-						static if (dim >= 2)
-							if (gotCR)
-								newLine();
+					}
+					if (i == arr.length && hit && p < pEnd) {
+						// We didn't find a newline yet (in which case i would exceed
+						// arr.length) but we finished with this block. We touched an
+						// EOL or EOP in the array, and likely a newline or form feed
+						// terminates them in the code. Eat them here lest we skip a
+						// line by seeing them in the next call.
 
-						cursor.set(cast(cell)b);
-						cursor.relPos.x++;
-						break;
-				}
+						static if (dim == 2) if (hit & 0b01) {
+							assert (*p == '\r' || *p == '\n');
+							if (*p++ == '\r' && p < pEnd && *p == '\n')
+								++p;
+						}
+						static if (dim == 3) if (hit & 0b10) {
+							assert (*p == '\f');
+							++p;
+						}
+					}
+				});
 			}
+			assert (p == pEnd);
 		}
 	}
 
