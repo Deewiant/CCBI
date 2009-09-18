@@ -364,11 +364,7 @@ private struct AABB(cell dim) {
 		return true;
 	}
 	bool getOverlapWith(AABB box, ref AABB overlap)
-	in {
-		// Allows us to make some assumptions
-		assert (!this.contains(box));
-		assert (!box.contains(*this));
-	} out (result) {
+	out (result) {
 		if (result) {
 			assert (this.overlaps(box));
 			assert (this.contains(overlap));
