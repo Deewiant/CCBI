@@ -1534,6 +1534,9 @@ private:
 
 	// Gives a contiguous area of Funge-Space to the given delegate.
 	// Additionally guarantees that the successive areas passed are consecutive.
+	public void map(Coords a, Coords b, void delegate(cell[]) f) {
+		map(AABB(a, b), f);
+	}
 	void map(AABB aabb, void delegate(cell[]) f) {
 		placeBox(aabb);
 

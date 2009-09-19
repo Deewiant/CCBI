@@ -184,27 +184,13 @@ void dixiecup() {
 }
 
 void chicane() {
-	Coords!(3) a = popOffsetVector().extend(1);
-	Coords!(3) b = popVector      ().extend(1);
+	Coords a = popOffsetVector();
+	Coords b = popVector      ();
 	b += a;
 
 	cell val = cip.stack.pop;
 
-	Coords c = void;
-	static if (dim >= 3) {
-		for (c.z = a.z; c.z < b.z; ++c.z)
-			for (c.y = a.y; c.y < b.y; ++c.y)
-				for (c.x = a.x; c.x < b.x; ++c.x)
-					state.space[c] = val;
-
-	} else static if (dim == 2) {
-		for (c.y = a.y; c.y < b.y; ++c.y)
-			for (c.x = a.x; c.x < b.x; ++c.x)
-				state.space[c] = val;
-
-	} else
-		for (c.x = a.x; c.x < b.x; ++c.x)
-			state.space[c] = val;
+	state.space.map(a, b-1, (cell[] arr) { arr[] = val; });
 }
 
 void fishhook() {
