@@ -2399,25 +2399,6 @@ void irrelevizeSubsumptionOrder(cell dim)
 	}
 }
 
-enum I1D {
-	NONE,
-	END_IN,
-	BEG_IN,
-	BOTH_OUT
-}
-// Assumes that boxB–boxE doesn't contain b–e
-I1D intersect1D(cell b, cell e, cell boxB, cell boxE) {
-	if (e >= boxB) {
-		if (e <= boxE)
-			return I1D.END_IN;
-		else if (b <= boxE) {
-			// e is past the box and b isn't
-			return b < boxB ? I1D.BOTH_OUT : I1D.BEG_IN;
-		}
-	}
-	return I1D.NONE;
-}
-
 // Modifies the given beg/end pair to give a box which contains the given
 // coordinates and overlaps with none of the given boxes. The coordinates
 // should, of course, be already contained between the beg and end.
