@@ -1116,7 +1116,13 @@ private:
 		aabb = pox;
 		return true;
 	}
-	AABB getBoxFor(Coords c) {
+	AABB getBoxFor(Coords c)
+	in {
+		foreach (box; boxen)
+			assert (!box.contains(c));
+	} out (box) {
+		assert (box.contains(c));
+	} body {
 		if (recentBuf.size() == recentBuf.CAPACITY) {
 
 			Memory[recentBuf.CAPACITY] a;
