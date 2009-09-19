@@ -911,15 +911,15 @@ final class FungeSpace(cell dim, bool befunge93) {
 				beg = end = lastBeg;
 			}
 
-			findBeg!(0)(&beg);
-			findEnd!(0)(&end);
+			findBeg!(0)(beg);
+			findEnd!(0)(end);
 			static if (dim > 1) {
-				findBeg!(1)(&beg);
-				findEnd!(1)(&end);
+				findBeg!(1)(beg);
+				findEnd!(1)(end);
 			}
 			static if (dim > 2) {
-				findBeg!(2)(&beg);
-				findEnd!(2)(&end);
+				findBeg!(2)(beg);
+				findEnd!(2)(end);
 			}
 
 			if (usingBak) {
@@ -940,15 +940,15 @@ final class FungeSpace(cell dim, bool befunge93) {
 			lastBeg = beg;
 			lastEnd = end;
 		}
-		void findBeg(ubyte axis)(Coords* beg) {
+		void findBeg(ubyte axis)(ref Coords beg) {
 			nextBox: foreach (box; boxen) {
 				++stats.space.lookups;
 
 				if (box.getNoOffset(InitCoords!(0)) != ' ')
 					beg.minWith(box.beg);
 
-				else if (box.beg.anyLess(*beg)) {
-					auto last = *beg;
+				else if (box.beg.anyLess(beg)) {
+					auto last = beg;
 					last.minWith(box.end);
 					last -= box.beg;
 
@@ -993,14 +993,14 @@ final class FungeSpace(cell dim, bool befunge93) {
 				}
 			}
 		}
-		void findEnd(ubyte axis)(Coords* end) {
+		void findEnd(ubyte axis)(ref Coords end) {
 			nextBox: foreach (box; boxen) {
 				++stats.space.lookups;
 				if (box[box.end] != ' ')
 					end.maxWith(box.end);
 
-				else if (box.end.anyGreater(*end)) {
-					auto last = *end - box.beg;
+				else if (box.end.anyGreater(end)) {
+					auto last = end - box.beg;
 					last.maxWith(InitCoords!(0));
 
 					Coords c = void;
@@ -1958,7 +1958,7 @@ private:
 public:
 	FungeSpace space;
 
-	static typeof(*this) opCall(Coords c, Coords* delta, FungeSpace s) {
+	static typeof(*this) opCall(Coords c, Coords delta, FungeSpace s) {
 
 		typeof(*this) cursor;
 		with (cursor) {
@@ -1966,9 +1966,7 @@ public:
 
 			if (!space.findBox(c, box, boxIdx)) {
 
-				assert (delta !is null);
-
-				if (!space.tryJumpToBox(c, *delta, box, boxIdx)) {
+				if (!space.tryJumpToBox(c, delta, box, boxIdx)) {
 					if (space.usingBak && space.bak.contains(c))
 						bak = true;
 					else
