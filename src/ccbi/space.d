@@ -633,16 +633,20 @@ private struct AABB(cell dim) {
 	}
 
 	// These return false if the skipping couldn't be completed within this box.
-	bool skipSpacesNoOffset(ref Coords p, Coords delta, Coords ob2b, Coords ob2e)
+	bool skipSpacesNoOffset(
+		ref Coords p, Coords delta, Coords ob2b, Coords ob2e,
+		ref ulong reads)
 	in {
 		assert (contains(p, ob2b, ob2e));
 	} out (done) {
 		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ' '));
 	} body {
+		++reads;
 		while (getNoOffset(p) == ' ') {
 			p += delta;
 			if (!contains(p, ob2b, ob2e))
 				return false;
+			++reads;
 		}
 		return true;
 	}
@@ -650,7 +654,8 @@ private struct AABB(cell dim) {
 	// inMiddle should start at false and thereafter just be passed back
 	// unmodified.
 	bool skipSemicolonsNoOffset(
-		ref Coords p, Coords delta, Coords ob2b, Coords ob2e, ref bool inMiddle)
+		ref Coords p, Coords delta, Coords ob2b, Coords ob2e, ref bool inMiddle,
+		ref ulong reads)
 	in {
 		assert (contains(p, ob2b, ob2e));
 	} out (done) {
@@ -659,6 +664,7 @@ private struct AABB(cell dim) {
 		if (inMiddle)
 			goto continuePrev;
 
+		++reads;
 		while (getNoOffset(p) == ';') {
 			do {
 				p += delta;
@@ -667,6 +673,7 @@ private struct AABB(cell dim) {
 					return false;
 				}
 continuePrev:;
+				++reads;
 			} while (getNoOffset(p) != ';')
 
 			p += delta;
@@ -674,6 +681,7 @@ continuePrev:;
 				inMiddle = false;
 				return false;
 			}
+			++reads;
 		}
 		return true;
 	}
@@ -888,6 +896,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			bool begSp = this[lastBeg] == ' ',
 			     endSp = this[lastEnd] == ' ';
 
+			stats.space.lookups += 2;
+
 			if (begSp && endSp) {
 				beg = InitCoords!(cell.max,cell.max,cell.max);
 				end = InitCoords!(cell.min,cell.min,cell.min);
@@ -932,6 +942,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 		void findBeg(ubyte axis)(Coords* beg) {
 			nextBox: foreach (box; boxen) {
+				++stats.space.lookups;
+
 				if (box.getNoOffset(InitCoords!(0)) != ' ')
 					beg.minWith(box.beg);
 
@@ -943,6 +955,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					Coords c = void;
 
 					bool check() {
+						++stats.space.lookups;
 						if (box.getNoOffset(c) != ' ') {
 							beg.minWith(c + box.beg);
 							if (beg.v[axis] <= box.beg.v[axis])
@@ -982,6 +995,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 		}
 		void findEnd(ubyte axis)(Coords* end) {
 			nextBox: foreach (box; boxen) {
+				++stats.space.lookups;
 				if (box[box.end] != ' ')
 					end.maxWith(box.end);
 
@@ -992,6 +1006,7 @@ final class FungeSpace(cell dim, bool befunge93) {
 					Coords c = void;
 
 					bool check() {
+						++stats.space.lookups;
 						if (box.getNoOffset(c) != ' ') {
 							end.maxWith(c + box.beg);
 							if (end.v[axis] >= box.end.v[axis])
@@ -1534,17 +1549,23 @@ private:
 
 	// Gives a contiguous area of Funge-Space to the given delegate.
 	// Additionally guarantees that the successive areas passed are consecutive.
-	public void map(Coords a, Coords b, void delegate(cell[]) f) {
+	//
+	// The delegate should update the given ulongs with the number of reads and
+	// writes it performed, respectively.
+	public void map(
+		Coords a, Coords b, void delegate(cell[],ref ulong,ref ulong) f)
+	{
 		map(AABB(a, b), f);
 	}
-	void map(AABB aabb, void delegate(cell[]) f) {
+	void map(AABB aabb, void delegate(cell[],ref ulong,ref ulong) f) {
 		placeBox(aabb);
 
 		auto beg = aabb.beg;
 
 		for (bool hitEnd = false;;) foreach (box; boxen) {
 			if (box.overlaps(AABB.unsafe(beg, aabb.end))) {
-				f(box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd));
+				f(box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd),
+				  stats.space.lookups, stats.space.assignments);
 				if (hitEnd)
 					return;
 				else
@@ -1563,6 +1584,9 @@ private:
 	//
 	// - Whether a new line or page was just reached, with one bit for each
 	//   boolean (LSB for line, next-most for page).
+	//
+	// Since this is currently only used from this class, we update stats
+	// directly instead of passing them to the delegate.
 	void map(
 		AABB aabb, void delegate(cell[], size_t,size_t,size_t,size_t, ubyte) f)
 	{
@@ -1649,11 +1673,13 @@ private:
 			auto pEnd = input.ptr + input.length;
 
 			if (binary) {
-				map(aabb, (cell[] arr) {
+				map(aabb, (cell[] arr,ref ulong,ref ulong) {
 					foreach (ref x; arr) {
 						ubyte b = *p++;
-						if (b != ' ')
+						if (b != ' ') {
 							x = cast(cell)b;
+							++stats.space.assignments;
+						}
 					}
 				});
 			} else {
@@ -1667,6 +1693,7 @@ private:
 						switch (b) {
 							default:
 								arr[i] = cast(cell)b;
+								++stats.space.assignments;
 							case ' ':
 								++i;
 
@@ -2139,14 +2166,17 @@ findBox:
 					pos.toString(), delta.toString());
 
 		if (bak) {
+			++space.stats.space.lookups;
 			while (space.bak[pos] == ' ') {
 				advance(delta);
 				if (!inBox())
 					return false;
+				++space.stats.space.lookups;
 			}
 			return true;
 		} else
-			return box.skipSpacesNoOffset(relPos, delta, ob2b, ob2e);
+			return box.skipSpacesNoOffset(
+				relPos, delta, ob2b, ob2e, space.stats.space.lookups);
 	}
 	bool skipSemicolons(Coords delta, ref bool inMid) {
 		version (detectInfiniteLoops)
@@ -2159,6 +2189,7 @@ findBox:
 			if (inMid)
 				goto continuePrev;
 
+			++space.stats.space.lookups;
 			while (space.bak[pos] == ';') {
 				do {
 					advance(delta);
@@ -2167,6 +2198,7 @@ findBox:
 						return false;
 					}
 continuePrev:;
+					++space.stats.space.lookups;
 				} while (space.bak[pos] != ';')
 
 				advance(delta);
@@ -2174,10 +2206,12 @@ continuePrev:;
 					inMid = false;
 					return false;
 				}
+				++space.stats.space.lookups;
 			}
 			return true;
 		} else
-			return box.skipSemicolonsNoOffset(relPos, delta, ob2b, ob2e, inMid);
+			return box.skipSemicolonsNoOffset(
+				relPos, delta, ob2b, ob2e, inMid, space.stats.space.lookups);
 	}
 	void skipToLastSpace(Coords delta) {
 
@@ -2186,6 +2220,7 @@ continuePrev:;
 		if (!inBox())
 			goto findBox;
 
+		++space.stats.space.lookups;
 		if (unsafeGet() == ' ') {
 			while (!skipSpaces(delta)) {
 findBox:

@@ -190,7 +190,10 @@ void chicane() {
 
 	cell val = cip.stack.pop;
 
-	state.space.map(a, b-1, (cell[] arr) { arr[] = val; });
+	state.space.map(a, b-1, (cell[] arr,ref ulong,ref ulong w) {
+		arr[] = val;
+		w += arr.length;
+	});
 }
 
 void fishhook() {
