@@ -632,60 +632,6 @@ private struct AABB(cell dim) {
 		}
 	}
 
-	// These return false if the skipping couldn't be completed within this box.
-	bool skipSpacesNoOffset(
-		ref Coords p, Coords delta, Coords ob2b, Coords ob2e,
-		ref ulong reads)
-	in {
-		assert (contains(p, ob2b, ob2e));
-	} out (done) {
-		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ' '));
-	} body {
-		++reads;
-		while (getNoOffset(p) == ' ') {
-			p += delta;
-			if (!contains(p, ob2b, ob2e))
-				return false;
-			++reads;
-		}
-		return true;
-	}
-
-	// inMiddle should start at false and thereafter just be passed back
-	// unmodified.
-	bool skipSemicolonsNoOffset(
-		ref Coords p, Coords delta, Coords ob2b, Coords ob2e, ref bool inMiddle,
-		ref ulong reads)
-	in {
-		assert (contains(p, ob2b, ob2e));
-	} out (done) {
-		assert (done == (contains(p, ob2b, ob2e) && getNoOffset(p) != ';'));
-	} body {
-		if (inMiddle)
-			goto continuePrev;
-
-		++reads;
-		while (getNoOffset(p) == ';') {
-			do {
-				p += delta;
-				if (!contains(p, ob2b, ob2e)) {
-					inMiddle = true;
-					return false;
-				}
-continuePrev:;
-				++reads;
-			} while (getNoOffset(p) != ';')
-
-			p += delta;
-			if (!contains(p, ob2b, ob2e)) {
-				inMiddle = false;
-				return false;
-			}
-			++reads;
-		}
-		return true;
-	}
-
 	cell[] getContiguousRange(
 		ref Coords from, Coords to, Coords origBeg, ref bool reachedTo)
 	in {
@@ -2169,18 +2115,26 @@ findBox:
 					"Delta is zero: skipping spaces forever...",
 					pos.toString(), delta.toString());
 
+		++space.stats.space.lookups;
+
+		// Evidently it is a noticeable performance improvement to lift out the
+		// condition.
 		if (bak) {
-			++space.stats.space.lookups;
-			while (space.bak[pos] == ' ') {
-				advance(delta);
-				if (!inBox())
+			while (space.bak[actualPos] == ' ') {
+				actualPos += delta;
+				if (!contains(actualPos, beg, end))
 					return false;
 				++space.stats.space.lookups;
 			}
-			return true;
-		} else
-			return box.skipSpacesNoOffset(
-				relPos, delta, ob2b, ob2e, space.stats.space.lookups);
+		} else {
+			while (box.getNoOffset(relPos) == ' ') {
+				relPos += delta;
+				if (!contains(relPos, ob2b, ob2e))
+					return false;
+				++space.stats.space.lookups;
+			}
+		}
+		return true;
 	}
 	bool skipSemicolons(Coords delta, ref bool inMid) {
 		version (detectInfiniteLoops)
@@ -2189,33 +2143,55 @@ findBox:
 					"Delta is zero: skipping semicolons forever...",
 					pos.toString(), delta.toString());
 
+		// As in skipSpaces, lifting out this condition is worthwhile but ugly.
 		if (bak) {
 			if (inMid)
-				goto continuePrev;
+				goto continuePrevBak;
 
 			++space.stats.space.lookups;
-			while (space.bak[pos] == ';') {
+			while (space.bak[actualPos] == ';') {
 				do {
-					advance(delta);
-					if (!inBox()) {
+					actualPos += delta;
+					if (!contains(actualPos, beg, end)) {
 						inMid = true;
 						return false;
 					}
-continuePrev:;
+continuePrevBak:
 					++space.stats.space.lookups;
-				} while (space.bak[pos] != ';')
+				} while (space.bak[actualPos] != ';')
 
-				advance(delta);
-				if (!inBox()) {
+				actualPos += delta;
+				if (!contains(actualPos, beg, end)) {
 					inMid = false;
 					return false;
 				}
 				++space.stats.space.lookups;
 			}
-			return true;
-		} else
-			return box.skipSemicolonsNoOffset(
-				relPos, delta, ob2b, ob2e, inMid, space.stats.space.lookups);
+		} else {
+			if (inMid)
+				goto continuePrevBox;
+
+			++space.stats.space.lookups;
+			while (box.getNoOffset(relPos) == ';') {
+				do {
+					relPos += delta;
+					if (!contains(relPos, ob2b, ob2e)) {
+						inMid = true;
+						return false;
+					}
+continuePrevBox:
+					++space.stats.space.lookups;
+				} while (box.getNoOffset(relPos) != ';')
+
+				relPos += delta;
+				if (!contains(relPos, ob2b, ob2e)) {
+					inMid = false;
+					return false;
+				}
+				++space.stats.space.lookups;
+			}
+		}
+		return true;
 	}
 	void skipToLastSpace(Coords delta) {
 
