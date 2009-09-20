@@ -1,8 +1,8 @@
 #!/bin/sh
 
-n=`grep 'NEWBOX_PAD[[:space:]]*=' src/ccbi/space.d | sed -E 's/.*([0-9]+)[,;]/\1/'`
+n=`grep 'NEWBOX_PAD[[:space:]]*=' src/ccbi/space/space.d | sed -E 's/.*([0-9]+)[,;]/\1/'`
 if [ -z $n ]; then
-	echo "NEWBOX_PAD not found in src/ccbi/space.d!"
+	echo "NEWBOX_PAD not found in src/ccbi/space/space.d!"
 	exit 1
 fi
 ins=
