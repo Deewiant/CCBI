@@ -4,6 +4,7 @@
 
 module ccbi.fungemachine;
 
+import tango.core.Exception       : OutOfMemoryException;
 import tango.core.Tuple;
 import tango.io.Console           : Cin;
 import tango.io.Stdout;
@@ -195,6 +196,11 @@ private:
 					++state.tick;
 				}
 			}
+		} catch (OutOfMemoryException) {
+			Sout.flush;
+			Serr("CCBI :: Failed to allocate memory!").newline;
+			returnVal = 3;
+
 		} catch (InfiniteLoopException e) {
 			Sout.flush;
 			Serr
