@@ -119,7 +119,7 @@ import ccbi.container;
 import ccbi.fingerprint;
 import ccbi.globals;
 import ccbi.random;
-import ccbi.space;
+import ccbi.space.space;
 
 alias .Coords!(dim) Coords;
 

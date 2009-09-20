@@ -4,9 +4,9 @@ module ccbi.fungestate;
 
 import ccbi.cell;
 import ccbi.ip;
-import ccbi.space;
 import ccbi.templateutils : EmitGot;
 import ccbi.utils         : shallowCopy;
+import ccbi.space.space;
 
 // All state that should be restored when an IP travels to the past belongs
 // here.

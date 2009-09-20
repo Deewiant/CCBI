@@ -12,10 +12,10 @@ import tango.time.Time;
 public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
-       import ccbi.space;
        import ccbi.stats;
        import ccbi.templateutils : EmitGot;
        import ccbi.utils;
+       import ccbi.space.cursor;
 
 final class IP(cell dim, bool befunge93, fings...) {
 	alias     .Coords!(dim)            Coords;
@@ -92,7 +92,7 @@ final class IP(cell dim, bool befunge93, fings...) {
 	}
 
 	private void informSpace() {
-		cursor.space.informOf(&cursor);
+		cursor.space.addInvalidatee(&cursor.invalidate);
 	}
 
 	void   move()         { cursor.advance(delta); }

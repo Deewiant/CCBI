@@ -21,8 +21,8 @@ import tango.text.Ascii           : icompare, toLower;
 import tango.text.Util            : split;
 
 import ccbi.container;
-import ccbi.space;
 import ccbi.stdlib;
+import ccbi.space.space;
 
 alias .Coords!(dim) Coords;
 

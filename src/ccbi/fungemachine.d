@@ -21,7 +21,6 @@ import ccbi.flags;
 import ccbi.fungestate;
 import ccbi.ip;
 import ccbi.request;
-import ccbi.space;
 import ccbi.stats;
 import ccbi.stdlib;
 import ccbi.templateutils;
@@ -30,6 +29,7 @@ import ccbi.utils;
 import ccbi.fingerprints.all;
 import ccbi.instructions.std;
 import ccbi.instructions.templates;
+import ccbi.space.space;
 
 mixin (InsImports!());
 
