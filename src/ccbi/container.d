@@ -150,11 +150,11 @@ final class Stack(T) : Container!(T) {
 			stats.pushes += ts.length;
 
 			auto neededRoom = head + ts.length;
-			if (neededRoom >= array.length) {
+			if (neededRoom > array.length) {
 				++stats.resizes;
 
 				array.length = 2 * array.length +
-					(neededRoom >= 2 * array.length ? neededRoom : 0);
+					(neededRoom > 2 * array.length ? neededRoom : 0);
 			}
 
 			foreach (t; ts)
