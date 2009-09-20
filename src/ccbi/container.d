@@ -413,8 +413,8 @@ final class Deque : Container!(cell) {
 			auto r = array.length - head;
 
 			auto newArray = new typeof(array)(array.length * 2);
-			newArray[0..r     ] = array[head..head+r].dup;
-			newArray[r..r+head] = array[0   ..head  ].dup;
+			newArray[0..r     ] = array[head..head+r];
+			newArray[r..r+head] = array[0   ..head  ];
 
 			head  = 0;
 			tail  = array.length;
