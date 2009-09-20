@@ -11,6 +11,7 @@
 module ccbi.ccbi;
 
 import tango.core.Exception    : ArgEx = IllegalArgumentException;
+import tango.io.device.Array   : Array;
 import tango.io.device.File    : File;
 import tango.io.device.FileMap : FileMap;
 import tango.io.Stdout;
@@ -396,11 +397,18 @@ int main(char[][] args) {
 	auto fungeArgs = args[filePos..$];
 	// }}}
 
-	FileMap file;
-	try file = new typeof(file)(fungeArgs[0], File.ReadExisting);
+	auto filename = fungeArgs[0];
+
+	Array file;
+	try file = new FileMap(filename, File.ReadExisting);
 	catch {
-		Stderr("Couldn't open file '")(fungeArgs[0])("' for reading.").newline;
-		return -1;
+		try {
+			scope intermediate = new File(filename);
+			file = new Array(intermediate.load);
+		} catch {
+			Stderr("Couldn't open file '")(filename)("' for reading.").newline;
+			return -1;
+		}
 	}
 
 	if (befunge93)

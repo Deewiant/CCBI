@@ -724,10 +724,15 @@ void inputFile() {
 		// the size of the rectangle where the file is eventually put
 		vb;
 
-	FileMap file;
-	try file = new typeof(file)(filename, File.ReadExisting);
+	Array file;
+	try file = new FileMap(filename, File.ReadExisting);
 	catch {
-		return reverse();
+		try {
+			scope intermediate = new File(filename);
+			file = new Array(intermediate.load);
+		} catch {
+			return reverse();
+		}
 	}
 
 	state.space.load(file, &vb, va, binary);
