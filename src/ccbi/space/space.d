@@ -1035,10 +1035,10 @@ private:
 		}
 	}
 
-	// Takes ownership of the Array, detaching it.
+	// Takes ownership of the Array, closing it.
 	public void load(Array arr, Coords* end, Coords target, bool binary) {
 
-		scope (exit) arr.detach;
+		scope (exit) arr.close;
 
 		auto input = cast(ubyte[])arr.slice;
 
