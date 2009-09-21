@@ -1064,8 +1064,15 @@ Request loadSemantics() {
 	// Call the constructor when we've already moved instead of before: TRDS
 	// appreciates it
 	cip.move;
-	loadedFingerprint(fingerprint);
-	return Request.NONE;
+	try {
+		loadedFingerprint(fingerprint);
+		return Request.NONE;
+	} catch {
+		// ctor failed
+		reverse;
+		cip.move;
+		return Request.MOVE;
+	}
 }
 
 // Unload Semantics
@@ -1081,10 +1088,16 @@ void unloadSemantics() {
 	if (!ins)
 		return reverse();
 
+	bool rev = false;
 	foreach (i; ins) {
 		assert (isSemantics(cast(cell)i));
-		unloadedFingerprintIns(cip.semantics[i - 'A'].pop.fingerprint);
+		try unloadedFingerprintIns(cip.semantics[i - 'A'].pop.fingerprint);
+		catch { rev = true; }
 	}
+
+	// One or more dtors failed
+	if (rev)
+		reverse;
 }
 
 }
