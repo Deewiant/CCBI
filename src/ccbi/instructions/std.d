@@ -241,21 +241,7 @@ void noOperation() {}
 static if (!befunge93) {
 
 // Jump Forward
-void jumpForward() {
-	cell n = cip.stack.pop;
-
-	bool neg = n < 0;
-	if (neg) {
-		reverse();
-		n *= -1;
-	}
-
-	while (n--)
-		cip.move();
-
-	if (neg)
-		reverse();
-}
+void jumpForward() { cip.move(cip.delta * cip.stack.pop); }
 
 // Quit
 Request quit() {
