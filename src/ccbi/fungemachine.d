@@ -230,10 +230,14 @@ private:
 	Request executeInstruction() {
 		++stats.executionCount;
 
-		static if (!befunge93)
-			cip.gotoNextInstruction();
+		cell c;
 
-		auto c = cip.unsafeCell;
+		static if (!befunge93) {
+			c = cip.cell;
+			if (c == ' ' || c == ';')
+				cip.gotoNextInstruction();
+		}
+		c = cip.unsafeCell;
 
 		if (c == '"')
 			cip.mode ^= IP.STRING;

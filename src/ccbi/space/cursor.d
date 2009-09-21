@@ -185,47 +185,47 @@ public:
 	}
 
 	void skipMarkers(Coords delta)
-	out {
-		assert (get() != ' ');
-		assert (get() != ';');
+	in {
+		assert (get() == ' ' || get() == ';');
+	} out {
+		assert (unsafeGet() != ' ');
+		assert (unsafeGet() != ';');
 	} body {
 		mixin DetectInfiniteLoopDecls!();
 
 		if (!inBox())
 			goto findBox;
 
-		switch (unsafeGet()) {
-			do {
-			case ' ':
-				while (!skipSpaces(delta)) {
+		if (unsafeGet() == ';')
+			goto semicolon;
+
+		do {
+			while (!skipSpaces(delta)) {
 findBox:
+				auto p = pos;
+				if (!getBox(p)) {
+					mixin (DetectInfiniteLoop!("processing spaces"));
+					if (space.tryJumpToBox(p, delta, box, boxIdx))
+						tessellate(p);
+					else
+						infLoop(
+							"IP journeys forever in the void, "
+							"futilely seeking a nonspace...",
+							p.toString(), delta.toString());
+				}
+			}
+			if (unsafeGet() == ';') {
+semicolon:
+				bool inMiddle = false;
+				while (!skipSemicolons(delta, inMiddle)) {
 					auto p = pos;
 					if (!getBox(p)) {
-						mixin (DetectInfiniteLoop!("processing spaces"));
-						if (space.tryJumpToBox(p, delta, box, boxIdx))
-							tessellate(p);
-						else
-							infLoop(
-								"IP journeys forever in the void, "
-								"futilely seeking a nonspace...",
-								p.toString(), delta.toString());
+						mixin (DetectInfiniteLoop!("jumping over semicolons"));
+						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
-				if (unsafeGet() == ';') {
-			case ';':
-					bool inMiddle = false;
-					while (!skipSemicolons(delta, inMiddle)) {
-						auto p = pos;
-						if (!getBox(p)) {
-							mixin (DetectInfiniteLoop!("jumping over semicolons"));
-							tessellate(space.jumpToBox(p, delta, box, boxIdx));
-						}
-					}
-				}
-			} while (unsafeGet() == ' ')
-
-			default: break;
-		}
+			}
+		} while (unsafeGet() == ' ')
 	}
 	bool skipSpaces(Coords delta) {
 		version (detectInfiniteLoops)
