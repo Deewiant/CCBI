@@ -4,9 +4,9 @@ module ccbi.exceptions;
 
 // We don't version this because we can't do "try {} version (foo) catch {}"
 class InfiniteLoopException : Exception {
-	char[] preamble;
-	this(char[] p, char[] msg) {
-		preamble = p;
+	char[] detector;
+	this(char[] d, char[] msg) {
+		detector = d;
 		super(msg);
 	}
 }
@@ -16,9 +16,6 @@ version (detectInfiniteLoops):
 
 final class SpaceInfiniteLoopException : InfiniteLoopException {
 	this(char[] src, char[] pos, char[] delta, char[] msg) {
-		super(
-			"Detected by " ~ src ~ " at " ~ pos ~
-			" with delta " ~ delta ~
-			":", msg);
+		super(src ~ " at " ~ pos ~ " with delta " ~ delta, msg);
 	}
 }

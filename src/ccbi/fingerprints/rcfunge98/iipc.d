@@ -23,6 +23,9 @@ mixin (Fingerprint!(
 
 template IIPC() {
 
+version (detectInfiniteLoops)
+	size_t ipsDormant = 0;
+
 // FungeMachine callback
 bool executable(IP ip) {
 	if (ip.mode & IP.DORMANT) {
@@ -48,7 +51,18 @@ void ancestorID() {
 }
 
 void ownID() { cip.stack.push(cip.id); }
-void goDormant() { ++stats.ipDormant; cip.mode |= cip.DORMANT; }
+void goDormant() {
+	++stats.ipDormant;
+
+	version (detectInfiniteLoops)
+		if (++ipsDormant == state.ips.length)
+			throw new InfiniteLoopException(
+				"IIPC instruction D",
+				"Now that IP at " ~cip.pos.toString~ " went dormant,"
+				"all IPs are dormant.");
+
+	cip.mode |= cip.DORMANT;
+}
 
 void topIP() {
 	if (auto ip = findIP(cip.stack.pop))
@@ -57,7 +71,12 @@ void topIP() {
 void popIP() {
 	if (auto ip = findIP(cip.stack.pop)) {
 		cip.stack.push(ip.stack.pop);
-		ip.mode &= ~cip.DORMANT;
+
+		if (ip.mode & ip.DORMANT) {
+			ip.mode &= ~ip.DORMANT;
+			version (detectInfiniteLoops)
+				--ipsDormant;
+		}
 	}
 }
 void pushIP() {
@@ -66,7 +85,13 @@ void pushIP() {
 
 	if (auto ip = findIP(id)) {
 		ip.stack.push(c);
-		ip.mode &= ~cip.DORMANT;
+
+		if (ip.mode & ip.DORMANT) {
+			ip.mode &= ~ip.DORMANT;
+
+			version (detectInfiniteLoops)
+				--ipsDormant;
+		}
 	}
 }
 

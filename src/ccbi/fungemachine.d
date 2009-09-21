@@ -205,7 +205,7 @@ private:
 			Sout.flush;
 			Serr
 				("CCBI :: Infinite loop detected!").newline
-				.print("  ")  (e.preamble).newline
+				.print("  Detected by ")(e.detector)(':').newline
 				.print("    ")(e.toString).newline;
 			returnVal = 2;
 
