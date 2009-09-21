@@ -291,7 +291,7 @@ Request iterate() {
 			return executeStandard(i);
 
 		case 'r':
-			if (i & 1)
+			if (n & 1)
 				reverse();
 
 		case 'z':
