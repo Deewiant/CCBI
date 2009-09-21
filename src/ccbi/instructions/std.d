@@ -259,16 +259,16 @@ Request iterate() {
 
 	auto r = Request.MOVE;
 
+	// negative argument is undefined by spec, just ignore it
+	if (n <= 0)
+		return r;
+
 	auto i = cip.cell;
 
 	if (i == ' ' || i == ';') {
 		cip.gotoNextInstruction();
 		i = cip.unsafeCell;
 	}
-
-	// negative argument is undefined by spec, just ignore it
-	if (n <= 0)
-		return r;
 
 	// k executes its operand from where k is
 	// and doesn't move past it
