@@ -26,6 +26,13 @@ void ctor() {
 	foreach (j, inout i; cip.mapping)
 		i = cast(cell)j;
 }
+void dtor() {
+	foreach (j, i; cip.mapping)
+		if (i != j)
+			return;
+
+	delete cip.mapping;
+}
 
 void remap() {
 	auto old = cip.stack.pop;

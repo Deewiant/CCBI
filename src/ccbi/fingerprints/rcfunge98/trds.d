@@ -81,6 +81,7 @@ void ctor() {
 		earlyState.startIdx = cipIdx;
 	}
 }
+void dtor() { usingTRDS = false; }
 
 // }}}
 // {{{ FungeMachine callbacks

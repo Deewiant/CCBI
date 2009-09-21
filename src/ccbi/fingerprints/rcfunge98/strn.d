@@ -60,6 +60,7 @@ void search() {
 // buffer for get() and input()
 char[] buf;
 void ctor() { buf = new char[80]; }
+void dtor() { delete buf; }
 
 void get() {
 	Coords c = popOffsetVector();
