@@ -283,6 +283,10 @@ Request iterate() {
 			cip.stack.pop(n);
 			return r;
 
+		case 'h', 'l':
+			static if (dim < 3)
+				goto case 'r';
+
 		case 'v', '^':
 			static if (dim < 2)
 				goto case 'r';
