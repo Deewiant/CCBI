@@ -1069,6 +1069,9 @@ Request loadSemantics() {
 		return Request.NONE;
 	} catch {
 		// ctor failed
+		foreach (i; ins)
+			cip.semantics[i - 'A'].pop(1);
+		cip.stack.pop(2);
 		reverse;
 		cip.move;
 		return Request.MOVE;
