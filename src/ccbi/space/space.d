@@ -567,7 +567,7 @@ private:
 	void placeBox(AABB aabb) {
 		foreach (box; boxen) if (box.contains(aabb)) {
 			++stats.space.boxesIncorporated;
-			return [box];
+			return;
 		}
 		return reallyPlaceBox(aabb);
 	}
