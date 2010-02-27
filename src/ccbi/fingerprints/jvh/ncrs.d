@@ -6,56 +6,33 @@ module ccbi.fingerprints.jvh.ncrs;
 
 import ccbi.fingerprint;
 
-version (Windows)
-	version = PDCurses;
-else
-	version = ncurses;
-
 template ChtypeMsg() { const ChtypeMsg = "NCRS :: assuming 32-bit chtype..."; }
 alias uint chtype;
 
-template MacroMsg() { const MacroMsg =
-"NCRS :: echo, noecho, and initscr may be macros, but there's no other way to
-        get their functionality than using them. Since both PDCurses and
-        ncurses provide them as actual functions, assuming that your curses
-        implementation also does so..."; }
+alias int c_int;
 
 extern (C) {
-	struct WINDOW;
+	ubyte ccbi_beep();
+	ubyte ccbi_refresh();
 
-	int beep();
+	ubyte ccbi_erase();
+	ubyte ccbi_clrtobot();
+	ubyte ccbi_clrtoeol();
 
-	// may be macros
-	int echo();
-	int noecho();
+	ubyte ccbi_echo  (c_int);
+	ubyte ccbi_cbreak(c_int);
+	ubyte ccbi_keypad(c_int);
 
-	int wgetch(WINDOW*);
+	c_int ccbi_getch();
+	ubyte ccbi_ungetch(c_int);
 
-	WINDOW* initscr();
-	int endwin();
+	ubyte ccbi_initscr();
+	ubyte ccbi_endwin();
 
-	int keypad(WINDOW*, bool);
+	ubyte ccbi_move(c_int, c_int);
 
-	int wmove(WINDOW*, int, int);
-
-	int cbreak();
-	int nocbreak();
-
-	int wrefresh(WINDOW*);
-
-	version (PDCurses) {
-		int PDC_ungetch(int);
-		alias PDC_ungetch ungetch;
-	} else
-		int ungetch(int);
-
-	int waddch(WINDOW*, chtype);
-	int waddstr(WINDOW*, char*);
-
-	int wclrtobot(WINDOW*);
-	int wclrtoeol(WINDOW*);
-
-	extern WINDOW* stdscr;
+	ubyte ccbi_addch (chtype);
+	ubyte ccbi_addstr(/+const+/ char*);
 }
 
 // 0x4e435253: NCRS
@@ -65,7 +42,7 @@ extern (C) {
 mixin (Fingerprint!(
 	"NCRS",
 
-	"B", "doBeep",
+	"B", "beep",
 	"C", "clear",
 	"E", "toggleEcho",
 	"G", "get",
@@ -79,14 +56,11 @@ mixin (Fingerprint!(
 	"U", "unget"
 ));
 
-enum { ERR = -1 }
-
 template NCRS() {
 
 pragma (msg, ChtypeMsg!());
-pragma (msg, MacroMsg!());
 
-version (PDCurses) {
+version (Windows) {
 	pragma (msg,
 		"NCRS :: remember to link with a curses library, such as PDCurses.");
 } else {
@@ -94,45 +68,42 @@ version (PDCurses) {
 		"NCRS :: remember to link with a curses library, such as ncurses.");
 }
 
-void doBeep () { if (beep()                 == ERR) reverse; }
-void refresh() { if (wrefresh(stdscr)       == ERR) reverse; }
-void unget  () { if (ungetch(cip.stack.pop) == ERR) reverse; }
+void beep   () { if (!ccbi_beep())                 reverse; }
+void refresh() { if (!ccbi_refresh())              reverse; }
 
 void clear() {
 	switch (cip.stack.pop) {
-		case 1: return wclrtoeol(stdscr);
-		case 0:
-			// return werase(stdscr); may be a macro, so do it manually
-			if (wmove(stdscr, 0, 0) == ERR)
-				reverse;
-		case 2: return wclrtobot(stdscr);
-		default: return reverse();
+		case 0: if (!ccbi_erase   ()) reverse; return;
+		case 1: if (!ccbi_clrtoeol()) reverse; return;
+		case 2: if (!ccbi_clrtobot()) reverse; return;
+		default: return reverse;
 	}
 }
 
-void toggleEcho  () { if ((cip.stack.pop ? echo    () : noecho()) == ERR) reverse; }
-void toggleInput () { if ((cip.stack.pop ? nocbreak() : cbreak()) == ERR) reverse; }
-void toggleKeypad() { if (keypad(stdscr, cast(bool)cip.stack.pop) == ERR) reverse; }
+void toggleEcho  () { if (!ccbi_echo  (cip.stack.pop)) reverse; }
+void toggleInput () { if (!ccbi_cbreak(cip.stack.pop)) reverse; }
+void toggleKeypad() { if (!ccbi_keypad(cip.stack.pop)) reverse; }
 
-void get() { cip.stack.push(cast(cell)wgetch(stdscr)); }
+void   get() { cip.stack.push(cast(cell)ccbi_getch()); }
+void unget() { if (!ccbi_ungetch(cip.stack.pop)) reverse; }
 
 void init() {
 	if (cip.stack.pop) {
-		if (initscr() is null)
+		if (!ccbi_initscr())
 			reverse();
 	} else {
-		if (endwin() == ERR)
+		if (!ccbi_endwin())
 			reverse();
 	}
 }
 
 void gotoxy() {
 	cell y = cip.stack.pop;
-	if (wmove(stdscr, y, cip.stack.pop) == ERR)
+	if (!ccbi_move(y, cip.stack.pop))
 		reverse();
 }
 
-void put()   { if (waddch (stdscr, cast(chtype)cip.stack.pop) == ERR) reverse; }
-void write() { if (waddstr(stdscr, popStringz())              == ERR) reverse; }
+void put()   { if (!ccbi_addch (cast(chtype)cip.stack.pop)) reverse; }
+void write() { if (!ccbi_addstr(popStringz()))              reverse; }
 
 }
