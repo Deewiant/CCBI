@@ -941,14 +941,13 @@ private:
 	// Gives a contiguous area of Funge-Space to the given delegate.
 	// Additionally guarantees that the successive areas passed are consecutive.
 	//
-	// The delegate should update the given ulongs with the number of reads and
-	// writes it performed, respectively.
-	public void map(
-		Coords a, Coords b, void delegate(cell[],ref ulong,ref ulong) f)
+	// The delegate should update the given statistics with the number of reads
+	// and writes it performed, respectively.
+	public void map(Coords a,Coords b,void delegate(cell[],ref Stat,ref Stat) f)
 	{
 		map(AABB(a, b), f);
 	}
-	void map(AABB aabb, void delegate(cell[],ref ulong,ref ulong) f) {
+	void map(AABB aabb, void delegate(cell[], ref Stat, ref Stat) f) {
 		placeBox(aabb);
 
 		auto beg = aabb.beg;
@@ -1067,7 +1066,7 @@ private:
 			auto pEnd = input.ptr + input.length;
 
 			if (binary) {
-				map(aabb, (cell[] arr,ref ulong,ref ulong) {
+				map(aabb, (cell[] arr,ref Stat,ref Stat) {
 					foreach (ref x; arr) {
 						ubyte b = *p++;
 						if (b != ' ') {

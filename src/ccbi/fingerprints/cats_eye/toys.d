@@ -190,7 +190,7 @@ void chicane() {
 
 	cell val = cip.stack.pop;
 
-	state.space.map(a, b-1, (cell[] arr,ref ulong,ref ulong w) {
+	state.space.map(a, b-1, (cell[] arr, ref Stat, ref Stat w) {
 		arr[] = val;
 		w += arr.length;
 	});

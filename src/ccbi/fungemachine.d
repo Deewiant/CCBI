@@ -222,7 +222,7 @@ private:
 			debug e.writeOut((char[] s) { Serr.print(s); });
 		}
 
-		if (flags.useStats) {
+		version (statistics) if (flags.useStats) {
 			Sout.flush;
 			printStats(Serr);
 		}
@@ -414,7 +414,7 @@ private:
 			_arguments, _argptr, fmt);
 	}
 
-	void printStats(FormatOutput!(char) put) {
+	version (statistics) void printStats(FormatOutput!(char) put) {
 		put("============").newline;
 		put(" Statistics ").newline;
 		put("============").newline;

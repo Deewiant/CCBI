@@ -4,7 +4,7 @@ fings='HRTI MODE MODU NULL ORTH PERL REFC ROMA TOYS TURT
        JSTR NCRS
        _3DSP BASE CPLI DATE DIRF EVAR FILE FIXP FPDP FPSP FRTH IIPC IMAP INDV SOCK STRN SUBR TERM TIME TRDS'
 
-flags='-Isrc -oq -d-debug -d-version=detectInfiniteLoops'
+flags='-Isrc -oq -d-debug -d-version=detectInfiniteLoops -d-version=statistics'
 
 for f in $fings; do flags="$flags -d-version=$f"; done
 

@@ -4,46 +4,72 @@ module ccbi.stats;
 
 import tango.math.Math : max;
 
+version (statistics)
+	alias ulong Stat;
+else
+	alias DummyStat Stat;
+
 struct Stats {
-	ulong
-		executionCount      = 0,
-		stdExecutionCount   = 0,
-		fingExecutionCount  = 0,
-		unimplementedCount  = 0,
-		execDormant         = 0,
-		ipForked            = 0,
-		ipStopped           = 0,
-		ipDormant           = 0,
-		ipTravelledToPast   = 0,
-		ipTravelledToFuture = 0,
-		travellerArrived    = 0,
-		timeStopped         = 0;
+	mixin (MkStats!(
+		"executionCount",
+		"stdExecutionCount",
+		"fingExecutionCount",
+		"unimplementedCount",
+		"execDormant",
+		"ipForked",
+		"ipStopped",
+		"ipDormant",
+		"ipTravelledToPast",
+		"ipTravelledToFuture",
+		"travellerArrived",
+		"timeStopped"
+	));
 
 	struct SpaceStats {
-		ulong
-			lookups           = 0,
-			assignments       = 0,
-			boxesIncorporated = 0,
-			boxesPlaced       = 0,
-			maxBoxesLive      = 0,
-			subsumedContains  = 0,
-			subsumedDisjoint  = 0,
-			subsumedFusables  = 0,
-			subsumedOverlaps  = 0;
+		mixin (MkStats!(
+			"lookups",
+			"assignments",
+			"boxesIncorporated",
+			"boxesPlaced",
+			"maxBoxesLive",
+			"subsumedContains",
+			"subsumedDisjoint",
+			"subsumedFusables",
+			"subsumedOverlaps"
+		));
 	}
 	SpaceStats space;
 
-	void newMax(ref ulong old, ulong n) { old = max(old, n); }
+	version (statistics)
+		static void newMax(ref ulong old, ulong n) { old = max(old, n); }
+	else
+		static void newMax(ref DummyStat, ulong) {}
 };
 
 struct ContainerStats {
-	ulong
-		pushes         = 0,
-		pops           = 0,
-		peeks          = 0,
-		popUnderflows  = 0,
-		peekUnderflows = 0,
-		resizes        = 0,
-		clears         = 0,
-		cleared        = 0;
+	mixin (MkStats!(
+		"pushes",
+		"pops",
+		"peeks",
+		"popUnderflows",
+		"peekUnderflows",
+		"resizes",
+		"clears",
+		"cleared"
+	));
+}
+
+version (statistics) {} else struct DummyStat {
+	static void opAddAssign(ulong) {}
+	static void opSubAssign(ulong) {}
+}
+
+private template MkStats(S...) {
+	static if (S.length)
+		const MkStats =
+			`version (statistics) ulong ` ~S[0]~ ` = 0;`
+			`else DummyStat ` ~S[0]~ `;`
+			~ MkStats!(S[1..$]);
+	else
+		const MkStats = "";
 }

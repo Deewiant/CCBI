@@ -6,8 +6,9 @@ import ccbi.fingerprints.all;
 import ccbi.stdlib : BitFields;
 
 struct Flags {
+	version (statistics)
+		bool useStats = false;
 	bool
-		useStats         = false,
 		script           = false,
 		tracing          = false,
 		warnings         = false,

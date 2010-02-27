@@ -26,6 +26,14 @@ import ccbi.fungemachine;
 import ccbi.templateutils;
 import ccbi.utils;
 
+version (statistics)
+	const char[] STAT_HELP = `
+
+ -s, --stats             Output some interesting statistics to stderr upon
+                         completion.`;
+else
+	const char[] STAT_HELP = "";
+
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
 	HELP = VERSION_STRING ~ `
@@ -49,12 +57,9 @@ ARGS may be one or more of:
                          corresponding with --unefunge, --befunge, and
                          --trefunge respectively.
 
- -t, --trace             Trace source during interpretation.
+ -t, --trace             Trace source during interpretation.` ~ STAT_HELP ~ `
 
  -w, --warnings          Warn when encountering unimplemented instructions.
-
- -s, --stats             Output some interesting statistics to stderr upon
-                         completion.
 
      --script            Begin execution on the second line if the first line
                          begins with a shebang ("#!").
@@ -328,9 +333,11 @@ int main(char[][] args) {
 
 	argp("befunge-93").bind({ befunge93 = true; });
 
+	version (statistics)
+		argp("stats")    .aliased('s').bind({ flags.useStats = true; });
+
 	argp("trace")       .aliased('t').bind({ flags.tracing  = true; });
 	argp("warnings")    .aliased('w').bind({ flags.warnings = true; });
-	argp("stats")       .aliased('s').bind({ flags.useStats = true; });
 	argp("script")                   .bind({ flags.script   = true; });
 	argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {
 		foreach (f; delimiters(fs, ",")) {
