@@ -17,14 +17,14 @@ import tango.io.device.FileMap : FileMap;
 import tango.io.Stdout;
 import tango.text.Arguments;
 import tango.text.Ascii        : toLower;
+import tango.text.Util         : delimiters;
 
+import ccbi.fingerprints.all;
 import ccbi.flags;
 import ccbi.globals : VERSION_STRING;
 import ccbi.fungemachine;
 import ccbi.templateutils;
 import ccbi.utils;
-
-import ccbi.fingerprints.cats_eye.turt : TURT_FILE_INIT;
 
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
@@ -65,7 +65,15 @@ ARGS may be one or more of:
      --befunge-93        Adhere to the Befunge-93 documentation instead of the
                          Funge-98 specification.
 
- -P, --disable-fprints   Run as if no fingerprints were implemented.
+ -f F, --fingerprints F  Allow enabling and disabling of individual
+                         fingerprints before starting the program. The
+                         parameter F is a comma-separated list of fingerprint
+                         names prefixed with '-' or '+'. Prefixing a name with
+                         '-' disables it while '+' enables it. The special name
+                         "all" can be used to modify the status of all
+                         fingerprints at once.
+
+                         By default, all fingerprints are enabled.
 
  -i, --implementation    Show some implementation details and exit.
 
@@ -312,7 +320,7 @@ int main(char[][] args) {
 		}
 		failedParse = true;
 		Stderr("CCBI :: dimensionality must be 1, 2, or 3, not '")(d)("'.")
-			  .newline;
+		     .newline;
 	});
 	argp("unefunge").bind({ dim = 1; });
 	argp( "befunge").bind({ dim = 2; });
@@ -320,11 +328,40 @@ int main(char[][] args) {
 
 	argp("befunge-93").bind({ befunge93 = true; });
 
-	argp("trace")          .aliased('t').bind({ flags.tracing             = true; });
-	argp("warnings")       .aliased('w').bind({ flags.warnings            = true; });
-	argp("stats")          .aliased('s').bind({ flags.useStats            = true; });
-	argp("script")                      .bind({ flags.script              = true; });
-	argp("disable-fprints").aliased('P').bind({ flags.fingerprintsEnabled = true; });
+	argp("trace")       .aliased('t').bind({ flags.tracing  = true; });
+	argp("warnings")    .aliased('w').bind({ flags.warnings = true; });
+	argp("stats")       .aliased('s').bind({ flags.useStats = true; });
+	argp("script")                   .bind({ flags.script   = true; });
+	argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {
+		foreach (f; delimiters(fs, ",")) {
+			bool enable = void;
+			switch (f[0]) {
+				case '-': enable = false; break;
+				case '+': enable =  true; break;
+				default:
+					failedParse = true;
+					Stderr("CCBI :: fingerprint setting '")(f)
+							("' must be prefixed with - or +.").newline;
+					return;
+			}
+			switch (f[1..$]) mixin (Switch!(
+				FingerprintSettingCases!(ALL_FINGERPRINTS),
+				`case "all":
+					if (enable)
+						flags.enabledFings.setAll();
+					else
+						flags.enabledFings.unsetAll();
+					break;`,
+				`default:
+					if (enable) {
+						failedParse = true;
+						Stderr("CCBI :: cannot enable unknown fingerprint '")
+						      (f[1..$])("'.").newline;
+					}
+					break;`
+			));
+		}
+	});
 
 	// TODO: minifunge, TURT file
 
@@ -359,6 +396,8 @@ int main(char[][] args) {
 		return failedParse ? 1 : 0;
 	}
 
+	flags.allFingsDisabled = flags.enabledFings.allUnset;
+
 	auto fungeArgs = argp("").assigned;
 	if (!fungeArgs.length) {
 		Stderr("CCBI :: missing source file.").newline.formatln(USAGE, args[0]);
@@ -388,4 +427,15 @@ int main(char[][] args) {
 		case 3: return (new FungeMachine!(3, false)(file, fungeArgs, flags)).run;
 		default: assert (false, "Internal error!");
 	}
+}
+
+template FingerprintSettingCases(fing...) {
+	static if (fing.length)
+		const FingerprintSettingCases =
+			`case "` ~fing[0]~ `":
+				flags.enabledFings.` ~PrefixName!(fing[0])~ ` = enable;
+				break;`
+			~ FingerprintSettingCases!(fing[1..$]);
+	else
+		const FingerprintSettingCases = "";
 }

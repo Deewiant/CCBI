@@ -14,6 +14,8 @@ import tango.io.stream.Typed   : TypedInput;
 import tango.math.Math         : min;
 import tango.sys.Common;
 
+import ccbi.templateutils : ToString;
+
 public alias FileConst.NewlineString NewlineString;
 
 A ipow(A, B)(A x, B exp) {
@@ -322,4 +324,41 @@ bool modDiv(U)(U a, U b, out U result) {
 
 	result = a * modInv(b);
 	return true;
+}
+
+// All set by default
+struct BitFields(F...) {
+	private ubyte[(F.length + 7)/8] bits = ubyte.max;
+
+	bool opIndex(size_t i) {
+		return (bits[i/8] & 1 << (i%8)) != 0;
+	}
+	bool opIndexAssign(bool b, size_t i) {
+		if (b)
+			bits[i/8] |=   1 << (i%8);
+		else
+			bits[i/8] &= ~(1 << (i%8));
+		return b;
+	}
+
+	void   setAll() { bits[] = ubyte.max; }
+	void unsetAll() { bits[] = 0; }
+
+	bool allUnset() {
+		foreach (b; bits)
+			if (b)
+				return false;
+		return true;
+	}
+
+	mixin (BitFieldsHelper!(0, F));
+}
+private template BitFieldsHelper(size_t n, F...) {
+	static if (F.length == 0)
+		const BitFieldsHelper = "";
+	else
+		const BitFieldsHelper = "
+			bool " ~F[0]~ "()       { return (*this)[" ~ToString!(n)~ "];     }
+			bool " ~F[0]~ "(bool b) { return (*this)[" ~ToString!(n)~ "] = b; }"
+			~ BitFieldsHelper!(n+1, F[1..$]);
 }

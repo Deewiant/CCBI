@@ -93,6 +93,8 @@ private char[] ActiveFingerprints() {
 }
 mixin (ActiveFingerprints());
 
+alias MapTuple!(PrefixName, ALL_FINGERPRINTS) ALL_FINGERPRINT_IDS;
+
 // TODO: can't these be made to use ConcatMap? Either here or at the caller
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
@@ -100,22 +102,29 @@ mixin (ActiveFingerprints());
 //
 // foreach fingerprint:
 // 	case HexCode!("<fingerprint>"):
+// 		if (!flags.enabledFings.<fingerprint>)
+// 			return null;
 // 		return <fingerprint>Instructions!();
 private template FingerprintInstructionsCases(fing...) {
 	static if (fing.length)
 		const FingerprintInstructionsCases =
 			`case `~ToString!(HexCode!(fing[0]))~`:`
+				`if (!flags.enabledFings.`~PrefixName!(fing[0])~`)`
+					`return null;`
 				`return `~PrefixName!(fing[0])~`Instructions!();`
 			~ FingerprintInstructionsCases!(fing[1..$]);
 	else
 		const FingerprintInstructionsCases = "";
 }
 
-char[] instructionsOf(cell fingerprint) {
-	switch (fingerprint) mixin (Switch!(
-		FingerprintInstructionsCases!(ALL_FINGERPRINTS),
-		"default: return null;"
-	));
+// mixin target
+template FingerprintHelpers() {
+	char[] instructionsOf(cell fingerprint) {
+		switch (fingerprint) mixin (Switch!(
+			FingerprintInstructionsCases!(ALL_FINGERPRINTS),
+			"default: return null;"
+		));
+	}
 }
 
 // Each fingerprint may have a constructor and a destructor. We keep track of

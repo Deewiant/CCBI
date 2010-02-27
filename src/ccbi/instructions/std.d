@@ -1028,7 +1028,7 @@ private bool popFingerprint(out cell fingerprint) {
 	if (n <= 0)
 		return false;
 
-	if (!flags.fingerprintsEnabled) {
+	if (flags.allFingsDisabled) {
 		cip.stack.pop(n);
 		return false;
 	}

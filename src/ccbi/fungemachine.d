@@ -248,7 +248,7 @@ private:
 		else if (cip.mode & IP.STRING)
 			cip.stack.push(c);
 		else {
-			static if (!befunge93) if (flags.fingerprintsEnabled) {
+			static if (!befunge93) if (!flags.allFingsDisabled) {
 				static if (GOT_IMAP)
 					if (c < cip.mapping.length && c >= 0)
 						c = cip.mapping[c];
@@ -291,7 +291,9 @@ private:
 	}
 
 	static if (!befunge93) {
-		mixin (ConcatMapTuple!(TemplateMixin, MapTuple!(PrefixName, fings)));
+		mixin FingerprintHelpers!();
+
+		mixin (ConcatMapTuple!(TemplateMixin, ALL_FINGERPRINT_IDS));
 		mixin (ConcatMapTuple!(FingerprintCount, fings));
 
 		void loadedFingerprint(cell fingerprint) {
@@ -392,7 +394,7 @@ private:
 			return true;
 
 		static if (GOT_TRDS || GOT_IIPC)
-			if (!flags.fingerprintsEnabled)
+			if (flags.allFingsDisabled)
 				return true;
 
 		static if (GOT_TRDS)
