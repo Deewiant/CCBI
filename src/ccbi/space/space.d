@@ -994,34 +994,37 @@ private:
 				size_t
 					width = void,
 					area = void,
-					lineStart = void,
 					pageStart = void;
 
 				// These depend on the original beg and thus have to be initialized
 				// before the call to getContiguousRange
+
+				// {box.beg.x, aabb.beg.y, aabb.beg.z}
+				Coords ls = beg;
+				ls.x = box.beg.x;
+
 				static if (dim >= 2) {
-					Coords ls = beg;
-					ls.x = box.beg.x;
-				}
-				static if (dim >= 3) {
+					// {box.beg.x, box.beg.y, aabb.beg.z}
 					Coords ps = box.beg;
-					ps.z = beg.z;
+					ps.v[2..$] = beg.v[2..$];
 				}
 
 				auto arr = box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd);
 
 				ubyte hit = 0;
 
+				// Unefunge needs this to skip leading spaces
+				auto lineStart = box.getIdx(ls) - (arr.ptr - box.data);
+
 				static if (dim >= 2) {
 					width = box.width;
-					lineStart = box.getIdx(ls) - (arr.ptr - box.data);
-
 					hit |= (beg.x == aabb.beg.x) << 0;
+
+					// Befunge needs this to skip leading newlines
+					pageStart = box.getIdx(ps) - (arr.ptr - box.data);
 				}
 				static if (dim >= 3) {
 					area = box.area;
-					pageStart = box.getIdx(ps) - (arr.ptr - box.data);
-
 					hit |= (beg.y == aabb.beg.y) << 1;
 				}
 
@@ -1074,19 +1077,33 @@ private:
 					}
 				});
 			} else {
+				// Used only for skipping leading spaces/newlines and thus not
+				// really representative of the cursor position at any point
+				static if (dim >= 2) auto x = target.x;
+				static if (dim >= 3) auto y = target.y;
+
 				map(aabb, (cell[] arr, size_t width,     size_t area,
 				                       size_t lineStart, size_t pageStart,
 				                       ubyte hit)
 				{
 					size_t i = 0;
 					while (i < arr.length) {
+						assert (p < pEnd);
 						ubyte b = *p++;
 						switch (b) {
 							default:
-								arr[i] = cast(cell)b;
+								arr[i++] = cast(cell)b;
 								++stats.space.assignments;
+								break;
+
 							case ' ':
-								++i;
+								// Ignore leading spaces (west of aabb.beg.x)
+								bool leadingSpace = i == lineStart;
+								static if (dim >= 2)
+									leadingSpace = leadingSpace && x++ < aabb.beg.x;
+
+								if (!leadingSpace)
+									++i;
 
 							static if (dim < 2) { case '\r','\n': }
 							static if (dim < 3) { case '\f': }
@@ -1097,12 +1114,24 @@ private:
 								if (p < pEnd && *p == '\n')
 									++p;
 							case '\n':
-								i = lineStart += width;
+								// Ignore leading newlines (north of aabb.beg.y)
+								bool leadingNewline = i == pageStart;
+								static if (dim >= 3)
+									leadingNewline = leadingNewline && y++ < aabb.beg.y;
+
+								if (!leadingNewline) {
+									i = lineStart += width;
+									x = target.x;
+								}
 								break;
 							}
 							static if (dim >= 3) {
 							case '\f':
-								i = lineStart = pageStart += area;
+								// Ignore leading form feeds (above aabb.beg.z)
+								if (i != 0) {
+									i = lineStart = pageStart += area;
+									y = target.y;
+								}
 								break;
 							}
 						}
@@ -1114,18 +1143,32 @@ private:
 						// terminates them in the code. Eat them here lest we skip a
 						// line by seeing them in the next call.
 
-						static if (dim == 2) if (hit & 0b01) {
-							assert (*p == '\r' || *p == '\n');
-							if (*p++ == '\r' && p < pEnd && *p == '\n')
+						static if (dim >= 2) if (hit & 0b01) {
+							// Skip any trailing other whitespace
+							while (*p == ' ' || *p == '\f')
 								++p;
+
+							if (p < pEnd) {
+								assert (*p == '\r' || *p == '\n');
+								if (*p++ == '\r' && p < pEnd && *p == '\n')
+									++p;
+							}
 						}
-						static if (dim == 3) if (hit & 0b10) {
-							assert (*p == '\f');
-							++p;
+						static if (dim == 3) if (hit & 0b10 && p < pEnd) {
+							// Skip any trailing other whitespace
+							while (*p == '\r' || *p == '\n' || *p == ' ')
+								++p;
+
+							if (p < pEnd) {
+								assert (*p == '\f');
+								++p;
+							}
 						}
 					}
 				});
 			}
+			for (; p < pEnd; ++p)
+				assert (*p == ' ' || *p == '\r' || *p == '\n' || *p == '\f');
 			assert (p == pEnd);
 		}
 	}
@@ -1215,6 +1258,7 @@ private:
 		ubyte getBeg = 0b111;
 		auto pos = target;
 		auto lastNonSpace = end;
+		bool foundNonSpace = false;
 
 		static if (dim >= 2) {
 			bool gotCR = false;
@@ -1225,7 +1269,9 @@ private:
 				pos.x = target.x;
 				++pos.y;
 				gotCR = false;
-				getBeg = 0b001;
+
+				if (foundNonSpace)
+					getBeg = 0b001;
 			}
 		}
 
@@ -1252,7 +1298,9 @@ private:
 					pos.x = target.x;
 					pos.y = target.y;
 					++pos.z;
-					getBeg = 0b011;
+
+					if (foundNonSpace)
+						getBeg = 0b011;
 				}
 				break;
 
@@ -1262,6 +1310,7 @@ private:
 						newLine();
 
 				if (b != ' ') {
+					foundNonSpace = true;
 					lastNonSpace = pos;
 
 					if (getBeg) for (size_t i = 0; i < dim; ++i) {
