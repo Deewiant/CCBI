@@ -4,6 +4,8 @@
 
 module ccbi.fungemachine;
 
+debug import tango.core.tools.TraceExceptions;
+
 import tango.core.Exception       : OutOfMemoryException;
 import tango.core.Tuple;
 import tango.io.Console           : Cin;
@@ -204,18 +206,20 @@ private:
 		} catch (InfiniteLoopException e) {
 			Sout.flush;
 			Serr
-				("CCBI :: Infinite loop detected!").newline
-				.print("  Detected by ")(e.detector)(':').newline
-				.print("    ")(e.toString).newline;
+				("CCBI :: Infinite loop detected!").newline()
+				("  Detected by ")(e.detector)(':').newline()
+				("    ")(e.toString).newline;
 			returnVal = 2;
 
 		} catch (Exception e) {
 			Sout.flush;
 			Serr
-				("CCBI :: Exited due to an error!").newline
-				.print("  ")  (e.toString).newline
-				.print("    at ")(e.file)(':')(e.line).newline;
+				("CCBI :: Exited due to an error!").newline()
+				("  ")(e.toString).newline()
+				("    at ")(e.file)(':')(e.line).newline;
 			returnVal = 1;
+
+			debug e.writeOut((char[] s) { Serr.print(s); });
 		}
 
 		if (flags.useStats) {
