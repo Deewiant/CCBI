@@ -26,6 +26,104 @@ import ccbi.fungemachine;
 import ccbi.templateutils;
 import ccbi.utils;
 
+// Yay version combinations and --help strings
+version (unefunge98) version = funge98;
+version ( befunge98) version = funge98;
+version (trefunge98) version = funge98;
+
+version (unefunge98) version ( befunge98) version = funge98_12;
+version ( befunge98) version (trefunge98) version = funge98_23;
+version (trefunge98) version (unefunge98) version = funge98_13;
+
+version (funge98_12) version = funge98Multi;
+version (funge98_23) version = funge98Multi;
+version (funge98_13) version = funge98Multi;
+
+version (unefunge98) version (befunge98) version (trefunge98)
+	version = funge98_123;
+
+version (befunge93) version (funge98)
+	version = funge93_and_98;
+
+version (funge98) {} else version (befunge93) {} else
+	static assert (false,
+		"A Funge-98 standard or Befunge-93 must be versioned in.");
+
+version (unefunge98) {
+	version (funge98Multi)
+		const char[] UNEFUNGE_HELP = `
+   --unefunge            Treat source as one-dimensional (Unefunge-98).`;
+	else
+		const char[] UNEFUNGE_HELP = `
+   --unefunge            Treat source as one-dimensional (Unefunge-98). This is
+                         the default.`;
+} else
+	const char[] UNEFUNGE_HELP = "";
+
+version (befunge98)
+	const char[] BEFUNGE_HELP = `
+   --befunge             Treat source as two-dimensional (Befunge-98). This is
+                         the default.`;
+else
+	const char[] BEFUNGE_HELP = "";
+
+version (trefunge98) {
+	version (befunge98)
+		const char[] TREFUNGE_HELP = `
+   --trefunge            Treat source as three-dimensional (Trefunge-98).`;
+	else
+		const char[] TREFUNGE_HELP = `
+   --trefunge            Treat source as three-dimensional (Trefunge-98). This
+                         is the default.`;
+} else
+	const char[] TREFUNGE_HELP = "";
+
+version (funge98_123)
+	const char[] DIMENSION_HELP = `
+
+ -d D, --dimension=D     Set dimensionality to D: may be 1, 2, or 3,
+                         corresponding with --unefunge, --befunge, and
+                         --trefunge respectively.`
+	~ BEFUNGE93_OVERRIDE;
+
+else version (funge98_12)
+	const char[] DIMENSION_HELP = `
+
+ -d D, --dimension=D     Set dimensionality to D: may be 1 or 2, corresponding
+                         with --unefunge and --befunge respectively.`
+	~ BEFUNGE93_OVERRIDE;
+
+else version (funge98_23)
+	const char[] DIMENSION_HELP = `
+
+ -d D, --dimension=D     Set dimensionality to D: may be 2 or 3, corresponding
+                         with --befunge and --trefunge respectively.`
+	~ BEFUNGE93_OVERRIDE;
+
+else version (funge98_13)
+	const char[] DIMENSION_HELP = `
+
+ -d D, --dimension=D     Set dimensionality to D: may be 1 or 3, corresponding
+                         with --unefunge and --trefunge respectively.`
+	~ BEFUNGE93_OVERRIDE;
+
+else
+	const char[] DIMENSION_HELP = "";
+
+version (funge93_and_98) {
+	const char[] BEFUNGE93_HELP = `
+
+     --befunge-93        Adhere to the Befunge-93 documentation instead of the
+                         Funge-98 specification.`;
+
+	const char[] BEFUNGE93_OVERRIDE = `
+
+                         Overrides --befunge-93.`;
+} else {
+	const char[] BEFUNGE93_HELP = "";
+	const char[] BEFUNGE93_OVERRIDE = "";
+}
+
 version (statistics)
 	const char[] STAT_HELP = `
 
@@ -33,6 +131,7 @@ version (statistics)
                          completion.`;
 else
 	const char[] STAT_HELP = "";
+
 
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
@@ -47,15 +146,13 @@ Interprets SOURCE_FILE as Funge-98 code, executing it and passing FUNGE_ARGS to
 it as command line arguments. The default mode of operation is Befunge-98, but
 this may be modified with the appropriate ARGS.
 
-ARGS may be one or more of:
- --unefunge              Treat source as one-dimensional (Unefunge).
- --befunge               Treat source as two-dimensional (Befunge). This is the
-                         default.
- --trefunge              Treat source as three-dimensional (Trefunge).
-
- -d D, --dimension=D     Set dimensionality to D: may be 1, 2, or 3,
-                         corresponding with --unefunge, --befunge, and
-                         --trefunge respectively.
+ARGS may be one or more of: `
+	~ UNEFUNGE_HELP
+	~ BEFUNGE_HELP
+	~ TREFUNGE_HELP
+	~ DIMENSION_HELP
+	~ BEFUNGE93_HELP
+	~ `
 
  -t, --trace             Trace source during interpretation.` ~ STAT_HELP ~ `
 
@@ -67,10 +164,7 @@ ARGS may be one or more of:
                          An infinite loop will occur if no second line exists,
                          or it is empty.
 
-     --befunge-93        Adhere to the Befunge-93 documentation instead of the
-                         Funge-98 specification.
-
- -f F, --fingerprints F  Allow enabling and disabling of individual
+ -f F, --fingerprints=F  Allow enabling and disabling of individual
                          fingerprints before starting the program. The
                          parameter F is a comma-separated list of fingerprint
                          names prefixed with '-' or '+'. Prefixing a name with
@@ -308,30 +402,45 @@ Other notes:
 
 int main(char[][] args) {
 	Flags flags;
-	byte dim = 2;
-	bool befunge93 = false;
+
+	version (befunge98)
+		byte dim = 2;
+	else version (trefunge98)
+		byte dim = 3;
+	else version (unefunge98)
+		byte dim = 1;
+
+	version (befunge93) {
+		version (funge98)
+			bool befunge93Mode = false;
+		else
+			bool befunge93Mode = true;
+	}
 
 	// {{{ parse arguments
 
 	auto argp = new Arguments;
 	bool failedParse = false;
 
-	argp("dim").aliased('d').params(1).smush.bind((char[] d) {
-		if (d.length == 1) switch (d[0]) {
-			case '1': dim = 1; return;
-			case '2': dim = 2; return;
-			case '3': dim = 3; return;
-			default: break;
-		}
-		failedParse = true;
-		Stderr("CCBI :: dimensionality must be 1, 2, or 3, not '")(d)("'.")
-		     .newline;
-	});
-	argp("unefunge").bind({ dim = 1; });
-	argp( "befunge").bind({ dim = 2; });
-	argp("trefunge").bind({ dim = 3; });
+	version (funge98Multi) {
+		argp("dim").aliased('d').params(1).smush.bind((char[] d) {
+			if (d.length == 1) switch (d[0]) {
+				version (unefunge98) { case '1': dim = 1; return; }
+				version ( befunge98) { case '2': dim = 2; return; }
+				version (trefunge98) { case '3': dim = 3; return; }
+				default: break;
+			}
+			failedParse = true;
+			Stderr("CCBI :: dimensionality must be 1, 2, or 3, not '")(d)("'.")
+			     .newline;
+		});
+		version (unefunge98) argp("unefunge").bind({ dim = 1; });
+		version ( befunge98) argp( "befunge").bind({ dim = 2; });
+		version (trefunge98) argp("trefunge").bind({ dim = 3; });
+	}
 
-	argp("befunge-93").bind({ befunge93 = true; });
+	version (befunge93)
+		argp("befunge-93").bind({ befunge93Mode = true; });
 
 	version (statistics)
 		argp("stats")    .aliased('s').bind({ flags.useStats = true; });
@@ -426,12 +535,20 @@ int main(char[][] args) {
 		}
 	}
 
-	if (befunge93)
-		return         (new FungeMachine!(2, true) (file, fungeArgs, flags)).run;
-	else switch (dim) {
-		case 1: return (new FungeMachine!(1, false)(file, fungeArgs, flags)).run;
-		case 2: return (new FungeMachine!(2, false)(file, fungeArgs, flags)).run;
-		case 3: return (new FungeMachine!(3, false)(file, fungeArgs, flags)).run;
+	version (befunge93)
+		if (befunge93Mode)
+			return         (new FungeMachine!(2,  true)(file, fungeArgs, flags)).run;
+
+	switch (dim) {
+		version (unefunge98) {
+			case 1: return (new FungeMachine!(1, false)(file, fungeArgs, flags)).run;
+		}
+		version ( befunge98) {
+			case 2: return (new FungeMachine!(2, false)(file, fungeArgs, flags)).run;
+		}
+		version (trefunge98) {
+			case 3: return (new FungeMachine!(3, false)(file, fungeArgs, flags)).run;
+		}
 		default: assert (false, "Internal error!");
 	}
 }
