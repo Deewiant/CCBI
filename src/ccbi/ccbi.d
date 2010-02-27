@@ -30,7 +30,7 @@ const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
 	HELP = VERSION_STRING ~ `
 
- Copyright (c) 2006-2009 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
+ Copyright (c) 2006-2010 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
  See the file license.txt for copyright details.
 
 ` ~ USAGE ~ `
