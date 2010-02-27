@@ -6,57 +6,92 @@ import tango.core.Tuple;
 
 import ccbi.cell;
 import ccbi.templateutils;
-public import
-	ccbi.fingerprints.cats_eye.hrti,
-	ccbi.fingerprints.cats_eye.mode,
-	ccbi.fingerprints.cats_eye.modu,
-	ccbi.fingerprints.cats_eye.null_,
-	ccbi.fingerprints.cats_eye.orth,
-	ccbi.fingerprints.cats_eye.perl,
-	ccbi.fingerprints.cats_eye.refc,
-	ccbi.fingerprints.cats_eye.roma,
-	ccbi.fingerprints.cats_eye.toys,
-	ccbi.fingerprints.cats_eye.turt,
-	ccbi.fingerprints.glfunge98.scke,
-	ccbi.fingerprints.jvh.jstr,
-	ccbi.fingerprints.jvh.ncrs,
-	ccbi.fingerprints.rcfunge98._3dsp,
-	ccbi.fingerprints.rcfunge98.base,
-	ccbi.fingerprints.rcfunge98.cpli,
-	ccbi.fingerprints.rcfunge98.date,
-	ccbi.fingerprints.rcfunge98.dirf,
-	ccbi.fingerprints.rcfunge98.evar,
-	ccbi.fingerprints.rcfunge98.file,
-	ccbi.fingerprints.rcfunge98.fixp,
-	ccbi.fingerprints.rcfunge98.fpdp,
-	ccbi.fingerprints.rcfunge98.fpsp,
-	ccbi.fingerprints.rcfunge98.frth,
-	ccbi.fingerprints.rcfunge98.iipc,
-	ccbi.fingerprints.rcfunge98.imap,
-	ccbi.fingerprints.rcfunge98.indv,
-	ccbi.fingerprints.rcfunge98.sock,
-	ccbi.fingerprints.rcfunge98.strn,
-	ccbi.fingerprints.rcfunge98.subr,
-	ccbi.fingerprints.rcfunge98.term,
-	ccbi.fingerprints.rcfunge98.time,
-	ccbi.fingerprints.rcfunge98.trds;
 
-alias Tuple!(
+version  (HRTI) public import ccbi.fingerprints.cats_eye .hrti;
+version  (MODE) public import ccbi.fingerprints.cats_eye .mode;
+version  (MODU) public import ccbi.fingerprints.cats_eye .modu;
+version  (NULL) public import ccbi.fingerprints.cats_eye .null_;
+version  (ORTH) public import ccbi.fingerprints.cats_eye .orth;
+version  (PERL) public import ccbi.fingerprints.cats_eye .perl;
+version  (REFC) public import ccbi.fingerprints.cats_eye .refc;
+version  (ROMA) public import ccbi.fingerprints.cats_eye .roma;
+version  (TOYS) public import ccbi.fingerprints.cats_eye .toys;
+version  (TURT) public import ccbi.fingerprints.cats_eye .turt;
+version  (SCKE) public import ccbi.fingerprints.glfunge98.scke;
+version  (JSTR) public import ccbi.fingerprints.jvh      .jstr;
+version  (NCRS) public import ccbi.fingerprints.jvh      .ncrs;
+version (_3DSP) public import ccbi.fingerprints.rcfunge98._3dsp;
+version  (BASE) public import ccbi.fingerprints.rcfunge98.base;
+version  (CPLI) public import ccbi.fingerprints.rcfunge98.cpli;
+version  (DATE) public import ccbi.fingerprints.rcfunge98.date;
+version  (DIRF) public import ccbi.fingerprints.rcfunge98.dirf;
+version  (EVAR) public import ccbi.fingerprints.rcfunge98.evar;
+version  (FILE) public import ccbi.fingerprints.rcfunge98.file;
+version  (FIXP) public import ccbi.fingerprints.rcfunge98.fixp;
+version  (FPDP) public import ccbi.fingerprints.rcfunge98.fpdp;
+version  (FPSP) public import ccbi.fingerprints.rcfunge98.fpsp;
+version  (FRTH) public import ccbi.fingerprints.rcfunge98.frth;
+version  (IIPC) public import ccbi.fingerprints.rcfunge98.iipc;
+version  (IMAP) public import ccbi.fingerprints.rcfunge98.imap;
+version  (INDV) public import ccbi.fingerprints.rcfunge98.indv;
+version  (SOCK) public import ccbi.fingerprints.rcfunge98.sock;
+version  (STRN) public import ccbi.fingerprints.rcfunge98.strn;
+version  (SUBR) public import ccbi.fingerprints.rcfunge98.subr;
+version  (TERM) public import ccbi.fingerprints.rcfunge98.term;
+version  (TIME) public import ccbi.fingerprints.rcfunge98.time;
+version  (TRDS) public import ccbi.fingerprints.rcfunge98.trds;
+
+private char[] ActiveFingerprints() {
+	char[] s = "alias Tuple!(";
+
 	// Cat's Eye
-	"HRTI", "MODE", "MODU", "NULL", "ORTH", "PERL", "REFC", "ROMA", "TOYS",
-	"TURT",
+	version  (HRTI) s ~= `"HRTI",`;
+	version  (MODE) s ~= `"MODE",`;
+	version  (MODU) s ~= `"MODU",`;
+	version  (NULL) s ~= `"NULL",`;
+	version  (ORTH) s ~= `"ORTH",`;
+	version  (PERL) s ~= `"PERL",`;
+	version  (REFC) s ~= `"REFC",`;
+	version  (ROMA) s ~= `"ROMA",`;
+	version  (TOYS) s ~= `"TOYS",`;
+	version  (TURT) s ~= `"TURT",`;
 
 	// Jesse van Herk
-	"JSTR", "NCRS",
+	version  (JSTR) s ~= `"JSTR",`;
+	version  (NCRS) s ~= `"NCRS",`;
 
 	// RC/Funge-98
-	"3DSP", "BASE", "CPLI", "DATE", "DIRF", "EVAR", "FILE", "FIXP", "FPDP",
-	"FPSP", "FRTH", "IIPC", "IMAP", "INDV", "SOCK", "STRN", "SUBR", "TERM",
-	"TIME", "TRDS",
+	version (_3DSP) s ~= `"3DSP",`;
+	version  (BASE) s ~= `"BASE",`;
+	version  (CPLI) s ~= `"CPLI",`;
+	version  (DATE) s ~= `"DATE",`;
+	version  (DIRF) s ~= `"DIRF",`;
+	version  (EVAR) s ~= `"EVAR",`;
+	version  (FILE) s ~= `"FILE",`;
+	version  (FIXP) s ~= `"FIXP",`;
+	version  (FPDP) s ~= `"FPDP",`;
+	version  (FPSP) s ~= `"FPSP",`;
+	version  (FRTH) s ~= `"FRTH",`;
+	version  (IIPC) s ~= `"IIPC",`;
+	version  (IMAP) s ~= `"IMAP",`;
+	version  (INDV) s ~= `"INDV",`;
+	version  (SOCK) s ~= `"SOCK",`;
+	version  (STRN) s ~= `"STRN",`;
+	version  (SUBR) s ~= `"SUBR",`;
+	version  (TERM) s ~= `"TERM",`;
+	version  (TIME) s ~= `"TIME",`;
+	version  (TRDS) s ~= `"TRDS",`;
 
 	// GLfunge98
-	"SCKE" // Uses stuff from SOCK: must be after it in this list!
-) ALL_FINGERPRINTS;
+	// Uses stuff from SOCK: must be after it in this list!
+	version (SCKE) s ~= `"SCKE",`;
+
+	if (s[$-1] == ',')
+		s = s[0..$-1];
+
+	return s ~ ") ALL_FINGERPRINTS;";
+}
+mixin (ActiveFingerprints());
 
 // TODO: can't these be made to use ConcatMap? Either here or at the caller
 
