@@ -15,6 +15,7 @@ import tango.io.device.Array   : Array;
 import tango.io.device.File    : File;
 import tango.io.device.FileMap : FileMap;
 import tango.io.Stdout;
+import tango.text.Arguments;
 import tango.text.Ascii        : toLower;
 
 import ccbi.flags;
@@ -26,22 +27,27 @@ import ccbi.utils;
 import ccbi.fingerprints.cats_eye.turt : TURT_FILE_INIT;
 
 const char[]
+	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
 	HELP = VERSION_STRING ~ `
 
  Copyright (c) 2006-2009 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
  See the file license.txt for copyright details.
 
-Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]
+` ~ USAGE ~ `
 
 Interprets SOURCE_FILE as Funge-98 code, executing it and passing FUNGE_ARGS to
 it as command line arguments. The default mode of operation is Befunge-98, but
 this may be modified with the appropriate ARGS.
 
 ARGS may be one or more of:
- -d1, --unefunge         Treat source as one-dimensional (Unefunge).
- -d2, --befunge          Treat source as two-dimensional (Befunge). This is the
+ --unefunge              Treat source as one-dimensional (Unefunge).
+ --befunge               Treat source as two-dimensional (Befunge). This is the
                          default.
- -d3, --trefunge         Treat source as three-dimensional (Trefunge).
+ --trefunge              Treat source as three-dimensional (Trefunge).
+
+ -d D, --dimension=D     Set dimensionality to D: may be 1, 2, or 3,
+                         corresponding with --unefunge, --befunge, and
+                         --trefunge respectively.
 
  -t, --trace             Trace source during interpretation.
 
@@ -59,36 +65,26 @@ ARGS may be one or more of:
      --befunge-93        Adhere to the Befunge-93 documentation instead of the
                          Funge-98 specification.
 
- -m, --mini-funge        If the following argument is 0, don't try to load a
-                         Mini-Funge library if an unimplemented fingerprint is
-                         requested by '('.
-
-                         If it is 1, '(' will prefer Mini-Funge libraries over
-                         the built-in semantics.
-
  -P, --disable-fprints   Run as if no fingerprints were implemented.
-
- -d, --draw-to           Use the following argument as the file name written to
-                         in the I instruction of the TURT fingerprint. The
-                         default is ` ~ TURT_FILE_INIT ~ `.
 
  -i, --implementation    Show some implementation details and exit.
 
- -p, --print-fprints     List all supported (and knowingly unsupported)
+ -p, --print-fprints     List all supported (and intentionally unsupported)
                          fingerprints and their implementation notes, and exit.
 
  -h, --help              Show this help text and exit.
  -v, --version           Show the version string and exit.
 
- -f, --file              Use the following argument as SOURCE_FILE, and any
-                         later ones as BEFUNGE_ARGS.
+ --                      Cease argument parsing: use the following argument as
+                         SOURCE_FILE, and any later ones as BEFUNGE_ARGS.
                          Useful if you have a file named "--help", for
                          instance.`,
 	IMPLEMENTATION =
 `There is no Befunge-93 compatibility mode: update your programs to account for
 the few corner cases where it actually matters.
 
-The Mini-Funge library format accepted is that used by RC/Funge-98 version 1.16.
+The Mini-Funge library format accepted is that used by RC/Funge-98 version
+1.16.
 
 Ambiguities or lack of information in the Funge-98 specification (henceforth
 "spec") have been dealt with as follows.
@@ -298,103 +294,76 @@ Other notes:
     "SCKE"  0x53434b45`;
 
 int main(char[][] args) {
-	if (args.length < 2) {
-		Stderr.formatln(HELP, args[0]);
-		return 1;
-	}
-
-	auto filePos = size_t.max;
-	auto progName = args[0];
-	args = args[1..$];
-
 	Flags flags;
 	byte dim = 2;
 	bool befunge93 = false;
 
 	// {{{ parse arguments
-	argLoop: for (size_t i = 0; i < args.length; ++i) {
 
-		bool help(char[] s) {
-			switch (toLower(s.dup)) {
-				case
-					"-?", "--?", "/?", "-h", "--h", "/h",
-					"-hlp", "--hlp", "/hlp", "-help", "--help", "/help":
-						return true;
-				default: return false;
-			}
+	auto argp = new Arguments;
+	bool failedParse = false;
+
+	argp("dim").aliased('d').params(1).smush.bind((char[] d) {
+		if (d.length == 1) switch (d[0]) {
+			case '1': dim = 1; return;
+			case '2': dim = 2; return;
+			case '3': dim = 3; return;
+			default: break;
 		}
+		failedParse = true;
+		Stderr("CCBI :: dimensionality must be 1, 2, or 3, not '")(d)("'.")
+			  .newline;
+	});
+	argp("unefunge").bind({ dim = 1; });
+	argp( "befunge").bind({ dim = 2; });
+	argp("trefunge").bind({ dim = 3; });
 
-		auto arg = args[i];
+	argp("befunge-93").bind({ befunge93 = true; });
 
-		char[] nextArg() {
-			if (++i >= args.length)
-				throw new ArgEx(
-					Stderr.layout.convert(
-						"Further argument required following {}.", arg));
-			return args[i];
-		}
+	argp("trace")          .aliased('t').bind({ flags.tracing             = true; });
+	argp("warnings")       .aliased('w').bind({ flags.warnings            = true; });
+	argp("stats")          .aliased('s').bind({ flags.useStats            = true; });
+	argp("script")                      .bind({ flags.script              = true; });
+	argp("disable-fprints").aliased('P').bind({ flags.fingerprintsEnabled = true; });
 
-		int msgOnly(char[] s) {
-			Stderr(s).newline;
-			return 0;
-		}
+	// TODO: minifunge, TURT file
 
-		// TODO: switch to a proper argument parser
-		with (flags) switch (arg) {
-			case "-d1", "--unefunge":       dim = 1;                     break;
-			case "-d2", "--befunge":        dim = 2;                     break;
-			case "-d3", "--trefunge":       dim = 3;                     break;
-			case "-t", "--trace":           tracing             = true;  break;
-			case "-w", "--warnings":        warnings            = true;  break;
-			case "-s", "--stats":           useStats            = true;  break;
-			case       "--script":          script              = true;  break;
-			case "-P", "--disable-fprints": fingerprintsEnabled = false; break;
-			case       "--befunge-93":      befunge93           = true;  break;
+	argp("implementation").aliased('i').halt.bind({ Stderr(  IMPLEMENTATION).newline; });
+	argp("print-fprints") .aliased('p').halt.bind({ Stderr(FINGERPRINT_INFO).newline; });
+	argp("version")       .aliased('v').halt.bind({ Stderr(  VERSION_STRING).newline; });
 
-/+			case "-m", "--mini-funge":
-				auto s = nextArg();
-				if (s == "0")
-					miniMode = Mini.NONE;
-				else if (s == "1")
-					miniMode = Mini.ALL;
-				else
-					throw new ArgEx(Stderr.layout.convert(
-						"Expected 0 or 1 following {}, not {}.", args[i-1], arg));
-				break;
-+/
+	argp("help").aliased('?').aliased('h').aliased('H')
+		.halt.bind({ Stderr.formatln(HELP, args[0]); });
 
-/+			case "-d", "--draw-to":
-				turtFile = nextArg();
-				break;
-+/
+	argp( "hlp").halt.bind({ Stderr.formatln(HELP, args[0]); });
+	argp("HELP").halt.bind({ Stderr.formatln(HELP, args[0]); });
+	argp( "HLP").halt.bind({ Stderr.formatln(HELP, args[0]); });
 
-			case "-i", "--implementation": return msgOnly(IMPLEMENTATION);
-			case "-p", "--print-fprints":  return msgOnly(FINGERPRINT_INFO);
-			case "-v", "--version":        return msgOnly(VERSION_STRING);
-			case "-f", "--file":
-				nextArg();
-				filePos = i;
-				break;
-			default:
-				if (arg.help()) {
-					Stderr.formatln(HELP, progName);
-					return 1;
-				} else {
-					filePos = i;
-					break argLoop;
-				}
-		}
+	const char[][] ERRORS = [
+		"CCBI :: argument '{0}' expects {2} parameter(s), but has only {1}.\n",
+		"CCBI :: argument '{0}' expects {3} parameter(s), but has only {1}.\n",
+		"CCBI :: argument '{0}' is missing.\n",
+		"CCBI :: argument '{0}' must be used with '{4}'.\n",
+		"CCBI :: argument '{0}' conflicts with '{4}'.\n",
+		"CCBI :: unexpected argument '{0}'. Use '--help' for help.\n",
+		"CCBI :: argument '{0}' expects one of {5}.\n",
+	];
+
+	if (!argp.parse(args[1..$]) || failedParse) {
+		argp.errors(ERRORS);
+
+		Stderr(argp.errors((char[] buf, char[] fmt, ...) {
+			failedParse = true;
+			return Stderr.layout.vprint(buf, fmt, _arguments, _argptr);
+		}));
+		return failedParse ? 1 : 0;
 	}
 
-//	if (!fingerprintsEnabled && miniMode == Mini.ALL)
-//		Stderr("Warning: --disable-fprints overrides --mini-funge 1").newline;
-
-	if (filePos == size_t.max) {
-		Stderr.formatln(HELP, args[0]);
+	auto fungeArgs = argp("").assigned;
+	if (!fungeArgs.length) {
+		Stderr("CCBI :: missing source file.").newline.formatln(USAGE, args[0]);
 		return 1;
 	}
-
-	auto fungeArgs = args[filePos..$];
 	// }}}
 
 	auto filename = fungeArgs[0];
