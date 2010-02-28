@@ -511,7 +511,7 @@ int main(char[][] args) {
 		if (befunge93Mode)
 			return         (new FungeMachine!(2,  true)(file, fungeArgs, flags)).run;
 
-	switch (dim) {
+	version (funge98) switch (dim) {
 		version (unefunge98) {
 			case 1: return (new FungeMachine!(1, false)(file, fungeArgs, flags)).run;
 		}
