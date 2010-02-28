@@ -412,6 +412,7 @@ private:
 	}
 
 	void warn(char[] fmt, ...) {
+		Serr("CCBI :: ");
 		Serr.layout.convert(
 			delegate uint(char[] s){ return Serr.write(s); },
 			_arguments, _argptr, fmt);
