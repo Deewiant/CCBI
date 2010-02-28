@@ -186,7 +186,7 @@ if(CCBI_BUILD_TYPE STREQUAL "Release-LLVM")
 	# Build .bc's out of the C wrappers
 	foreach(C_SRC ${C_SOURCES})
 		get_filename_component(fn "${C_SRC}" NAME_WE)
-		set(C_OBJ "${fn}${CMAKE_C_OUTPUT_EXTENSION}")
+		set(C_OBJ "${OBJDIR}/${fn}${CMAKE_C_OUTPUT_EXTENSION}")
 		list(APPEND C_OBJS "${C_OBJ}")
 		add_custom_command(VERBATIM
 			OUTPUT "${C_OBJ}"
