@@ -139,6 +139,20 @@ version (tracer)
 else
 	const char[] TRACE_HELP = "";
 
+version (funge98)
+	const char[] FINGERPRINTS_HELP = `
+ -f F, --fingerprints=F  Allow enabling and disabling of individual
+                         fingerprints before starting the program. The
+                         parameter F is a comma-separated list of fingerprint
+                         names prefixed with '-' or '+'. Prefixing a name with
+                         '-' disables it while '+' enables it. The special name
+                         "all" can be used to modify the status of all
+                         fingerprints at once.
+
+                         By default, all fingerprints are enabled.`;
+else
+	const char[] FINGERPRINTS_HELP = "";
+
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
 	HELP = VERSION_STRING ~ `
@@ -158,6 +172,7 @@ ARGS may be one or more of: `
 	~ TREFUNGE_HELP
 	~ DIMENSION_HELP
 	~ BEFUNGE93_HELP
+	~ FINGERPRINTS_HELP
 	~ TRACE_HELP
 	~ STAT_HELP
 	~ `
@@ -169,16 +184,6 @@ ARGS may be one or more of: `
 
                          An infinite loop will occur if no second line exists,
                          or it is empty.
-
- -f F, --fingerprints=F  Allow enabling and disabling of individual
-                         fingerprints before starting the program. The
-                         parameter F is a comma-separated list of fingerprint
-                         names prefixed with '-' or '+'. Prefixing a name with
-                         '-' disables it while '+' enables it. The special name
-                         "all" can be used to modify the status of all
-                         fingerprints at once.
-
-                         By default, all fingerprints are enabled.
 
  -i, --implementation    Show some implementation details and exit.
 
@@ -454,36 +459,39 @@ int main(char[][] args) {
 	argp("trace")       .aliased('t').bind({ flags.tracing  = true; });
 	argp("warnings")    .aliased('w').bind({ flags.warnings = true; });
 	argp("script")                   .bind({ flags.script   = true; });
-	argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {
-		foreach (f; delimiters(fs, ",")) {
-			bool enable = void;
-			switch (f[0]) {
-				case '-': enable = false; break;
-				case '+': enable =  true; break;
-				default:
-					failedParse = true;
-					Stderr("CCBI :: fingerprint setting '")(f)
-							("' must be prefixed with - or +.").newline;
-					return;
-			}
-			switch (f[1..$]) mixin (Switch!(
-				FingerprintSettingCases!(ALL_FINGERPRINTS),
-				`case "all":
-					if (enable)
-						flags.enabledFings.setAll();
-					else
-						flags.enabledFings.unsetAll();
-					break;`,
-				`default:
-					if (enable) {
+
+	version (funge98) {
+		argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {
+			foreach (f; delimiters(fs, ",")) {
+				bool enable = void;
+				switch (f[0]) {
+					case '-': enable = false; break;
+					case '+': enable =  true; break;
+					default:
 						failedParse = true;
-						Stderr("CCBI :: cannot enable unknown fingerprint '")
-						      (f[1..$])("'.").newline;
-					}
-					break;`
-			));
-		}
-	});
+						Stderr("CCBI :: fingerprint setting '")(f)
+								("' must be prefixed with - or +.").newline;
+						return;
+				}
+				switch (f[1..$]) mixin (Switch!(
+					FingerprintSettingCases!(ALL_FINGERPRINTS),
+					`case "all":
+						if (enable)
+							flags.enabledFings.setAll();
+						else
+							flags.enabledFings.unsetAll();
+						break;`,
+					`default:
+						if (enable) {
+							failedParse = true;
+							Stderr("CCBI :: cannot enable unknown fingerprint '")
+						      	(f[1..$])("'.").newline;
+						}
+						break;`
+				));
+			}
+		});
+	}
 
 	// TODO: minifunge, TURT file
 
