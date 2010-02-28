@@ -128,9 +128,8 @@ const char[]
 
 ` ~ USAGE ~ `
 
-Interprets SOURCE_FILE as Funge-98 code, executing it and passing FUNGE_ARGS to
-it as command line arguments. The default mode of operation is Befunge-98, but
-this may be modified with the appropriate ARGS.
+Interprets SOURCE_FILE as Funge code, executing it and passing FUNGE_ARGS to it
+as command line arguments.
 
 ARGS may be one or more of: `
 	~ UNEFUNGE_HELP
@@ -169,10 +168,7 @@ ARGS may be one or more of: `
                          Useful if you have a file named "--help", for
                          instance.`,
 	IMPLEMENTATION =
-`There is no Befunge-93 compatibility mode: update your programs to account for
-the few corner cases where it actually matters.
-
-The Mini-Funge library format accepted is that used by RC/Funge-98 version
+`The Mini-Funge library format accepted is that used by RC/Funge-98 version
 1.16.
 
 Ambiguities or lack of information in the Funge-98 specification (henceforth
