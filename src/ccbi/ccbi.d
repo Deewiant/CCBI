@@ -110,6 +110,14 @@ version (funge98)
 else
 	const char[] FINGERPRINTS_HELP = "";
 
+version (detectInfiniteLoops)
+	const char[] INFINITY_NOTE = "";
+else
+	const char[] INFINITY_NOTE = `
+
+                         Note: not all infinite loop checks are enabled in this
+                         build of CCBI.`;
+
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
 	HELP = VERSION_STRING ~ `
@@ -131,6 +139,12 @@ ARGS may be one or more of: `
 	~ FINGERPRINTS_HELP
 	~ TRACE_HELP
 	~ STAT_HELP
+	~ `
+
+ -d, --detect-infinity   Detect situations in which the program is irreversibly
+                         stuck in an infinite loop, aborting with an error
+                         message when that happens.`
+	~ INFINITY_NOTE
 	~ `
 
  -w, --warnings          Warn when encountering unimplemented instructions.
@@ -397,11 +411,12 @@ int main(char[][] args) {
 		argp("befunge-93").bind({ befunge93Mode = true; });
 
 	version (statistics)
-		argp("stats")    .aliased('s').bind({ flags.useStats = true; });
+		argp("stats")       .aliased('s').bind({ flags.useStats = true; });
 
-	argp("trace")       .aliased('t').bind({ flags.tracing  = true; });
-	argp("warnings")    .aliased('w').bind({ flags.warnings = true; });
-	argp("script")                   .bind({ flags.script   = true; });
+	argp("trace")          .aliased('t').bind({ flags.tracing  = true; });
+	argp("warnings")       .aliased('w').bind({ flags.warnings = true; });
+	argp("script")                      .bind({ flags.script   = true; });
+	argp("detect-infinity").aliased('d').bind({ flags.detectInfiniteLoops = true; });
 
 	version (funge98) {
 		argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {

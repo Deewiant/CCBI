@@ -339,10 +339,6 @@ findBox:
 		}
 	}
 }
-
 private void infLoop(char[] msg, char[] pos, char[] delta) {
-	version (detectInfiniteLoops)
-		throw new SpaceInfiniteLoopException("Funge-Space", pos, delta, msg);
-	else
-		for (;;){}
+	throw new SpaceInfiniteLoopException("Funge-Space", pos, delta, msg);
 }

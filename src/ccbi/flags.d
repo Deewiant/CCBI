@@ -9,10 +9,11 @@ struct Flags {
 	version (statistics)
 		bool useStats = false;
 	bool
-		script           = false,
-		tracing          = false,
-		warnings         = false,
-		allFingsDisabled = false; // Short-cut past enabledFings if true
+		script              = false,
+		tracing             = false,
+		warnings            = false,
+		detectInfiniteLoops = false,
+		allFingsDisabled    = false; // Short-cut past enabledFings if true
 
 	BitFields!(ALL_FINGERPRINT_IDS) enabledFings;
 }

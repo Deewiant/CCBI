@@ -7,6 +7,7 @@ module ccbi.fungemachine;
 debug import tango.core.tools.TraceExceptions;
 
 import tango.core.Exception       : OutOfMemoryException;
+import tango.core.Thread;
 import tango.core.Tuple;
 import tango.io.Console           : Cin;
 import tango.io.Stdout;
@@ -205,6 +206,11 @@ private:
 			returnVal = 3;
 
 		} catch (InfiniteLoopException e) {
+			if (!flags.detectInfiniteLoops)
+				for (;;)
+					// We're so fast we can run infinite loops without using the CPU
+					Thread.yield();
+
 			Sout.flush;
 			Serr
 				("CCBI :: Infinite loop detected!").newline()
