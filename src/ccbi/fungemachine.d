@@ -138,8 +138,9 @@ private:
 				else
 					const bool normalTime = true;
 
-				if (flags.tracing && !Tracer.doTrace())
-					break mainLoop;
+				version (tracer)
+					if (flags.tracing && !Tracer.doTrace())
+						break mainLoop;
 
 				static if (befunge93) {
 					switch (executeInstruction()) {
@@ -229,7 +230,8 @@ private:
 		return returnVal;
 	}
 
-	mixin .Tracer!() Tracer;
+	version (tracer)
+		mixin .Tracer!() Tracer;
 
 	Request executeInstruction() {
 		++stats.executionCount;
@@ -368,7 +370,8 @@ private:
 		else
 			auto ip = state.ips[idx];
 
-		Tracer.ipStopped(ip);
+		version (tracer)
+			Tracer.ipStopped(ip);
 
 		static if (GOT_TRDS)
 			if (usingTRDS)

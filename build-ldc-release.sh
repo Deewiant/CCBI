@@ -4,7 +4,7 @@ fings='HRTI MODE MODU NULL ORTH PERL REFC ROMA TOYS TURT
        JSTR NCRS
        _3DSP BASE CPLI DATE DIRF EVAR FILE FIXP FPDP FPSP FRTH IIPC IMAP INDV SOCK STRN SUBR TERM TIME TRDS'
 
-flags='-Isrc -oq -d-version=statistics -d-version=befunge93 -d-version=unefunge98 -d-version=befunge98 -d-version=trefunge98'
+flags='-Isrc -oq -d-version=statistics -d-version=tracer -d-version=befunge93 -d-version=unefunge98 -d-version=befunge98 -d-version=trefunge98'
 
 for f in $fings; do flags="$flags -d-version=$f"; done
 

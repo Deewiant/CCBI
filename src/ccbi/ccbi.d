@@ -132,6 +132,12 @@ version (statistics)
 else
 	const char[] STAT_HELP = "";
 
+version (tracer)
+	const char[] TRACE_HELP = `
+
+ -t, --trace             Enable the built-in tracer (debugger).`;
+else
+	const char[] TRACE_HELP = "";
 
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
@@ -152,9 +158,9 @@ ARGS may be one or more of: `
 	~ TREFUNGE_HELP
 	~ DIMENSION_HELP
 	~ BEFUNGE93_HELP
+	~ TRACE_HELP
+	~ STAT_HELP
 	~ `
-
- -t, --trace             Trace source during interpretation.` ~ STAT_HELP ~ `
 
  -w, --warnings          Warn when encountering unimplemented instructions.
 
