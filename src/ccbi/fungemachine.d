@@ -70,16 +70,16 @@ private:
 	else
 		alias ALL_FINGERPRINTS fings;
 
-	alias .IP        !(dim, befunge93, fings) IP;
-	alias .FungeSpace!(dim, befunge93)        FungeSpace;
-	alias .Dimension !(dim).Coords            InitCoords;
+	alias .IP        !(dim, befunge93) IP;
+	alias .FungeSpace!(dim, befunge93) FungeSpace;
+	alias .Dimension !(dim).Coords     InitCoords;
 
 	mixin (EmitGot!("IIPC", fings));
 	mixin (EmitGot!("IMAP", fings));
 	mixin (EmitGot!("TRDS", fings));
 
 	IP cip;
-	FungeState!(dim, befunge93, fings) state;
+	FungeState!(dim, befunge93) state;
 
 	static if (!befunge93)
 		IP tip; // traced IP

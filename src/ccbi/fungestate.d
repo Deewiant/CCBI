@@ -2,7 +2,10 @@
 
 module ccbi.fungestate;
 
+import tango.core.Tuple;
+
 import ccbi.cell;
+import ccbi.fingerprints.all;
 import ccbi.ip;
 import ccbi.templateutils : EmitGot;
 import ccbi.utils         : shallowCopy;
@@ -10,10 +13,14 @@ import ccbi.space.space;
 
 // All state that should be restored when an IP travels to the past belongs
 // here.
-struct FungeState(cell dim, bool befunge93, fings...) {
+struct FungeState(cell dim, bool befunge93) {
+	alias .Coords!(dim)            Coords;
+	alias .IP    !(dim, befunge93) IP;
 
-	alias .IP    !(dim, befunge93, fings) IP;
-	alias .Coords!(dim)                   Coords;
+	static if (befunge93)
+		alias Tuple!() fings;
+	else
+		alias ALL_FINGERPRINTS fings;
 
 	mixin (EmitGot!("REFC", fings));
 	mixin (EmitGot!("TURT", fings));

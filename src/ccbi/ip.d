@@ -12,15 +12,21 @@ import tango.time.Time;
 public import ccbi.cell;
        import ccbi.container;
        import ccbi.fingerprint;
+       import ccbi.fingerprints.all;
        import ccbi.stats;
        import ccbi.templateutils : EmitGot;
        import ccbi.utils;
        import ccbi.space.cursor;
 
-final class IP(cell dim, bool befunge93, fings...) {
+final class IP(cell dim, bool befunge93) {
 	alias     .Coords!(dim)            Coords;
 	alias   Dimension!(dim).Coords     InitCoords;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
+
+	static if (befunge93)
+		alias Tuple!() fings;
+	else
+		alias ALL_FINGERPRINTS fings;
 
 	mixin (EmitGot!("HRTI", fings));
 	mixin (EmitGot!("IIPC", fings));
