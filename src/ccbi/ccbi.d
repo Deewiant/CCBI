@@ -489,7 +489,9 @@ int main(char[][] args) {
 
 	auto fungeArgs = argp("").assigned;
 	if (!fungeArgs.length) {
-		Stderr("CCBI :: missing source file.").newline.formatln(USAGE, args[0]);
+		Stderr("CCBI :: missing source file. Use '--help' for help.").newline
+		     .newline
+		     .formatln(USAGE, args[0]);
 		return 1;
 	}
 	// }}}
