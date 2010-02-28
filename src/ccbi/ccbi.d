@@ -27,20 +27,9 @@ import ccbi.templateutils;
 import ccbi.utils;
 
 // Yay version combinations and --help strings
-version (unefunge98) version = funge98;
-version ( befunge98) version = funge98;
-version (trefunge98) version = funge98;
-
-version (unefunge98) version ( befunge98) version = funge98_12;
-version ( befunge98) version (trefunge98) version = funge98_23;
-version (trefunge98) version (unefunge98) version = funge98_13;
-
-version (funge98_12) version = funge98Multi;
-version (funge98_23) version = funge98Multi;
-version (funge98_13) version = funge98Multi;
-
-version (unefunge98) version (befunge98) version (trefunge98)
-	version = funge98_123;
+version (unefunge98)   version = funge98;
+version ( befunge98) { version = funge98; version = notOnlyUne; }
+version (trefunge98) { version = funge98; version = notOnlyUne; }
 
 version (befunge93) version (funge98)
 	version = funge93_and_98;
@@ -50,19 +39,19 @@ version (funge98) {} else version (befunge93) {} else
 		"A Funge-98 standard or Befunge-93 must be versioned in.");
 
 version (unefunge98) {
-	version (funge98Multi)
+	version (notOnlyUne)
 		const char[] UNEFUNGE_HELP = `
-   --unefunge            Treat source as one-dimensional (Unefunge-98).`;
+ -1, --unefunge          Treat source as one-dimensional (Unefunge-98).`;
 	else
 		const char[] UNEFUNGE_HELP = `
-   --unefunge            Treat source as one-dimensional (Unefunge-98). This is
+ -1, --unefunge          Treat source as one-dimensional (Unefunge-98). This is
                          the default.`;
 } else
 	const char[] UNEFUNGE_HELP = "";
 
 version (befunge98)
 	const char[] BEFUNGE_HELP = `
-   --befunge             Treat source as two-dimensional (Befunge-98). This is
+ -2, --befunge           Treat source as two-dimensional (Befunge-98). This is
                          the default.`;
 else
 	const char[] BEFUNGE_HELP = "";
@@ -70,45 +59,13 @@ else
 version (trefunge98) {
 	version (befunge98)
 		const char[] TREFUNGE_HELP = `
-   --trefunge            Treat source as three-dimensional (Trefunge-98).`;
+ -3, --trefunge          Treat source as three-dimensional (Trefunge-98).`;
 	else
 		const char[] TREFUNGE_HELP = `
-   --trefunge            Treat source as three-dimensional (Trefunge-98). This
+ -3, --trefunge          Treat source as three-dimensional (Trefunge-98). This
                          is the default.`;
 } else
 	const char[] TREFUNGE_HELP = "";
-
-version (funge98_123)
-	const char[] DIMENSION_HELP = `
-
- -d D, --dimension=D     Set dimensionality to D: may be 1, 2, or 3,
-                         corresponding with --unefunge, --befunge, and
-                         --trefunge respectively.`
-	~ BEFUNGE93_OVERRIDE;
-
-else version (funge98_12)
-	const char[] DIMENSION_HELP = `
-
- -d D, --dimension=D     Set dimensionality to D: may be 1 or 2, corresponding
-                         with --unefunge and --befunge respectively.`
-	~ BEFUNGE93_OVERRIDE;
-
-else version (funge98_23)
-	const char[] DIMENSION_HELP = `
-
- -d D, --dimension=D     Set dimensionality to D: may be 2 or 3, corresponding
-                         with --befunge and --trefunge respectively.`
-	~ BEFUNGE93_OVERRIDE;
-
-else version (funge98_13)
-	const char[] DIMENSION_HELP = `
-
- -d D, --dimension=D     Set dimensionality to D: may be 1 or 3, corresponding
-                         with --unefunge and --trefunge respectively.`
-	~ BEFUNGE93_OVERRIDE;
-
-else
-	const char[] DIMENSION_HELP = "";
 
 version (funge93_and_98) {
 	const char[] BEFUNGE93_HELP = `
@@ -170,7 +127,6 @@ ARGS may be one or more of: `
 	~ UNEFUNGE_HELP
 	~ BEFUNGE_HELP
 	~ TREFUNGE_HELP
-	~ DIMENSION_HELP
 	~ BEFUNGE93_HELP
 	~ FINGERPRINTS_HELP
 	~ TRACE_HELP
@@ -433,22 +389,9 @@ int main(char[][] args) {
 	auto argp = new Arguments;
 	bool failedParse = false;
 
-	version (funge98Multi) {
-		argp("dim").aliased('d').params(1).smush.bind((char[] d) {
-			if (d.length == 1) switch (d[0]) {
-				version (unefunge98) { case '1': dim = 1; return; }
-				version ( befunge98) { case '2': dim = 2; return; }
-				version (trefunge98) { case '3': dim = 3; return; }
-				default: break;
-			}
-			failedParse = true;
-			Stderr("CCBI :: dimensionality must be 1, 2, or 3, not '")(d)("'.")
-			     .newline;
-		});
-		version (unefunge98) argp("unefunge").bind({ dim = 1; });
-		version ( befunge98) argp( "befunge").bind({ dim = 2; });
-		version (trefunge98) argp("trefunge").bind({ dim = 3; });
-	}
+	version (unefunge98) argp("unefunge").aliased('1').bind({ dim = 1; });
+	version ( befunge98) argp( "befunge").aliased('2').bind({ dim = 2; });
+	version (trefunge98) argp("trefunge").aliased('3').bind({ dim = 3; });
 
 	version (befunge93)
 		argp("befunge-93").bind({ befunge93Mode = true; });
