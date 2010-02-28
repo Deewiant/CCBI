@@ -6,7 +6,7 @@ module ccbi.fingerprints.cats_eye.turt;
 
 import tango.io.device.File;
 import tango.math.Math : PI, cos, sin, round = rndint, abs;
-import tango.text.convert.Integer : format;
+import tango.text.convert.Integer : format, itoa;
 
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 import tango.text.xml.DocPrinter;
@@ -51,8 +51,8 @@ typedef int tc;
 // but only this much, since even this is pretty huge
 enum : tc {
 	PADDING = 10,
-	MIN = -99999_9999 + PADDING,
-	MAX =  99999_9999 - PADDING
+	MIN = -999_999_999 + PADDING,
+	MAX =  999_999_999 - PADDING
 }
 
 uint getInt(tc c) { return abs(cast(int)c) / 10000; }
@@ -68,69 +68,9 @@ unittest {
 }
 
 char[] tcToString(tc n) {
-	static assert (MIN >= -99999_9999 && MAX <= 99999_9999);
-
-	static char[11] buf;
-	size_t i = 0;
-
-	if (n == 0)
-		return "0";
-
-	else if (n < 0)
-		buf[i++] = '-';
-
-	uint
-		intPart = getInt(n),
-		decPart = getDec(n);
-
-	if (intPart > 0) {
-		auto s = format(buf[i..i+5], intPart, "d");
-
-		// move s to the left
-		// so we don't get a buf like '-  123'
-		foreach (c; s)
-			buf[i++] = c;
-	}
-
-	if (decPart > 0) {
-		buf[i++] = '.';
-
-		size_t beg = i;
-		format(buf[i..i+4], decPart, "d4");
-		i += 4;
-
-		// remove trailing zeroes
-//		size_t tz = 0;
-		while (buf[i-1] == '0') {
-//			++tz;
-			--i;
-		}
-
-		/+ XXX: BREAKS EVERY SVG VIEWER I TRIED (RAM/CPU usage hit the roof)
-		// switch to scientific notation if it's more compact
-		// it only is when intPart is 0 (so we can lose the leading zeroes)
-		if (intPart == 0) {
-			size_t lz = 0;
-			while (buf[beg + lz] == '0')
-				++lz;
-
-			size_t
-				currentLength    = 4 - tz + 1, // 1 for the decimal point
-				numberLength     = 4 - tz - lz,
-				scientificLength = numberLength + "e-x".length;
-
-			if (currentLength > scientificLength) {
-				i = 0;
-				for (; i < numberLength; ++i)
-					buf[i] = buf[beg + lz + i];
-				buf[i++] = 'e';
-				buf[i++] = '-';
-				buf[i++] = '4' - tz;
-			}
-		} +/
-	}
-
-	return buf[0..i];
+	static assert (MIN >= -999_999_999 && MAX <= 999_999_999);
+	char[10] buf;
+	return itoa(buf, n);
 }
 // }}}
 // {{{ Point, Turtle, Drawing
@@ -484,7 +424,7 @@ void printDrawing() {
 		.attribute(null, "type", "text/css");
 
 	char[] styleData =
-		"path{fill:none;stroke-width:.0001px;"
+		"path{fill:none;stroke-width:1px;"
 		"stroke-linecap:round;stroke-linejoin:round}";
 
 	root
@@ -578,7 +518,7 @@ void printDrawing() {
 			.element  (null, "circle")
 			.attribute(null, "cx",   tcToString(dot.x).dup)
 			.attribute(null, "cy",   tcToString(dot.y).dup)
-			.attribute(null, "r",    ".00005");
+			.attribute(null, "r",    ".5");
 
 		auto colourS = toCSSColour(colour);
 
