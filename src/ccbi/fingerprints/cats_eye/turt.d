@@ -259,19 +259,56 @@ cell toDeg(real r) { return cast(cell)round((180.0 / PI) * r); }
 uint toRGB(cell c) { return cast(uint)(c & ((1 << 24) - 1)); }
 
 char[] toCSSColour(uint c) {
+	const HEX = "0123456789ABCDEF";
 	static char[7] buf = "#rrggbb";
 
-	format(buf[1..3], c >> 16 & 0xff, "x2");
-	format(buf[3..5], c >>  8 & 0xff, "x2");
-	format(buf[5..7], c       & 0xff, "x2");
+	buf[1] = HEX[c >> 20 & 0xf];
+	buf[2] = HEX[c >> 16 & 0xf];
+	buf[3] = HEX[c >> 12 & 0xf];
+	buf[4] = HEX[c >>  8 & 0xf];
+	buf[5] = HEX[c >>  4 & 0xf];
+	buf[6] = HEX[c >>  0 & 0xf];
 
 	// #rgb if possible
 	if (buf[1] == buf[2] && buf[3] == buf[4] && buf[5] == buf[6]) {
 		buf[2] = buf[3];
 		buf[3] = buf[5];
+		if (buf[1..4] == "f00")
+			return "red";
 		return buf[0..4];
-	} else
-		return buf;
+	}
+	switch (buf[1..$]) {
+		case "008000": return "green";
+		case "008080": return "teal";
+		case "4b0082": return "indigo";
+		case "800000": return "maroon";
+		case "800080": return "purple";
+		case "808000": return "olive";
+		case "808080": return "grey";
+		case "a0522d": return "sienna";
+		case "a52a2a": return "brown";
+		case "c0c0c0": return "silver";
+		case "cd853f": return "peru";
+		case "d2b48c": return "tan";
+		case "da70d6": return "orchid";
+		case "dda0dd": return "plum";
+		case "ee82ee": return "violet";
+		case "f0e68c": return "khaki";
+		case "f0ffff": return "azure";
+		case "f5deb3": return "wheat";
+		case "f5f5dc": return "beige";
+		case "fa8072": return "salmon";
+		case "faf0e6": return "linen";
+		case "ff6347": return "tomato";
+		case "ff7f50": return "coral";
+		case "ffa500": return "orange";
+		case "ffc0cb": return "pink";
+		case "ffd700": return "gold";
+		case "ffe4c4": return "bisque";
+		case "fffafa": return "snow";
+		case "fffff0": return "ivory";
+		default: return buf;
+	}
 }
 
 // If we've moved to a location with the pen up, and the pen is now down, it
