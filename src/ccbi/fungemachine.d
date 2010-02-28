@@ -70,9 +70,9 @@ private:
 	else
 		alias ALL_FINGERPRINTS fings;
 
-	alias .IP        !(dim, befunge93) IP;
-	alias .FungeSpace!(dim, befunge93) FungeSpace;
-	alias .Dimension !(dim).Coords     InitCoords;
+	alias .IP        !(dim, befunge93)* IP;
+	alias .FungeSpace!(dim, befunge93)  FungeSpace;
+	alias .Dimension !(dim).Coords      InitCoords;
 
 	mixin (EmitGot!("IIPC", fings));
 	mixin (EmitGot!("IMAP", fings));
@@ -101,7 +101,7 @@ private:
 		static if (!befunge93)
 			fungeArgs = args;
 
-		state.space = new FungeSpace(&stats, source);
+		state.space = FungeSpace(&stats, source);
 	}
 
 	// Moved out of the constructor so that we can handle any initial
@@ -118,8 +118,8 @@ private:
 		static if (befunge93)
 			pos.y = 1;
 
-		auto ip = new IP(
-			pos, state.space,
+		auto ip = IP.opCall(
+			pos, &state.space,
 			&stackStats, &stackStackStats, &semanticStats);
 
 		static if (befunge93)

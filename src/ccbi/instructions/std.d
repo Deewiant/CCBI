@@ -1113,9 +1113,9 @@ static if (!befunge93) {
 Request splitIP() {
 	++stats.ipForked;
 
-	state.ips ~= new typeof(this.cip)(cip);
+	state.ips ~= cip.deepCopy();
 
-	with (state.ips[$-1]) {
+	with (*state.ips[$-1]) {
 		id = ++state.currentID;
 
 		static if (GOT_IIPC)

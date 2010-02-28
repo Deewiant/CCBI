@@ -373,7 +373,7 @@ void counterclockwise() {
 }
 
 void necklace() {
-	with (cip) state.space[pos - delta] = stack.pop;
+	with (*cip) state.space[pos - delta] = stack.pop;
 }
 
 void barstool() {

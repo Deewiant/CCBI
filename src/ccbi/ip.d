@@ -18,9 +18,9 @@ public import ccbi.cell;
        import ccbi.utils;
        import ccbi.space.cursor;
 
-final class IP(cell dim, bool befunge93) {
-	alias     .Coords!(dim)            Coords;
-	alias   Dimension!(dim).Coords     InitCoords;
+struct IP(cell dim, bool befunge93) {
+	alias .Coords    !(dim)            Coords;
+	alias  Dimension !(dim).Coords     InitCoords;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
 	static if (befunge93)
@@ -33,68 +33,78 @@ final class IP(cell dim, bool befunge93) {
 	mixin (EmitGot!("IMAP", fings));
 	mixin (EmitGot!("TRDS", fings));
 
-	this(
+	// Yes, IPs are always heap-allocated: simplifies things
+	static typeof(this) opCall(
 		Coords pos,
-		FungeSpace s,
+		FungeSpace* s,
 		ContainerStats* stackStats,
 		ContainerStats* stackStackStats,
 		ContainerStats* semanticStats)
 	{
-		static if (!befunge93)
-			id = 0;
-		static if (GOT_IIPC)
-			parentID = 0;
+		auto x = new IP;
+		with (*x) {
+			static if (!befunge93)
+				id = 0;
+			static if (GOT_IIPC)
+				parentID = 0;
 
-		stack = new Stack!(.cell)(stackStats);
+			stack = new Stack!(.cell)(stackStats);
 
-		static if (!befunge93) {
-			stackStack = new typeof(stackStack)(stackStackStats, 1u);
-			stackStack.push(stack);
-		}
+			static if (!befunge93) {
+				stackStack = new typeof(stackStack)(stackStackStats, 1u);
+				stackStack.push(stack);
+			}
 
-		static if (!befunge93)
-			foreach (inout sem; semantics)
-				sem = new typeof(sem)(semanticStats);
+			static if (!befunge93)
+				foreach (inout sem; semantics)
+					sem = new typeof(sem)(semanticStats);
 
-		cursor = typeof(cursor)(pos, delta, s);
+			cursor = typeof(cursor)(pos, delta, s);
 
-		informSpace();
-	}
-
-	static if (!befunge93) this(IP o, bool active = true, FungeSpace s = null) {
-		shallowCopy(this, o);
-
-		// deep copy stack stack
-		stackStack = new typeof(stackStack)(o.stackStack);
-
-		bool deque = cast(Deque)stack !is null;
-
-		foreach (inout stack; stackStack) {
-			alias Container!(.cell) CC;
-			alias Stack    !(.cell) Ctack;
-
-			stack = (deque
-				? cast(CC)new Deque(cast(Deque)stack)
-				: cast(CC)new Ctack(cast(Ctack)stack)
-			);
-		}
-		stack = stackStack.top;
-
-		// deep copy semantics
-		foreach (i, inout sem; semantics)
-			sem = new typeof(sem)(o.semantics[i]);
-
-		// deep copy mapping
-		static if (GOT_IMAP)
-			mapping = o.mapping.dup;
-
-		if (s)
-			cursor.space = s;
-
-		if (active) {
-			cursor.invalidate;
 			informSpace();
 		}
+		return x;
+	}
+
+	static if (!befunge93)
+	typeof(this) deepCopy(bool active = true, FungeSpace* s = null) {
+		auto copy = new IP;
+		*copy = *this;
+
+		with (*copy) {
+			// deep copy stack stack
+			stackStack = new typeof(stackStack)(stackStack);
+
+			bool deque = cast(Deque)stack !is null;
+
+			foreach (inout stack; stackStack) {
+				alias Container!(.cell) CC;
+				alias Stack    !(.cell) Ctack;
+
+				stack = (deque
+					? cast(CC)new Deque(cast(Deque)stack)
+					: cast(CC)new Ctack(cast(Ctack)stack)
+				);
+			}
+			stack = stackStack.top;
+
+			// deep copy semantics
+			foreach (ref sem; semantics)
+				sem = new typeof(sem)(sem);
+
+			// deep copy mapping
+			static if (GOT_IMAP)
+				mapping = mapping.dup;
+
+			if (s)
+				cursor.space = s;
+
+			if (active) {
+				cursor.invalidate;
+				informSpace();
+			}
+		}
+		return copy;
 	}
 
 	private void informSpace() {

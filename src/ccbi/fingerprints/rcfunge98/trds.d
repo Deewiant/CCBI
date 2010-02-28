@@ -103,7 +103,7 @@ void newTick() {
 	// Must be appended: preserves correct execution order
 	foreach (ip; travellers) if (state.tick == ip.jumpedTo) {
 		++stats.travellerArrived;
-		state.ips ~= new IP(ip, true, state.space);
+		state.ips ~= ip.deepCopy(true, &state.space);
 	}
 }
 
@@ -308,7 +308,7 @@ Request timeJump(IP ip) {
 	}
 	if (!found) {
 		ip.mode |= IP.FROM_FUTURE;
-		travellers ~= new IP(ip, false);
+		travellers ~= ip.deepCopy(false);
 	}
 
 	/+

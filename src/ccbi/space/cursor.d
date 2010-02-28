@@ -27,9 +27,9 @@ private:
 	}
 
 public:
-	FungeSpace space;
+	FungeSpace* space;
 
-	static typeof(*this) opCall(Coords c, Coords delta, FungeSpace s) {
+	static typeof(*this) opCall(Coords c, Coords delta, FungeSpace* s) {
 
 		typeof(*this) cursor;
 		with (cursor) {
@@ -58,7 +58,7 @@ public:
 
 	cell get()
 	out (c) {
-		assert (space[pos] == c);
+		assert ((*space)[pos] == c);
 	} body {
 		if (!inBox()) {
 			auto p = pos;
@@ -73,7 +73,7 @@ public:
 	in {
 		assert (inBox());
 	} out (c) {
-		assert (space[pos] == c);
+		assert ((*space)[pos] == c);
 	} body {
 		++space.stats.space.lookups;
 		return bak ? space.bak[pos]
@@ -82,12 +82,12 @@ public:
 
 	void set(cell c)
 	out {
-		assert (space[pos] == c);
+		assert ((*space)[pos] == c);
 	} body {
 		if (!inBox()) {
 			auto p = pos;
 			if (!getBox(p))
-				return space[p] = c;
+				return (*space)[p] = c;
 		}
 		unsafeSet(c);
 	}
@@ -95,7 +95,7 @@ public:
 	in {
 		assert (inBox());
 	} out {
-		assert (space[pos] == c);
+		assert ((*space)[pos] == c);
 	} body {
 		++space.stats.space.assignments;
 		bak ? space.bak[pos] = c

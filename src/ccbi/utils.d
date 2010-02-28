@@ -72,21 +72,6 @@ in {
 char[][] words(char[]   s) { return s.delimit(" "); }
 char[] unwords(char[][] s) { return s.join   (" "); }
 
-// Thanks to Ben Hinkle at
-// http://www.digitalmars.com/d/archives/digitalmars/D/learn/1625.html
-void shallowCopy(Object a, Object b) {
-	ClassInfo ci = a.classinfo;
-	assert (ci is b.classinfo);
-
-	auto
-		src  = cast(void*)b,
-		dest = cast(void*)a;
-
-	size_t start = Object.classinfo.init.length;
-
-	dest[start .. ci.init.length] = src[start .. ci.init.length];
-}
-
 bool isSemantics(cell i) { return i <= 'Z' && i >= 'A'; }
 
 size_t findIndex(T)(T[] a, T v) {

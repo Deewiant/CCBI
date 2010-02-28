@@ -8,7 +8,6 @@ import ccbi.cell;
 import ccbi.fingerprints.all;
 import ccbi.ip;
 import ccbi.templateutils : EmitGot;
-import ccbi.utils         : shallowCopy;
 import ccbi.space.space;
 
 // All state that should be restored when an IP travels to the past belongs
@@ -28,10 +27,10 @@ struct FungeState(cell dim, bool befunge93) {
 	mixin (EmitGot!("TIME", fings));
 	mixin (EmitGot!("TRDS", fings));
 
-	FungeSpace!(dim, befunge93) space;
+	FungeSpace!(dim, befunge93) space = void;
 
 	static if (!befunge93) {
-		IP[] ips;
+		IP*[] ips;
 		size_t startIdx;
 
 		// For IPs
@@ -58,12 +57,12 @@ struct FungeState(cell dim, bool befunge93) {
 		typeof(*this) copy = *this;
 
 		with (copy) {
-			space = new typeof(space)(space);
+			space = space.deepCopy();
 
 			static if (!befunge93) {
 				ips = ips.dup;
 				foreach (ref ip; ips)
-					ip = new IP(ip, active, space);
+					ip = ip.deepCopy(active, &space);
 			}
 
 			static if (GOT_REFC) references = references.dup;

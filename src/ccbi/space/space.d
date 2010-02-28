@@ -19,13 +19,13 @@ import tango.util.container.HashMap;
 public import ccbi.space.coords;
 public import ccbi.space.utils;
 
-final class FungeSpace(cell dim, bool befunge93) {
+struct FungeSpace(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
 	static assert (!befunge93 || dim == 2);
 
-	alias .AABB     !(dim)            AABB;
-	alias .Coords   !(dim)            Coords;
-	alias .Dimension!(dim).Coords     InitCoords;
+	alias .AABB     !(dim)        AABB;
+	alias .Coords   !(dim)        Coords;
+	alias .Dimension!(dim).Coords InitCoords;
 
 	// All arbitrary
 	private const
@@ -70,29 +70,36 @@ final class FungeSpace(cell dim, bool befunge93) {
 	}
 	Stats* stats;
 
-	this(Stats* stats, Array source) {
-		this.stats = stats;
-
-		load(source, null, InitCoords!(0), false);
-		if (boxen.length) {
-			lastBeg = boxen[0].beg;
-			lastEnd = boxen[0].end;
+	static typeof(*this) opCall(Stats* stats, Array source) {
+		typeof(*this) x;
+		x.stats = stats;
+		with (x) {
+			// FungeSpace. is WORKAROUND: http://www.dsource.org/projects/ldc/ticket/397
+			load(source, null, FungeSpace.InitCoords!(0), false);
+			if (boxen.length) {
+				lastBeg = boxen[0].beg;
+				lastEnd = boxen[0].end;
+			}
 		}
+		return x;
 	}
 
-	this(FungeSpace other) {
-		shallowCopy(this, other);
+	typeof(*this) deepCopy() {
+		typeof(*this) copy = *this;
 
-		// deep copy space
-		boxen = other.boxen.dup;
-		foreach (i, ref aabb; boxen) {
-			auto orig = aabb.data;
-			aabb.data = cmalloc(aabb.size);
-			aabb.data[0..aabb.size] = orig[0..aabb.size];
+		with (copy) {
+			// deep copy space
+			boxen = boxen.dup;
+			foreach (i, ref aabb; boxen) {
+				auto orig = aabb.data;
+				aabb.data = cmalloc(aabb.size);
+				aabb.data[0..aabb.size] = orig[0..aabb.size];
+			}
+
+			// Empty out invalidatees, they refer to the other space
+			invalidatees.length = 0;
 		}
-
-		// Empty out invalidatees, they refer to the other space
-		invalidatees.length = 0;
+		return copy;
 	}
 
 	void free() {
@@ -140,8 +147,8 @@ final class FungeSpace(cell dim, bool befunge93) {
 			}
 		}
 		void getTightBounds(out Coords beg, out Coords end) {
-			bool begSp = this[lastBeg] == ' ',
-			     endSp = this[lastEnd] == ' ';
+			bool begSp = (*this)[lastBeg] == ' ',
+			     endSp = (*this)[lastEnd] == ' ';
 
 			stats.space.lookups += 2;
 
@@ -1348,7 +1355,7 @@ private:
 
 				for (cell x = beg.x; x < end.x; ++x) {
 					c.x = x;
-					b = cast(ubyte)this[c];
+					b = cast(ubyte)(*this)[c];
 					tfile.write(b);
 				}
 				if (++y != end.y) foreach (ch; NewlineString) {
