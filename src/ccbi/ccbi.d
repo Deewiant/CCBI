@@ -98,6 +98,7 @@ else
 
 version (funge98)
 	const char[] FINGERPRINTS_HELP = `
+
  -f F, --fingerprints=F  Allow enabling and disabling of individual
                          fingerprints before starting the program. The
                          parameter F is a comma-separated list of fingerprint
