@@ -331,9 +331,11 @@ struct BitFields(F...) {
 	private ubyte[(F.length + 7)/8] bits = ubyte.max;
 
 	bool opIndex(size_t i) {
+		assert (i < F.length);
 		return (bits[i/8] & 1 << (i%8)) != 0;
 	}
 	bool opIndexAssign(bool b, size_t i) {
+		assert (i < F.length);
 		if (b)
 			bits[i/8] |=   1 << (i%8);
 		else
@@ -345,9 +347,15 @@ struct BitFields(F...) {
 	void unsetAll() { bits[] = 0; }
 
 	bool allUnset() {
-		foreach (b; bits)
+		foreach (b; bits[0..$-1])
 			if (b)
 				return false;
+
+		auto last = bits[$-1];
+		for (ubyte i = 0; i < F.length % 8; ++i)
+			if (last & 1 << i)
+				return false;
+
 		return true;
 	}
 
