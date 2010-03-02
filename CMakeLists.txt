@@ -195,14 +195,18 @@ if(CCBI_BUILD_TYPE STREQUAL "Release-LLVM")
 	endforeach()
 
 	# Link .bc's, fix weak to linkonce (LDC...), optimize
+	if(CCBI_LINK_TANGO_RT)
+		set(INTERNALIZE_OPT "")
+	else()
+		set(INTERNALIZE_OPT "-internalize-public-api-list=_Dmain")
+	endif()
 	set(CCBI_BC_OPT "${CCBI_BC}.opt")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC_OPT}"
 		DEPENDS "${CCBI_BC}" ${C_OBJS}
 		COMMAND llvm-link "${CCBI_BC}" ${C_OBJS} | llvm-dis
 		        | sed "s/= weak/= linkonce/;s/define weak/define linkonce/" | llvm-as
-		        | opt -std-compile-opts -std-link-opts -internalize-public-api-list=_Dmain
-		              -unroll-allow-partial
+		        | opt -std-compile-opts -std-link-opts -unroll-allow-partial ${INTERNALIZE_OPT}
 		        > "${CCBI_BC_OPT}")
 
 	# Assemble, make .o, link
