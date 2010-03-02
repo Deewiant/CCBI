@@ -99,6 +99,7 @@ ccbiFing(
 
 if(FINGERPRINT_NCRS)
 	if(CURSES_FOUND)
+		list(APPEND C_SOURCES "${CCBI_SOURCE_DIR}/src/wrapncrs.c")
 		foreach(lib ${CURSES_LIBRARIES})
 			list(APPEND D_LINK_FLAGS -L${lib})
 		endforeach()
@@ -167,8 +168,6 @@ endif()
 
 ########
 # Add executable-building command
-
-file(GLOB C_SOURCES src/*.c)
 
 set(CCBI_BIN "${CCBI_BINARY_DIR}/bin/ccbi${CMAKE_EXECUTABLE_SUFFIX}")
 set(OBJDIR "${CCBI_BINARY_DIR}/obj")
