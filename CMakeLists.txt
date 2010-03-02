@@ -39,7 +39,10 @@ if(NOT DC)
 	message(SEND_ERROR "Could not find a D compiler: wanted 'ldmd' or 'dmd'.")
 endif()
 if (DC MATCHES "ldmd")
+	set(VENDOR "ldc")
 	list(APPEND D_FLAGS -oq)
+else()
+	set(VENDOR "dmd")
 endif()
 
 set(DC_ARGS "" CACHE STRING "Extra arguments to pass to the D compiler, semicolon-separated.")
@@ -113,13 +116,60 @@ endif()
 # Advanced options
 
 option(CCBI_LINK_TANGO_RT
-       "If enabled, link the Tango runtime manually instead of relying on the compiler to do it for us."
+       "If enabled, link the Tango runtime manually instead of relying on the compiler to do it for us. Very advanced! Requires TANGO_DIR."
        OFF)
 option(CCBI_LINK_TANGO_USER
        "If enabled, link the Tango user modules manually instead of relying on the compiler to do it for us."
        OFF)
 
-mark_as_advanced(CCBI_LINK_TANGO_RT CCBI_LINK_TANGO_USER)
+set(TANGO_DIR "" CACHE PATH "Tango root directory, required only by CCBI_LINK_TANGO_RT.")
+
+if(CCBI_LINK_TANGO_RT)
+	if(NOT IS_DIRECTORY "${TANGO_DIR}")
+		message(FATAL_ERROR "TANGO_DIR '${TANGO_DIR}' does not exist! Fix that or disable CCBI_LINK_TANGO_RT.")
+	endif()
+
+	set(TMP "tango/core/rt/compiler/${VENDOR}" "tango/core/rt/compiler/util")
+	foreach(dir ${TMP})
+		if(IS_DIRECTORY "${TANGO_DIR}/${dir}")
+			file(GLOB_RECURSE TMP2 "${TANGO_DIR}/${dir}/*.d")
+			foreach(file ${TMP2})
+				list(APPEND D_SOURCES "${file}")
+			endforeach()
+			file(GLOB_RECURSE TMP2 "${TANGO_DIR}/${dir}/*.c")
+			foreach(file ${TMP2})
+				list(APPEND C_SOURCES "${file}")
+			endforeach()
+		else()
+			message(SEND_ERROR "TANGO_DIR invalid (or unsupported Tango version): dir '${TANGO_DIR}/${dir}' not found! Fix that or disable CCBI_LINK_TANGO_RT.")
+		endif()
+	endforeach()
+	set(TMP "tango/core/rt/gc/basic")
+	foreach(dir ${TMP})
+		if(IS_DIRECTORY "${TANGO_DIR}/${dir}")
+			file(GLOB_RECURSE TMP2 "${TANGO_DIR}/${dir}/*.d")
+			foreach(file ${TMP2})
+				list(APPEND D_SOURCES "${file}")
+			endforeach()
+			file(GLOB_RECURSE TMP2 "${TANGO_DIR}/${dir}/*.c")
+			foreach(file ${TMP2})
+				list(APPEND C_SOURCES "${file}")
+			endforeach()
+		else()
+			message(SEND_ERROR "TANGO_DIR invalid (or unsupported Tango version): dir '${TANGO_DIR}/${dir}' not found! Fix that or disable CCBI_LINK_TANGO_RT.")
+		endif()
+	endforeach()
+	set(TMP "tango/core/Runtime.d" "tango/core/Exception.d" "tango/core/Thread.d")
+	foreach(file ${TMP})
+		if(EXISTS "${TANGO_DIR}/${file}" AND NOT IS_DIRECTORY "${TANGO_DIR}/${file}")
+			list(APPEND D_SOURCES "${TANGO_DIR}/${file}")
+		else()
+			message(SEND_ERROR "TANGO_DIR invalid (or unsupported Tango version): file '${TANGO_DIR}/${file}' not found! Fix that or disable CCBI_LINK_TANGO_RT.")
+		endif()
+	endforeach()
+endif()
+
+mark_as_advanced(CCBI_LINK_TANGO_RT CCBI_LINK_TANGO_USER TANGO_DIR)
 
 find_program(STRIP strip DOC "Debug symbols stripper, used when CCBI_BUILD_TYPE is not Debug. Unset to disable stripping.")
 mark_as_advanced(STRIP)
@@ -134,7 +184,7 @@ if(GOT_FUNGE)
 		COMMAND ${DC} ${D_FLAGS} -v -o- src/ccbi/ccbi.d
 		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
 		OUTPUT_STRIP_TRAILING_WHITESPACE
-		OUTPUT_VARIABLE D_SOURCES
+		OUTPUT_VARIABLE GATHERED_D_SOURCES
 		ERROR_VARIABLE D_COMPILE_ERRORS)
 
 	# Get rid of the fingerprints' pragma(msg) stuff
@@ -144,27 +194,34 @@ if(GOT_FUNGE)
 		message(FATAL_ERROR "${DC} failed at compiling:\n${D_COMPILE_ERRORS}")
 	endif()
 
-	string(REGEX REPLACE "\r?\n" ";" D_SOURCES "${D_SOURCES}")
-	foreach(line ${D_SOURCES})
+	string(REGEX REPLACE "\r?\n" ";" GATHERED_D_SOURCES "${GATHERED_D_SOURCES}")
+	foreach(line ${GATHERED_D_SOURCES})
 		string(SUBSTRING "${line}" 0 7 s)
 		if(s STREQUAL "import ")
 			string(REGEX REPLACE ".*[.]di[)]$" "" line "${line}")
-			string(REGEX REPLACE "[^(]*[(](.*)[)]$" "\\1" line "${line}")
+			string(REGEX REPLACE "[^(]*[(](.*)[)]$" "\\1" path "${line}")
 
-			if(   (NOT CCBI_LINK_TANGO_USER AND line MATCHES "/tango/")
-				OR (NOT CCBI_LINK_TANGO_RT AND (line MATCHES "/tango/core/"
-			                            	 OR  line MATCHES "/ldc/")))
-				set(line "")
+
+			if(   (NOT CCBI_LINK_TANGO_USER AND path MATCHES "/tango/")
+			   OR (NOT CCBI_LINK_TANGO_RT   AND path MATCHES "/tango/core/")
+			   OR path MATCHES "/${VENDOR}/")
+				set(path "")
+			elseif(CCBI_LINK_TANGO_RT)
+				# Did we already add it when populating stuff from TANGO_DIR?
+				string(REGEX REPLACE ".*/tango/" "${TANGO_DIR}/tango/" tmp "${path}")
+				list(FIND D_SOURCES "${tmp}" tmp)
+				if(tmp GREATER -1)
+					set(path "")
+				endif()
 			endif()
 
-			if(line)
-				list(APPEND D_SOURCES2 "${line}")
+			if(path)
+				list(APPEND D_SOURCES "${path}")
 			endif()
 		endif()
 	endforeach()
-	set(D_SOURCES ${D_SOURCES2})
-	unset(D_SOURCES2)
 	list(INSERT D_SOURCES 0 src/ccbi/ccbi.d)
+	list(REMOVE_DUPLICATES D_SOURCES)
 endif()
 
 ########
