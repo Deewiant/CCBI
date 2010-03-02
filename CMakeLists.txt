@@ -45,6 +45,7 @@ endif()
 set(DC_ARGS "" CACHE STRING "Extra arguments to pass to the D compiler, semicolon-separated.")
 foreach(arg ${DC_ARGS})
 	list(APPEND D_FLAGS ${arg})
+	list(APPEND D_LINK_FLAGS ${arg})
 endforeach()
 
 set(CCBI_BUILD_TYPE "Release" CACHE STRING
