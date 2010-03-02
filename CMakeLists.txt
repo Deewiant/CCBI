@@ -52,7 +52,7 @@ foreach(arg ${DC_ARGS})
 endforeach()
 
 set(CCBI_BUILD_TYPE "Release" CACHE STRING
-    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, sed, and (for C wrappers) clang; highly recommended).")
+    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, sed, and (for C wrappers) clang; highly recommended); Release-LLVM-Safer (less LTO, less buggy).")
 
 option(ENABLE_BEFUNGE93  "Build support for Befunge-93." ON)
 option(ENABLE_FUNGE98_1 "Build support for Unefunge-98 (one-dimensional Funge-98)." OFF)
@@ -230,7 +230,7 @@ endif()
 set(CCBI_BIN "${CCBI_BINARY_DIR}/bin/ccbi${CMAKE_EXECUTABLE_SUFFIX}")
 set(OBJDIR "${CCBI_BINARY_DIR}/obj")
 
-if(CCBI_BUILD_TYPE STREQUAL "Release-LLVM")
+if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 
 	# Build the .bc
 	set(CCBI_BC "${OBJDIR}/ccbi.ccbi.bc")
@@ -252,18 +252,28 @@ if(CCBI_BUILD_TYPE STREQUAL "Release-LLVM")
 	endforeach()
 
 	# Link .bc's, fix weak to linkonce (LDC...), optimize
+
 	if(CCBI_LINK_TANGO_RT)
 		set(INTERNALIZE_OPT "")
 	else()
-		set(INTERNALIZE_OPT "-internalize-public-api-list=_Dmain")
+		set(INTERNALIZE_OPT -internalize-public-api-list=_Dmain)
 	endif()
+
+	if(CCBI_BUILD_TYPE STREQUAL "Release-LLVM-Safer")
+		# Identical to the default options but removes -inline from between -instcombine and -prune-eh
+		# (And doesn't specify analysis passes explicitly, the transformations will request what they need)
+		set(LTO -internalize ${INTERNALIZE_OPT} -ipsccp -globalopt -constmerge -deadargelim -instcombine -prune-eh -globalopt -globaldce -argpromotion -instcombine -jump-threading -scalarrepl -functionattrs -globalsmodref-aa -loopsimplify -licm -gvn -memcpyopt -dse -instcombine -jump-threading -mem2reg -simplifycfg -globaldce)
+	else()
+		set(LTO -std-link-opts ${INTERNALIZE_OPT})
+	endif()
+
 	set(CCBI_BC_OPT "${CCBI_BC}.opt")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC_OPT}"
 		DEPENDS "${CCBI_BC}" ${C_OBJS}
 		COMMAND llvm-link "${CCBI_BC}" ${C_OBJS} | llvm-dis
 		        | sed "s/= weak/= linkonce/;s/define weak/define linkonce/" | llvm-as
-		        | opt -std-compile-opts -std-link-opts -unroll-allow-partial ${INTERNALIZE_OPT}
+		        | opt -std-compile-opts -unroll-allow-partial ${LTO}
 		        > "${CCBI_BC_OPT}")
 
 	# Assemble, make .o, link
