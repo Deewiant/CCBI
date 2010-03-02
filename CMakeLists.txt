@@ -49,7 +49,7 @@ foreach(arg ${DC_ARGS})
 endforeach()
 
 set(CCBI_BUILD_TYPE "Release" CACHE STRING
-    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, and sed; highly recommended).")
+    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, sed, and (for C wrappers) clang; highly recommended).")
 
 option(ENABLE_BEFUNGE93  "Build support for Befunge-93." ON)
 option(ENABLE_FUNGE98_1 "Build support for Unefunge-98 (one-dimensional Funge-98)." OFF)
@@ -121,7 +121,7 @@ option(CCBI_LINK_TANGO_USER
 
 mark_as_advanced(CCBI_LINK_TANGO_RT CCBI_LINK_TANGO_USER)
 
-find_program(STRIP strip DOC "Debug symbols stripper.")
+find_program(STRIP strip DOC "Debug symbols stripper, used when CCBI_BUILD_TYPE is not Debug. Unset to disable stripping.")
 mark_as_advanced(STRIP)
 
 ########
