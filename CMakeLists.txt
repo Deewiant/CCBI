@@ -293,15 +293,22 @@ else()
 	endif()
 
 	# Easy way of building all C wrappers: make a library out of them
-	set(LIBRARY_OUTPUT_PATH "${OBJDIR}")
-	add_library("wrappers" STATIC ${C_SOURCES})
+	if(C_SOURCES)
+		set(LIBRARY_OUTPUT_PATH "${OBJDIR}")
+		add_library("wrappers" STATIC ${C_SOURCES})
+		set(WRAPPERS "wrappers")
+		set(LWRAPPERS "-L-lwrappers")
+	else()
+		set(WRAPPERS "")
+		set(LWRAPPERS "")
+	endif()
 
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BIN}"
 		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
-		DEPENDS "wrappers" ${D_SOURCES}
+		DEPENDS ${WRAPPERS} ${D_SOURCES}
 		COMMAND ${DC} ${D_FLAGS} ${D_LINK_FLAGS} ${EXTRA_ARGS} "-of${CCBI_BIN}" "-od${OBJDIR}"
-		        "-L-L${OBJDIR}" -L-lwrappers ${D_SOURCES})
+		        "-L-L${OBJDIR}" ${LWRAPPERS} ${D_SOURCES})
 endif()
 
 add_custom_target(CCBI ALL "" DEPENDS "${CCBI_BIN}")
