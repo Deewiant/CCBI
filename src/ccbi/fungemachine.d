@@ -389,6 +389,10 @@ private:
 			state.ips.removeAt(idx);
 
 			if (state.ips.length > 0) {
+				foreach (stack; ip.stackStack)
+					delete stack;
+				delete ip.stackStack;
+
 				// Not in the below case because quitting handles that
 				++stats.ipStopped;
 				return true;

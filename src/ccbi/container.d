@@ -4,8 +4,16 @@
 
 module ccbi.container;
 
+import c = tango.stdc.stdlib;
+
 import ccbi.cell;
 import ccbi.stats;
+
+private {
+	T*  malloc(T)(      size_t n) { return cast(T*)c. malloc(   n * T.sizeof); }
+	T* realloc(T)(T* p, size_t n) { return cast(T*)c.realloc(p, n * T.sizeof); }
+	alias c.free free;
+}
 
 abstract class Container(T) {
 	const size_t DEFAULT_SIZE = 0100;
@@ -46,8 +54,11 @@ abstract class Container(T) {
 		T at(size_t);
 	}
 
+	final ~this() { free(array); }
+
 	protected {
-		T[] array;
+		T* array = null;
+		size_t capacity = 0;
 		size_t head = 0;
 	}
 	ContainerStats* stats;
@@ -90,25 +101,30 @@ final class Stack(T) : Container!(T) {
 	this(Stack s) {
 		super.stats = s.stats;
 
-		array = s.array.dup;
-		head  = s.size;
-
+		head     = s.size;
+		capacity = s.capacity;
+		array = malloc!(T)(capacity);
+		array[0..head] = s.array[0..head];
 	}
 
 	this(ContainerStats* stats, Deque q) {
 		super.stats = stats;
 
-		static if (is(T : cell))
-			array = q.elementsBottomToTop.dup;
-		else
-			assert (false, "Trying to make non-cell stack out of deque");
-
 		head = q.size;
+
+		static if (is(T : cell)) {
+			auto arr = q.elementsBottomToTop;
+			capacity = arr.length;
+			array = malloc!(T)(capacity);
+			array[0..head] = arr[0..head];
+		} else
+			assert (false, "Trying to make non-cell stack out of deque");
 	}
 
 	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
 		super.stats = stats;
-		array.length = n;
+		capacity = n;
+		array = malloc!(T)(capacity);
 	}
 
 	final {
@@ -164,15 +180,18 @@ final class Stack(T) : Container!(T) {
 			stats.pushes += ts.length;
 
 			auto neededRoom = head + ts.length;
-			if (neededRoom > array.length) {
+			if (neededRoom > capacity) {
 				++stats.resizes;
 
-				array.length = 2 * array.length +
-					(neededRoom > 2 * array.length ? neededRoom : 0);
+				capacity = 2 * capacity +
+					(neededRoom > 2 * capacity ? neededRoom : 0);
+
+				array = realloc(array, capacity);
 			}
 
-			foreach (t; ts)
-				array[head++] = t;
+			auto nhead = head + ts.length;
+			array[head..nhead] = ts;
+			head = nhead;
 		}
 		override void pushHead(T[] ts...) { push(ts); }
 
@@ -182,13 +201,15 @@ final class Stack(T) : Container!(T) {
 
 
 		override T* reserve(size_t n) {
-			if (array.length < n + head)
-				array.length = n + head;
+			if (capacity < n + head) {
+				capacity = n + head;
+				array = realloc(array, capacity);
+			}
 
 			auto ptr = &array[head];
 
 			head += n;
-			assert (head <= array.length);
+			assert (head <= capacity);
 
 			return ptr;
 		}
@@ -235,10 +256,11 @@ final class Deque : Container!(cell) {
 	this(Deque q) {
 		super.stats = q.stats;
 
-		mode  = q.mode;
-		tail  = q.tail;
-		head  = q.head;
-		array = q.array.dup;
+		mode     = q.mode;
+		tail     = q.tail;
+		head     = q.head;
+		capacity = q.capacity;
+		array    = malloc!(cell)(capacity);
 	}
 	this(ContainerStats* stats, Stack!(cell) s) {
 		super.stats = stats;
@@ -270,11 +292,11 @@ final class Deque : Container!(cell) {
 
 			if (!empty) {
 				if (mode & QUEUE_MODE) while (i--) {
-					tail = (tail - 1) & (array.length - 1);
+					tail = (tail - 1) & (capacity - 1);
 					if (empty)
 						break;
 				} else while (i--) {
-					head = (head + 1) & (array.length - 1);
+					head = (head + 1) & (capacity - 1);
 					if (empty)
 						break;
 				}
@@ -291,7 +313,7 @@ final class Deque : Container!(cell) {
 			}
 
 			auto h = array[head];
-			head = (head + 1) & (array.length - 1);
+			head = (head + 1) & (capacity - 1);
 			return h;
 		}
 
@@ -319,14 +341,14 @@ final class Deque : Container!(cell) {
 			stats.pushes += cs.length;
 
 			foreach (c; cs) {
-				head = (head - 1) & (array.length - 1);
+				head = (head - 1) & (capacity - 1);
 				array[head] = c;
 				if (head == tail)
 					doubleCapacity();
 			}
 		}
 
-		override size_t size() { return (tail - head) & (array.length - 1); }
+		override size_t size() { return (tail - head) & (capacity - 1); }
 		override bool empty()  { return tail == head; }
 
 
@@ -343,7 +365,7 @@ final class Deque : Container!(cell) {
 
 		override int opApply(int delegate(inout cell t) dg) {
 			int r = 0;
-			for (size_t i = head; i != tail; i = (i + 1) & (array.length - 1))
+			for (size_t i = head; i != tail; i = (i + 1) & (capacity - 1))
 				if (r = dg(array[i]), r)
 					break;
 			return r;
@@ -355,7 +377,7 @@ final class Deque : Container!(cell) {
 
 		int bottomToTop(int delegate(inout cell t) dg) {
 			int r = 0;
-			for (size_t i = tail; i != head; i = (i - 1) & (array.length - 1))
+			for (size_t i = tail; i != head; i = (i - 1) & (capacity - 1))
 				if (r = dg(array[i]), r)
 					break;
 			return r;
@@ -367,8 +389,8 @@ final class Deque : Container!(cell) {
 			if (head < tail)
 				elems[0..size] = array[head..head + size];
 			else if (head > tail) {
-				auto lh = array.length - head;
-				elems[ 0..lh]        = array[head..$];
+				auto lh = capacity - head;
+				elems[ 0..lh]        = array[head..capacity];
 				elems[lh..lh + tail] = array[0..tail];
 			}
 
@@ -382,7 +404,7 @@ final class Deque : Container!(cell) {
 
 			foreach (c; cs) {
 				array[tail] = c;
-				tail = (tail + 1) & (array.length - 1);
+				tail = (tail + 1) & (capacity - 1);
 				if (head == tail)
 					doubleCapacity();
 			}
@@ -396,7 +418,7 @@ final class Deque : Container!(cell) {
 				return 0;
 			}
 
-			tail = (tail - 1) & (array.length - 1);
+			tail = (tail - 1) & (capacity - 1);
 			return array[tail];
 		}
 
@@ -416,7 +438,7 @@ final class Deque : Container!(cell) {
 				++stats.peekUnderflows;
 				return 0;
 			} else
-				return array[(tail - 1) & (array.length - 1)];
+				return array[(tail - 1) & (capacity - 1)];
 		}
 
 		void allocateArray(size_t length) {
@@ -441,7 +463,8 @@ final class Deque : Container!(cell) {
 					newSize >>>= 1;
 			}
 
-			array = new typeof(array)(newSize);
+			capacity = newSize;
+			array = realloc(array, capacity);
 		}
 
 		void doubleCapacity() {
@@ -450,15 +473,16 @@ final class Deque : Container!(cell) {
 			++stats.resizes;
 
 			// elems to the right of head
-			auto r = array.length - head;
+			auto r = capacity - head;
 
-			auto newArray = new typeof(array)(array.length * 2);
+			auto newArray = malloc!(cell)(capacity * 2);
 			newArray[0..r     ] = array[head..head+r];
 			newArray[r..r+head] = array[0   ..head  ];
 
 			head  = 0;
-			tail  = array.length;
+			tail  = capacity;
 			array = newArray;
+			capacity *= 2;
 		}
 	}
 }
