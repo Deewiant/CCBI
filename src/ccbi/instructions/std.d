@@ -883,134 +883,273 @@ void execute() {
 
 static if (!befunge93) {
 
+const cell[7] SYSINFO_CONSTANT_TOP =
+	[ dim
+	, PATH_SEPARATOR
+	  // = is equivalent to C system()
+	, 1
+	, VERSION_NUMBER
+	, HANDPRINT
+	, cell.sizeof
+	  // Unbuffered input is not being used
+	  // = is implemented
+	  // o is implemented
+	  // i is implemented
+	  // t is implemented
+	, 0b01111 ];
+
+cell[] envCache, argsCache;
+
+void computeArgsCache() { // {{{
+	if (argsCache.length)
+		return;
+
+	size_t sz = 0;
+	bool wasNull = false;
+	foreach_reverse (farg; fungeArgs) {
+		if (farg.length) {
+			sz += farg.length;
+			wasNull = false;
+
+		// ignore consecutive null arguments
+		} else if (!wasNull)
+			wasNull = true;
+		++sz;
+	}
+
+	argsCache.length = sz;
+	auto q = argsCache.ptr;
+
+	wasNull = false;
+	foreach_reverse (farg; fungeArgs) {
+		if (farg.length) {
+			*q++ = 0;
+			foreach_reverse (c; farg)
+				*q++ = cast(cell)c;
+			wasNull = false;
+
+		} else if (!wasNull) {
+			*q++ = 0;
+			wasNull = true;
+		}
+	}
+} // }}}
+void computeEnvCache() { // {{{
+	if (envCache.length)
+		return;
+
+	size_t sz = 0;
+	auto env = environment(&sz);
+
+	// Add env.length for the null terminators
+	envCache.length = sz + env.length;
+	auto q = envCache.ptr;
+
+	foreach_reverse (var; env) {
+		*q++ = 0;
+		foreach_reverse (c; var)
+			*q++ = cast(cell)c;
+	}
+} // }}}
+
+template SimpleVectorCases(char[] vec, cell offset, cell i = 0) {
+	static if (i < dim)
+		const SimpleVectorCases =
+			"case " ~ToString!(offset+i)~ ":"
+			"	return cip.stack.push(" ~vec~ ".v[$-1 - (arg - " ~ToString!(offset)~ ")]);"
+			~ SimpleVectorCases!(vec, offset, i+1);
+	else
+		const SimpleVectorCases = "";
+}
+template BoundsVectorCases(cell offset, cell i = 0) {
+	static if (i < dim*2)
+		const BoundsVectorCases = "case " ~ToString!(offset+i)~ ":"
+			~ BoundsVectorCases!(offset, i+1);
+	else
+		const BoundsVectorCases = "{"
+			"Coords beg = void, end = void;"
+			"state.space.getTightBounds(beg, end);"
+			"end -= beg;"
+			"if (arg < " ~ToString!(offset + dim)~ ")"
+			"	return cip.stack.push(beg.v[$-1 - (arg - " ~ToString!(offset)~ ")]);"
+			"else"
+			"	return cip.stack.push(end.v[$-1 - (arg - " ~ToString!(offset+dim)~ ")]);"
+		"}";
+}
+
 // Get SysInfo
 void getSysInfo() {
-	with (cip.stack) {
-		auto arg = pop();
+	auto arg = cip.stack.pop;
 
-		auto oldStackSize = size;
+	if (arg <= 0) {
+		// We're going to push everything: reserve space for it all and copy it
+		// on
 
-		// environment
+		// Top 9 cells; 5 vectors; another 3 cells; at least one stack size;
+		// command line arguments terminated by double null; environment
+		// variables terminated by null
+		const GUARANTEED_SIZE = 9 + 5*dim + 3 + 1 + 2 + 1;
 
-		push(0);
-		foreach_reverse (v; environment())
-			pushStringz(v);
+		auto oldStackSize = cast(cell)cip.stack.size;
 
-		// command line arguments
+		auto minNeeded =
+			GUARANTEED_SIZE + (cip.stackStack.size - 1) +
+			envCache.length + argsCache.length;
 
-		push(0, 0);
+		auto p = cip.stack.reserve(minNeeded);
 
-		bool wasNull = false;
-		foreach_reverse (farg; fungeArgs) {
-			if (farg.length) {
-				pushStringz(farg);
-				wasNull = false;
+		// Environment
 
-			// ignore consecutive null arguments
-			} else if (!wasNull) {
-				push(0);
-				wasNull = true;
-			}
+		if (!envCache) {
+			computeEnvCache();
+			// Need to adjust by minNeeded since we haven't written that yet
+			p = cip.stack.reserve(envCache.length) - minNeeded;
 		}
 
-		// size of each stack on stack stack
+		*p++ = 0;
+		p[0..envCache.length] = envCache;
+		p += envCache.length;
 
-		foreach (stack; &cip.stackStack.bottomToTop)
-			push(cast(cell)stack.size);
-		pop(1);
-		push(
-			cast(cell)oldStackSize,
+		// Command line arguments
 
-		// size of stack stack
+		if (!argsCache) {
+			computeArgsCache();
+			// Ditto above minNeeded adjustment, but we did write the null
+			// terminator which is part of that
+			p = cip.stack.reserve(argsCache.length) - minNeeded + 1;
+		}
 
-			cast(cell)cip.stackStack.size
-		);
+		*p++ = 0;
+		*p++ = 0;
+		p[0..argsCache.length] = argsCache;
+		p += argsCache.length;
 
-		// time + date
+		// Stack sizes
+
+		foreach (stack; &cip.stackStack.topToBottom)
+			*p++ = cast(cell)stack.size;
+
+		*(p-1) = oldStackSize;
+		*p++ = cast(cell)cip.stackStack.size;
+
+		// Time + date
 
 		auto now = Clock.toDate();
 
-		push(
-			cast(cell)(
-				now.time.hours   * 256 * 256 +
-				now.time.minutes * 256       +
-				now.time.seconds),
-			cast(cell)(
-				(now.date.year - 1900) * 256 * 256 +
-				now.date.month         * 256       +
-				now.date.day));
+		*p++ = cast(cell)(
+			now.time.hours   * 256 * 256 +
+			now.time.minutes * 256       +
+			now.time.seconds);
+		*p++ = cast(cell)(
+			(now.date.year - 1900) * 256 * 256 +
+			now.date.month         * 256       +
+			now.date.day);
 
-		// the rest
+		// Bounds
 
-		Coords beg, end;
+		Coords beg = void, end = void;
 		state.space.getTightBounds(beg, end);
+		end -= beg;
 
-		pushVector(end - beg);
-		pushVector(beg);
-		pushVector(cip.offset);
-		pushVector(cip.delta);
-		pushVector(cip.pos);
+		p[0..dim] = end.v; p += dim;
+		p[0..dim] = beg.v; p += dim;
 
-		push(
-			// team number? not in the spec
-			0,
-			cip.id,
-			dim,
-			PATH_SEPARATOR,
-			// = equivalent to C system()
-			1,
-			VERSION_NUMBER,
-			HANDPRINT,
-			cell.sizeof,
-			// unbuffered input is not being used
-			// = is implemented
-			// o is implemented
-			// i is implemented
-			// t is implemented (this is Concurrent Befunge-98)
-			0b01111
-		);
+		// Cip info
 
-		// phew, done pushing
+		p[0..dim] = cip.offset.v; p += dim;
+		p[0..dim] = cip.delta.v;  p += dim;
+		p[0..dim] = cip.pos.v;    p += dim;
 
-		if (arg > 0) {
-			auto diff = size - oldStackSize;
+		*p++ = 0; // team number
+		*p++ = cip.id;
 
-			// Handle the two cases differently for speed
+		// Constant env info
+		p[0..SYSINFO_CONSTANT_TOP.length] = SYSINFO_CONSTANT_TOP;
 
-			// Simpler, but breaks the stack abstraction and is slower with a
-			// deque (where elementsBottomToTop() has to duplicate the whole
-			// stack):
-			//
-			// auto pick = elementsBottomToTop()[size() - arg];
-			// pop(size() - oldStackSize);
-			// push(pick);
-
-			if (arg < diff) {
-				// Common case: the arg is one we pushed above
-				// So pop up to it, copy it, pop the rest, and push it.
-				pop(arg-1);
-
-				auto tmp = pop;
-				pop(size - oldStackSize);
-				push(tmp);
-
-			} else {
-				// y as a 'pick' instruction
-				// Pop what we pushed, pop up to the cell to be picked, push them
-				// back and push the picked cell once more.
-				pop(diff);
-				arg -= diff;
-
-				auto tmp = new cell[arg];
-				foreach_reverse (inout c; tmp)
-					c = pop;
-
-				foreach (c; tmp)
-					push(c);
-				push(tmp[0]);
-			}
-		}
+		// And done.
+		return;
 	}
+
+	// We know we're only going to push a single cell: find out which one it
+	// will be.
+
+	--arg;
+	switch (arg) {
+		static assert (SYSINFO_CONSTANT_TOP.length == 7);
+		case 0,1,2,3,4,5,6: return cip.stack.push(SYSINFO_CONSTANT_TOP[$-arg-1]);
+		case 7:             return cip.stack.push(cip.id);
+		case 8:             return cip.stack.push(0); // team number
+
+		mixin (SimpleVectorCases!("cip.pos",    9));
+		mixin (SimpleVectorCases!("cip.delta",  9 + dim));
+		mixin (SimpleVectorCases!("cip.offset", 9 + dim*2));
+
+		mixin (BoundsVectorCases!(9 + dim*3));
+
+		case 9 + dim*5, 9 + dim*5 + 1: {
+			auto now = Clock.toDate();
+			if (arg == 9 + dim*5)
+				return cip.stack.push(cast(cell)(
+					(now.date.year - 1900) * 256 * 256 +
+					now.date.month         * 256       +
+					now.date.day));
+			else
+				return cip.stack.push(cast(cell)(
+					now.time.hours   * 256 * 256 +
+					now.time.minutes * 256       +
+					now.time.seconds));
+		}
+
+		case 9 + dim*5 + 2: return cip.stack.push(cast(cell)cip.stackStack.size);
+		default: break;
+	}
+	arg -= 9 + dim*5 + 2 + 1;
+
+	// Not one of the compile-time-known indices: try the runtime ones.
+
+	// A stack size?
+
+	if (arg < cip.stackStack.size)
+		return cip.stack.push(cast(cell)cip.stackStack.at(arg).size);
+
+	arg -= cip.stackStack.size;
+
+	// A character from a command line argument?
+
+	computeArgsCache();
+
+	if (arg < argsCache.length)
+		return cip.stack.push(argsCache[$-1-arg]);
+
+	arg -= argsCache.length;
+
+	// In the double null terminator?
+	if (arg < 2)
+		return cip.stack.push(0);
+	arg -= 2;
+
+	// A character from an environment variable?
+
+	computeEnvCache();
+
+	if (arg < envCache.length)
+		return cip.stack.push(envCache[$-1-arg]);
+
+	arg -= envCache.length;
+
+	// In the null terminator?
+	if (arg == 0)
+		return cip.stack.push(0);
+	--arg;
+
+	// Bigger than what we'd push: pick from the stack instead.
+
+	if (arg < cip.stack.size)
+		return cip.stack.push(cip.stack.at(cip.stack.size-1 - arg));
+
+	// Picks from empty stack
+	++cip.stack.stats.peekUnderflows;
+	return cip.stack.push(0);
 }
 
 }

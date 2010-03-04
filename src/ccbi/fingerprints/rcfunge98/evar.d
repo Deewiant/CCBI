@@ -79,6 +79,7 @@ void putEnv() {
 	}
 
 	envChanged = true;
+	Std.envCache.length = 0;
 }
 
 void getNthEnv() {

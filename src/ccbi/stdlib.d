@@ -49,7 +49,8 @@ version (Win32) {
 
 	private size_t maxSize = 0x80;
 
-	environment_t environment() {
+	// Sums the lengths into the given pointer too
+	environment_t environment(size_t* size = null) {
 		if (!envChanged)
 			return .env;
 
@@ -79,6 +80,9 @@ version (Win32) {
 			}
 			val.length = j;
 
+			if (size)
+				*size += j;
+
 			if (j > maxSize)
 				maxSize = j;
 
@@ -96,7 +100,7 @@ version (Win32) {
 
 	extern (C) extern char** environ;
 
-	environment_t environment() {
+	environment_t environment(size_t* size = null) {
 		if (!envChanged)
 			return .env;
 
@@ -105,6 +109,9 @@ version (Win32) {
 		size_t i = 0;
 		for (auto p = environ; *p; ++p) {
 			auto j = strlen(*p);
+
+			if (size)
+				*size += j;
 
 			if (i == arr.length)
 				arr.length = 2 * arr.length;

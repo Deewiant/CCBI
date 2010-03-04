@@ -30,6 +30,20 @@ abstract class Container(T) {
 
 		size_t size();
 		bool empty();
+
+		// Abstraction-breaking stuff
+
+		// Makes sure that there's capacity for at least the given number of Ts.
+		// Modifies size, but doesn't guarantee any values for the reserved
+		// elements.
+		//
+		// Returns a pointer to the top of the array overlaying the storage that
+		// backs this Container, guaranteeing that following the pointer there is
+		// space for least the given number of Ts.
+		T* reserve(size_t);
+
+		// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
+		T at(size_t);
 	}
 
 	protected {
@@ -167,6 +181,22 @@ final class Stack(T) : Container!(T) {
 
 
 
+		override T* reserve(size_t n) {
+			if (array.length < n + head)
+				array.length = n + head;
+
+			auto ptr = &array[head];
+
+			head += n;
+			assert (head <= array.length);
+
+			return ptr;
+		}
+
+		override T at(size_t i) { return array[i]; }
+
+
+
 		override int opApply(int delegate(inout T t) dg) {
 			int r = 0;
 			foreach (inout a; array[0..head])
@@ -298,6 +328,16 @@ final class Deque : Container!(cell) {
 
 		override size_t size() { return (tail - head) & (array.length - 1); }
 		override bool empty()  { return tail == head; }
+
+
+
+		override cell* reserve(size_t n) {
+			assert (false, "TODO");
+		}
+
+		override cell at(size_t i) {
+			assert (false, "TODO");
+		}
 
 
 
