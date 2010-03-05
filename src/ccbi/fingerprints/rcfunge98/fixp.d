@@ -48,9 +48,9 @@ real popFixp() {
 	return cast(real)cip.stack.pop / 10000;
 }
 
-void and() { with (cip.stack) push(pop & pop); }
-void or () { with (cip.stack) push(pop | pop); }
-void xor() { with (cip.stack) push(pop ^ pop); }
+void and() { with (*cip.stack) push(pop & pop); }
+void or () { with (*cip.stack) push(pop | pop); }
+void xor() { with (*cip.stack) push(pop ^ pop); }
 
 void  sin() { pushFixp(math. sin(popFixp()  * (math.PI / 180.0))); }
 void  cos() { pushFixp(math. cos(popFixp()  * (math.PI / 180.0))); }

@@ -32,7 +32,7 @@ import tango.time.Time;
 import tango.time.chrono.Gregorian;
 
 Time popYMD() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell
 			day   = pop(),
 			month = pop(),
@@ -109,7 +109,7 @@ void ymdToJdn() {
 }
 
 void yearDayToFull() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto
 			doy  = pop()+1,
 			year = pop();

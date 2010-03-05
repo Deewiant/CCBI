@@ -30,7 +30,7 @@ void signedResultModulo() {
 			return x;
 	}
 
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell y = pop,
 		     x = pop;
 
@@ -48,7 +48,7 @@ void unsignedResultModulo() {
 	 + but the following always gives an unsigned (positive) result...
 	 +/
 
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell y = pop,
 		     x = pop;
 
@@ -72,7 +72,7 @@ void cIntegerRemainder() {
 	 + so that's what we're going with
 	 +/
 
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell y = pop,
 		     x = pop;
 

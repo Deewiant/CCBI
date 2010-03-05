@@ -316,15 +316,13 @@ Request iterate() {
 // ---------------
 
 // Logical Not
-void logicalNot() { with (cip.stack) push(cast(cell)!pop); }
+void logicalNot() { cip.stack.push(cast(cell)!cip.stack.pop); }
 
 // Greater Than
 void greaterThan() {
-	with (cip.stack) {
-		cell c = pop;
+	cell c = cip.stack.pop;
 
-		push(cast(cell)(pop > c));
-	}
+	cip.stack.push(cast(cell)(cip.stack.pop > c));
 }
 
 // East-West If, North-South If
@@ -361,54 +359,48 @@ void compare() {
 // see template PushNumber
 
 // Add
-void add()      { with (cip.stack) push(pop + pop); }
+void add()      { cip.stack.push(cip.stack.pop + cip.stack.pop); }
 
 // Multiply
-void multiply() { with (cip.stack) push(pop * pop); }
+void multiply() { cip.stack.push(cip.stack.pop * cip.stack.pop); }
 
 // Subtract
 void subtract() {
-	with (cip.stack) {
-		cell fst = pop,
-		     snd = pop;
-		push(snd - fst);
-	}
+	cell fst = cip.stack.pop,
+		  snd = cip.stack.pop;
+	cip.stack.push(snd - fst);
 }
 
 // Divide
 void divide() {
-	with (cip.stack) {
-		cell fst = pop,
-		     snd = pop;
+	cell fst = cip.stack.pop,
+		  snd = cip.stack.pop;
 
-		if (fst)
-			push(snd / fst);
-		else static if (befunge93) {
-			Sout.flush;
-			Serr("CCBI :: division by zero encountered. Input wanted result: ");
-			Serr.flush;
-			reallyInputDecimal();
-		} else
-			push(0);
-	}
+	if (fst)
+		cip.stack.push(snd / fst);
+	else static if (befunge93) {
+		Sout.flush;
+		Serr("CCBI :: division by zero encountered. Input wanted result: ");
+		Serr.flush;
+		reallyInputDecimal();
+	} else
+		cip.stack.push(0);
 }
 
 // Remainder
 void remainder() {
-	with (cip.stack) {
-		cell fst = pop,
-		     snd = pop;
+	cell fst = cip.stack.pop,
+		  snd = cip.stack.pop;
 
-		if (fst)
-			push(snd % fst);
-		else static if (befunge93) {
-			Sout.flush;
-			Serr("CCBI :: modulo by zero encountered. Input wanted result: ");
-			Serr.flush;
-			reallyInputDecimal();
-		} else
-			push(0);
-	}
+	if (fst)
+		cip.stack.push(snd % fst);
+	else static if (befunge93) {
+		Sout.flush;
+		Serr("CCBI :: modulo by zero encountered. Input wanted result: ");
+		Serr.flush;
+		reallyInputDecimal();
+	} else
+		cip.stack.push(0);
 }
 
 // Push Ten - Push Fifteen
@@ -452,10 +444,8 @@ void duplicate() {
 
 // Swap
 void swap() {
-	with (cip.stack) {
-		auto c = pop;
-		push(c, pop);
-	}
+	auto c = cip.stack.pop;
+	cip.stack.push(c, cip.stack.pop);
 }
 
 static if (!befunge93) {
@@ -480,16 +470,23 @@ Request beginBlock() {
 		cip.unsafeCell = '}';
 
 	if (!cip.stackStack) {
-		cip.stackStack = new typeof(cip.stackStack)(&stackStackStats, 1u);
+		cip.stackStack = new typeof(*cip.stackStack);
+		*cip.stackStack = typeof(*cip.stackStack)(&stackStackStats, 1u);
 		cip.stackStack.push(cip.stack);
 	}
 
-	try cip.stackStack.push(cip.newStack());
-	catch {
+	try {
+		auto stack = new typeof(*cip.stack);
+		*stack = typeof(*stack)(
+			cip.stack.isDeque, cip.stack.isDeque ? &dequeStats : &stackStats);
+
+		cip.stackStack.push(stack);
+	} catch {
 		return reverse();
 	}
 
-	cip.stackStack.top.mode = cip.stack.mode;
+	if (cip.stack.isDeque)
+		cip.stackStack.top.deque.mode = cip.stack.deque.mode;
 
 	auto n = cip.stack.pop;
 
@@ -523,12 +520,14 @@ void endBlock() {
 	if (cip.mode & cip.SWITCH)
 		cip.unsafeCell = '{';
 
-	if (!cip.stackStack || cip.stackStack.size == 1)
+	if (cip.stackCount == 1)
 		return reverse();
 
 	auto oldStack  = cip.stackStack.pop;
 	cip.stack      = cip.stackStack.top;
-	cip.stack.mode = oldStack.mode;
+
+	if (cip.stack.isDeque)
+		cip.stack.deque.mode = oldStack.deque.mode;
 
 	auto n = oldStack.pop;
 
@@ -549,7 +548,7 @@ void endBlock() {
 
 // Stack under Stack
 void stackUnderStack() {
-	if (!cip.stackStack || cip.stackStack.size == 1)
+	if (cip.stackCount == 1)
 		return reverse();
 
 	cell count = cip.stack.pop;
@@ -558,7 +557,8 @@ void stackUnderStack() {
 	auto soss = cip.stackStack.top;
 	cip.stackStack.push(tmp);
 
-	soss.mode = cip.stack.mode;
+	if (cip.stack.isDeque)
+		soss.deque.mode = cip.stack.deque.mode;
 
 	if (count > 0)
 		while (count--)
@@ -1210,8 +1210,10 @@ Request loadSemantics() {
 		assert (isSemantics(cast(cell)i));
 
 		auto sem = cip.semantics[i - 'A'];
-		if (!sem)
-			sem = cip.semantics[i - 'A'] = new typeof(sem)(&semanticStats, 2u);
+		if (!sem) {
+			sem = cip.semantics[i - 'A'] = new typeof(*sem);
+			*sem = typeof(*sem)(&semanticStats, 2u);
+		}
 
 		sem.push(Semantics(fingerprint, i));
 	}

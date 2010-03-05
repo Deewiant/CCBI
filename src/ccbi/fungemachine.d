@@ -322,7 +322,7 @@ private:
 			++stats.fingExecutionCount;
 
 			auto stack = cip.semantics[c - 'A'];
-			if (!stack || stack.empty)
+			if (stack.empty)
 				return unimplemented;
 
 			auto sem = stack.top;
@@ -388,11 +388,17 @@ private:
 				state.ips.removeAt(idx);
 
 				if (ip.stackStack) {
-					foreach (stack; ip.stackStack)
+					foreach (ref stack; *ip.stackStack) {
+						stack.free();
+						// stack must be ref for this delete to be valid
 						delete stack;
+					}
+					ip.stackStack.free();
 					delete ip.stackStack;
-				} else
+				} else {
+					ip.stack.free();
 					delete ip.stack;
+				}
 
 				// Not in the below case because quitting handles that
 				++stats.ipStopped;

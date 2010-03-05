@@ -532,7 +532,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				if (!readIP(ip, index, args.arg(1), invalidIndices))
 					break;
 
-				void printStack(Container!(cell) st, size_t i) {
+				void printStack(typeof(ip.stack) st, size_t i) {
 					Serr(" Stack ");
 					static if (befunge93)
 						Serr("has");
@@ -755,8 +755,8 @@ char[] modeString(in IP ip) {
 	if (ip.mode & IP.STRING)      str[i++] = '"';
 	if (ip.mode & IP.HOVER)       str[i++] = 'H';
 
-	auto q = cast(Deque)ip.stack;
-	if (q) {
+	static if (!befunge93) if (ip.stack.isDeque) {
+		auto q = ip.stack.deque;
 		if (q.mode & QUEUE_MODE)   str[i++] = 'Q';
 		if (q.mode & INVERT_MODE)  str[i++] = 'I';
 	}

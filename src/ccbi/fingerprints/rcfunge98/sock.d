@@ -46,7 +46,7 @@ void create() {
 	ProtocolType protocol;
 	SocketType   type;
 
-	with (cip.stack) {
+	with (*cip.stack) {
 		switch (pop) {
 			case 1: protocol = ProtocolType.TCP; break;
 			case 2: protocol = ProtocolType.UDP; break;
@@ -103,7 +103,7 @@ void kill() {
 }
 
 void connect() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto address = cast(uint)  pop,
 		     port    = cast(ushort)pop,
 		     fam     = popFam(),
@@ -120,7 +120,7 @@ void connect() {
 }
 
 void bind() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto address = cast(uint)  pop,
 		     port    = cast(ushort)pop,
 		     fam     = popFam(),
@@ -171,7 +171,7 @@ void accept() {
 ubyte[] buffer;
 
 void receive() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto s   = cast(size_t)pop,
 		     len = cast(size_t)pop;
 
@@ -196,7 +196,7 @@ void receive() {
 }
 
 void send() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto s   = cast(size_t)pop,
 		     len = cast(size_t)pop;
 

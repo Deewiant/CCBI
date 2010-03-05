@@ -22,10 +22,10 @@ mixin (Fingerprint!(
 
 template FRTH() {
 
-void stackSize() { with (cip.stack) push(cast(cell)size); }
+void stackSize() { with (*cip.stack) push(cast(cell)size); }
 
 void forthOver() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto b = pop, a = pop;
 
 		push(a, b, a);
@@ -33,7 +33,7 @@ void forthOver() {
 }
 
 void forthRot() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto c = pop, b = pop, a = pop;
 
 		push(b, c, a);
@@ -42,7 +42,7 @@ void forthRot() {
 
 // copy u-th from top to top
 void forthPick() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto u = pop,
 		     s = size;
 
@@ -55,7 +55,7 @@ void forthPick() {
 
 // move u-th from top to top
 void forthRoll() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto u = pop,
 		     s = size;
 

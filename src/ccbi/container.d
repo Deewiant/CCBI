@@ -6,23 +6,25 @@ module ccbi.container;
 
 import tango.core.Memory : GC;
 import tango.core.Exception : onOutOfMemoryError;
+import tango.core.Tuple;
 import c = tango.stdc.stdlib;
 
 import ccbi.cell;
 import ccbi.stats;
+import ccbi.templateutils;
 
 private {
 	// Just like with the Funge-Space, using the C heap reduces memory usage to
 	// a half or less than what it would be with the GC. Also, not initializing
 	// unused elements is a very noticeable speedup.
 	//
-	// NOTE! Classes/interfaces are reported to the GC but pointers are not!
+	// NOTE! In addition to classes/interfaces, pointers are reported to the GC!
 	T* malloc(T)(size_t n) {
 		auto p = cast(T*)c.malloc(n * T.sizeof);
 		if (!p)
 			onOutOfMemoryError();
 
-		static if (is(T == class) || is(T == interface))
+		static if (is(T == class) || is(T == interface) || is(T : T*))
 			GC.addRange(p, n * T.sizeof);
 
 		return p;
@@ -32,7 +34,7 @@ private {
 		if (!p)
 			onOutOfMemoryError();
 
-		static if (is(T == class) || is(T == interface)) {
+		static if (is(T == class) || is(T == interface) || is(T : T*)) {
 			if (p != p0) {
 				GC.removeRange(p0);
 				GC.addRange(p, n * T.sizeof);
@@ -48,66 +50,99 @@ private {
 	}
 }
 
-abstract class Container(T) {
-	const size_t DEFAULT_SIZE = 0100;
+private const size_t DEFAULT_SIZE = 0100;
 
-	abstract {
-		T pop();
+private template F(char[] ty, char[] f, args...) {
+	static if (args.length)
+		const F =
+			ty ~ " " ~ f ~ "(" ~ Intercalate!(",", args) ~ ") {"
+			"	if (isDeque)"
+			"		return deque." ~f~ "(" ~ Intercalate!(",", ArgNames!(args)) ~ ");"
+			"	else"
+			"		return stack." ~f~ "(" ~ Intercalate!(",", ArgNames!(args)) ~ ");"
+			"}";
+	else
+		const F =
+			ty ~ " " ~ f ~ "(" ~ Intercalate!(",", args) ~ ") {"
+			"	if (isDeque)"
+			"		return deque." ~f~ ";"
+			"	else"
+			"		return stack." ~f~ ";"
+			"}";
+}
+private template ArgNames(args...) {
+	static if (args.length)
+		alias Tuple!(
+			args[0][
+				FindLast!(' ', args[0])+1 ..
+				Find!('.', args[0], FindLast!(' ', args[0]))],
 
-		// different to pop() in queuemode, needed for tracing
-		T popHead();
+			ArgNames!(args[1..$])) ArgNames;
+	else
+		alias Tuple!() ArgNames;
+}
 
-		// pop this many elements, ignoring their values
-		void pop(size_t);
-
-		void clear();
-
-		T top();
-
-		void push(T[]...);
-
-		// different to push() in invertmode, needed for tracing and copying
-		void pushHead(T[]...);
-
-		size_t size();
-		bool empty();
-
-		// Abstraction-breaking stuff
-
-		// Makes sure that there's capacity for at least the given number of Ts.
-		// Modifies size, but doesn't guarantee any values for the reserved
-		// elements.
-		//
-		// Returns a pointer to the top of the array overlaying the storage that
-		// backs this Container, guaranteeing that following the pointer there is
-		// space for least the given number of Ts.
-		T* reserve(size_t);
-
-		// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
-		T at(size_t);
+struct CellContainer {
+	bool isDeque = false;
+	union {
+		Stack!(cell) stack;
+		Deque        deque;
 	}
 
-	final ~this() { free(array); }
-
-	protected {
-		T* array = null;
-		size_t capacity = 0;
-		size_t head = 0;
+	static typeof(*this) opCall(bool isDeque, ContainerStats* stats) {
+		CellContainer cc;
+		cc.isDeque = isDeque;
+		if (isDeque)
+			cc.deque = Deque(stats);
+		else
+			cc.stack = Stack!(cell)(stats);
+		return cc;
 	}
-	ContainerStats* stats;
 
-	// only needed in Deque, but it's easier to pass it from stack to stack
-	// (since it's meant to be per-IP) if it's declared here
-	byte mode;
+	mixin (F!("cell", "pop"));
 
-	abstract {
-		int opApply    (int delegate(inout T t) dg);
+	// different to pop() in queuemode, needed for tracing
+	mixin (F!("cell", "popHead"));
 
-		int topToBottom(int delegate(inout T t) dg);
-		int bottomToTop(int delegate(inout T t) dg);
+	// pop n elements, ignoring their values
+	mixin (F!("void", "pop", "size_t n"));
 
-		T[] elementsBottomToTop();
-	}
+	mixin (F!("void", "clear"));
+
+	mixin (F!("cell", "top"));
+
+	mixin (F!("void", "push", "cell[] xs..."));
+
+	// different to push() in invertmode, needed for tracing and copying
+	mixin (F!("void", "pushHead", "cell[] xs..."));
+
+	mixin (F!("size_t", "size"));
+	mixin (F!("bool", "empty"));
+
+	mixin (F!("ContainerStats*", "stats"));
+
+	// Abstraction-breaking stuff
+
+	// Makes sure that there's capacity for at least the given number of cells.
+	// Modifies size, but doesn't guarantee any values for the reserved
+	// elements.
+	//
+	// Returns a pointer to the top of the array overlaying the storage that
+	// backs this Container, guaranteeing that following the pointer there is
+	// space for least the given number of Ts.
+	mixin (F!("cell*", "reserve", "size_t n"));
+
+	// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
+	mixin (F!("cell", "at", "size_t i"));
+
+	mixin (F!("void", "free"));
+
+	mixin (F!("int", "opApply", "int delegate(inout cell c) dg"));
+
+	mixin (F!("int", "topToBottom", "int delegate(inout cell c) dg"));
+	mixin (F!("int", "bottomToTop", "int delegate(inout cell c) dg"));
+
+	mixin (F!("cell[]", "elementsBottomToTop"));
 }
 
 /+ The stack is, by default, a Stack instead of a Deque even though the MODE
@@ -128,153 +163,167 @@ abstract class Container(T) {
  + Stack.
  +/
 
-final class Stack(T) : Container!(T) {
-	private this() {}
-
-	this(Stack s) {
-		super.stats = s.stats;
-
-		head     = s.size;
-		capacity = s.capacity;
-		array = malloc!(T)(capacity);
-		array[0..head] = s.array[0..head];
+struct Stack(T) {
+	private {
+		T* array;            
+		size_t capacity;
+		size_t head;
+		ContainerStats* stats;
 	}
 
-	this(ContainerStats* stats, Deque q) {
-		super.stats = stats;
+	static typeof(*this) opCall(ContainerStats* stats, size_t n = DEFAULT_SIZE)
+	{
+		typeof(*this) x;
+		x.stats = stats;
+		x.capacity = n;
+		x.array = malloc!(T)(x.capacity);
+		return x;
+	}
 
-		head = q.size;
+	static typeof(*this) opCall(Stack s) {
+		typeof(*this) x;
+		with (x) {
+			stats          = s.stats;
+			head           = s.size;
+			capacity       = s.capacity;
+			array          = malloc!(T)(capacity);
+			array[0..head] = s.array[0..head];
+		}
+		return x;
+	}
 
-		static if (is(T : cell)) {
-			auto arr = q.elementsBottomToTop;
-			capacity = arr.length;
-			array = malloc!(T)(capacity);
-			array[0..head] = arr[0..head];
+	static typeof(*this) opCall(ContainerStats* stats, Deque q) {
+		typeof(*this) x;
+		x.stats = stats;
+		with (x) {
+			head = q.size;
+
+			static if (is(T : cell)) {
+				auto arr = q.elementsBottomToTop;
+				capacity = arr.length;
+				array = malloc!(T)(capacity);
+				array[0..head] = arr[0..head];
+			} else
+				assert (false, "Trying to make non-cell stack out of deque");
+		}
+		return x;
+	}
+
+	void free() { .free(array); }
+
+	T pop() {
+		++stats.pops;
+
+		// not an error to pop an empty stack
+		if (empty) {
+			static if (is (T : cell)) {
+				++stats.popUnderflows;
+				return 0;
+			} else
+				assert (false, "Attempted to pop empty non-cell stack.");
 		} else
-			assert (false, "Trying to make non-cell stack out of deque");
+			return array[--head];
 	}
 
-	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
-		super.stats = stats;
-		capacity = n;
-		array = malloc!(T)(capacity);
-	}
+	T popHead() { return pop(); }
 
-	final {
-		override T pop() {
-			++stats.pops;
+	void pop(size_t i)  {
+		stats.pops          += i;
+		stats.popUnderflows += i;
 
-			// not an error to pop an empty stack
-			if (empty) {
-				static if (is (T : cell)) {
-					++stats.popUnderflows;
-					return 0;
-				} else
-					assert (false, "Attempted to pop empty non-cell stack.");
-			} else
-				return array[--head];
-		}
-
-		override T popHead() { return pop(); }
-
-		override void pop(size_t i)  {
-			stats.pops          += i;
-			stats.popUnderflows += i;
-
-			if (i >= head) {
-				stats.popUnderflows -= head;
-				head = 0;
-			} else
-				head -= i;
-		}
-
-		override void clear() {
-			++stats.clears;
-			stats.cleared += size;
-
+		if (i >= head) {
+			stats.popUnderflows -= head;
 			head = 0;
-		}
-
-		override T top() {
-			++stats.peeks;
-
-			if (empty) {
-				static if (is (T : cell)) {
-					++stats.peekUnderflows;
-					return 0;
-				} else
-					assert (false, "Attempted to peek empty non-cell stack.");
-			}
-
-			return array[head-1];
-		}
-
-		override void push(T[] ts...) {
-			stats.pushes += ts.length;
-
-			auto neededRoom = head + ts.length;
-			if (neededRoom > capacity) {
-				++stats.resizes;
-
-				capacity = 2 * capacity +
-					(neededRoom > 2 * capacity ? neededRoom : 0);
-
-				array = realloc(array, capacity);
-			}
-
-			auto nhead = head + ts.length;
-			array[head..nhead] = ts;
-			head = nhead;
-		}
-		override void pushHead(T[] ts...) { push(ts); }
-
-		override size_t size() { return head; }
-		override bool empty()  { return head == 0; }
-
-
-
-		override T* reserve(size_t n) {
-			if (capacity < n + head) {
-				capacity = n + head;
-				array = realloc(array, capacity);
-			}
-
-			auto ptr = &array[head];
-
-			head += n;
-			assert (head <= capacity);
-
-			return ptr;
-		}
-
-		override T at(size_t i) { return array[i]; }
-
-
-
-		override int opApply(int delegate(inout T t) dg) {
-			int r = 0;
-			foreach (inout a; array[0..head])
-				if (r = dg(a), r)
-					break;
-			return r;
-		}
-
-		int topToBottom(int delegate(inout T t) dg) {
-			int r = 0;
-			foreach_reverse (inout a; array[0..head])
-				if (r = dg(a), r)
-					break;
-			return r;
-		}
-
-		int bottomToTop(int delegate(inout T t) dg) {
-			return opApply(dg);
-		}
-
-
-
-		override T[] elementsBottomToTop() { return array[0..head]; }
+		} else
+			head -= i;
 	}
+
+	void clear() {
+		++stats.clears;
+		stats.cleared += size;
+
+		head = 0;
+	}
+
+	T top() {
+		++stats.peeks;
+
+		if (empty) {
+			static if (is (T : cell)) {
+				++stats.peekUnderflows;
+				return 0;
+			} else
+				assert (false, "Attempted to peek empty non-cell stack.");
+		}
+
+		return array[head-1];
+	}
+
+	void push(T[] ts...) {
+		stats.pushes += ts.length;
+
+		auto neededRoom = head + ts.length;
+		if (neededRoom > capacity) {
+			++stats.resizes;
+
+			capacity = 2 * capacity +
+				(neededRoom > 2 * capacity ? neededRoom : 0);
+
+			array = realloc(array, capacity);
+		}
+
+		auto nhead = head + ts.length;
+		array[head..nhead] = ts;
+		head = nhead;
+	}
+	void pushHead(T[] ts...) { push(ts); }
+
+	size_t size() { return head; }
+	bool empty()  { return head == 0; }
+
+
+
+	T* reserve(size_t n) {
+		if (capacity < n + head) {
+			capacity = n + head;
+			array = realloc(array, capacity);
+		}
+
+		auto ptr = &array[head];
+
+		head += n;
+		assert (head <= capacity);
+
+		return ptr;
+	}
+
+	T at(size_t i) { return array[i]; }
+
+
+
+	int opApply(int delegate(inout T t) dg) {
+		int r = 0;
+		foreach (inout a; array[0..head])
+			if (r = dg(a), r)
+				break;
+		return r;
+	}
+
+	int topToBottom(int delegate(inout T t) dg) {
+		int r = 0;
+		foreach_reverse (inout a; array[0..head])
+			if (r = dg(a), r)
+				break;
+		return r;
+	}
+
+	int bottomToTop(int delegate(inout T t) dg) {
+		return opApply(dg);
+	}
+
+
+
+	T[] elementsBottomToTop() { return array[0..head]; }
 }
 
 enum : byte {
@@ -283,239 +332,256 @@ enum : byte {
 }
 
 // only used if the MODE fingerprint is loaded
-final class Deque : Container!(cell) {
-	private this() {}
+struct Deque {
+	private {
+		// Same order of members as in Stack!(cell)... may or may not lead to
+		// better codegen with the union in CellContainer
+		cell* array;
+		size_t capacity;
+		size_t head;
+		ContainerStats* stats;
 
-	this(Deque q) {
-		super.stats = q.stats;
-
-		mode     = q.mode;
-		tail     = q.tail;
-		head     = q.head;
-		capacity = q.capacity;
-		array    = malloc!(cell)(capacity);
+		size_t tail;
 	}
-	this(ContainerStats* stats, Stack!(cell) s) {
-		super.stats = stats;
+	byte mode;
 
-		assert (mode == 0);
-
-		allocateArray(s.size);
-
-		this.push(s.elementsBottomToTop);
-	}
-
-	this(ContainerStats* stats, size_t n = super.DEFAULT_SIZE) {
-		super.stats = stats;
-		allocateArray(n);
+	static typeof(*this) opCall(ContainerStats* stats, size_t n = DEFAULT_SIZE)
+	{
+		typeof(*this) x;
+		x.stats = stats;
+		x.allocateArray(n);
+		return x;
 	}
 
-	private typeof(head) tail = 0;
-
-	final {
-		override cell pop() {
-			if (mode & QUEUE_MODE)
-				return popTail();
-			else
-				return popHead();
+	static typeof(*this) opCall(Deque q) {
+		typeof(*this) x;
+		with (x) {
+			stats    = q.stats;
+			mode     = q.mode;
+			tail     = q.tail;
+			head     = q.head;
+			capacity = q.capacity;
+			array    = malloc!(cell)(capacity);
 		}
+		return x;
+	}
+	static typeof(*this) opCall(ContainerStats* stats, Stack!(cell) s) {
+		typeof(*this) x;
+		x.stats = stats;
+		with (x) {
+			assert (mode == 0);
 
-		override void pop(size_t i)  {
-			stats.pops += i;
+			allocateArray(s.size);
 
-			if (!empty) {
-				if (mode & QUEUE_MODE) while (i--) {
-					tail = (tail - 1) & (capacity - 1);
-					if (empty)
-						break;
-				} else while (i--) {
-					head = (head + 1) & (capacity - 1);
-					if (empty)
-						break;
-				}
-			}
-
-			stats.popUnderflows += i;
+			push(s.elementsBottomToTop);
 		}
-		override cell popHead() {
-			++stats.pops;
+		return x;
+	}
 
-			if (empty) {
-				++stats.popUnderflows;
-				return 0;
-			}
+	void free() { .free(array); }
 
-			auto h = array[head];
-			head = (head + 1) & (capacity - 1);
-			return h;
-		}
+	cell pop() {
+		if (mode & QUEUE_MODE)
+			return popTail();
+		else
+			return popHead();
+	}
 
-		override void clear() {
-			++stats.clears;
-			stats.cleared += size;
+	void pop(size_t i)  {
+		stats.pops += i;
 
-			head = tail = 0;
-		}
-
-		override cell top() {
-			if (mode & QUEUE_MODE)
-				return peekTail();
-			else
-				return peekHead();
-		}
-
-		override void push(cell[] ts...) {
-			if (mode & INVERT_MODE)
-				pushTail(ts);
-			else
-				pushHead(ts);
-		}
-		override void pushHead(cell[] cs...) {
-			stats.pushes += cs.length;
-
-			foreach (c; cs) {
-				head = (head - 1) & (capacity - 1);
-				array[head] = c;
-				if (head == tail)
-					doubleCapacity();
-			}
-		}
-
-		override size_t size() { return (tail - head) & (capacity - 1); }
-		override bool empty()  { return tail == head; }
-
-
-
-		override cell* reserve(size_t n) {
-			assert (false, "TODO");
-		}
-
-		override cell at(size_t i) {
-			assert (false, "TODO");
-		}
-
-
-
-		override int opApply(int delegate(inout cell t) dg) {
-			int r = 0;
-			for (size_t i = head; i != tail; i = (i + 1) & (capacity - 1))
-				if (r = dg(array[i]), r)
+		if (!empty) {
+			if (mode & QUEUE_MODE) while (i--) {
+				tail = (tail - 1) & (capacity - 1);
+				if (empty)
 					break;
-			return r;
-		}
-
-		int topToBottom(int delegate(inout cell t) dg) {
-			return opApply(dg);
-		}
-
-		int bottomToTop(int delegate(inout cell t) dg) {
-			int r = 0;
-			for (size_t i = tail; i != head; i = (i - 1) & (capacity - 1))
-				if (r = dg(array[i]), r)
+			} else while (i--) {
+				head = (head + 1) & (capacity - 1);
+				if (empty)
 					break;
-			return r;
+			}
 		}
 
-		override cell[] elementsBottomToTop() {
-			auto elems = new cell[size];
+		stats.popUnderflows += i;
+	}
+	cell popHead() {
+		++stats.pops;
 
-			if (head < tail)
-				elems[0..size] = array[head..head + size];
-			else if (head > tail) {
-				auto lh = capacity - head;
-				elems[ 0..lh]        = array[head..capacity];
-				elems[lh..lh + tail] = array[0..tail];
-			}
+		if (empty) {
+			++stats.popUnderflows;
+			return 0;
+		}
 
-			return elems.reverse;
+		auto h = array[head];
+		head = (head + 1) & (capacity - 1);
+		return h;
+	}
+
+	void clear() {
+		++stats.clears;
+		stats.cleared += size;
+
+		head = tail = 0;
+	}
+
+	cell top() {
+		if (mode & QUEUE_MODE)
+			return peekTail();
+		else
+			return peekHead();
+	}
+
+	void push(cell[] ts...) {
+		if (mode & INVERT_MODE)
+			pushTail(ts);
+		else
+			pushHead(ts);
+	}
+	void pushHead(cell[] cs...) {
+		stats.pushes += cs.length;
+
+		foreach (c; cs) {
+			head = (head - 1) & (capacity - 1);
+			array[head] = c;
+			if (head == tail)
+				doubleCapacity();
 		}
 	}
 
-	private final {
-		void pushTail(cell[] cs...) {
-			stats.pushes += cs.length;
+	size_t size() { return (tail - head) & (capacity - 1); }
+	bool empty()  { return tail == head; }
 
-			foreach (c; cs) {
-				array[tail] = c;
-				tail = (tail + 1) & (capacity - 1);
-				if (head == tail)
-					doubleCapacity();
-			}
+
+
+	cell* reserve(size_t n) {
+		assert (false, "TODO");
+	}
+
+	cell at(size_t i) {
+		assert (false, "TODO");
+	}
+
+
+
+	int opApply(int delegate(inout cell t) dg) {
+		int r = 0;
+		for (size_t i = head; i != tail; i = (i + 1) & (capacity - 1))
+			if (r = dg(array[i]), r)
+				break;
+		return r;
+	}
+
+	int topToBottom(int delegate(inout cell t) dg) {
+		return opApply(dg);
+	}
+
+	int bottomToTop(int delegate(inout cell t) dg) {
+		int r = 0;
+		for (size_t i = tail; i != head; i = (i - 1) & (capacity - 1))
+			if (r = dg(array[i]), r)
+				break;
+		return r;
+	}
+
+	cell[] elementsBottomToTop() {
+		auto elems = new cell[size];
+
+		if (head < tail)
+			elems[0..size] = array[head..head + size];
+		else if (head > tail) {
+			auto lh = capacity - head;
+			elems[ 0..lh]        = array[head..capacity];
+			elems[lh..lh + tail] = array[0..tail];
 		}
 
-		cell popTail() {
-			++stats.pops;
+		return elems.reverse;
+	}
 
-			if (empty) {
-				++stats.popUnderflows;
-				return 0;
-			}
+private:
 
-			tail = (tail - 1) & (capacity - 1);
-			return array[tail];
+	void pushTail(cell[] cs...) {
+		stats.pushes += cs.length;
+
+		foreach (c; cs) {
+			array[tail] = c;
+			tail = (tail + 1) & (capacity - 1);
+			if (head == tail)
+				doubleCapacity();
+		}
+	}
+
+	cell popTail() {
+		++stats.pops;
+
+		if (empty) {
+			++stats.popUnderflows;
+			return 0;
 		}
 
-		cell peekHead() {
-			++stats.peeks;
+		tail = (tail - 1) & (capacity - 1);
+		return array[tail];
+	}
 
-			if (empty) {
-				++stats.peekUnderflows;
-				return 0;
-			} else
-				return array[head];
+	cell peekHead() {
+		++stats.peeks;
+
+		if (empty) {
+			++stats.peekUnderflows;
+			return 0;
+		} else
+			return array[head];
+	}
+	cell peekTail() {
+		++stats.peeks;
+
+		if (empty) {
+			++stats.peekUnderflows;
+			return 0;
+		} else
+			return array[(tail - 1) & (capacity - 1)];
+	}
+
+	void allocateArray(size_t length) {
+		auto newSize = DEFAULT_SIZE;
+
+		if (length >= newSize) {
+			static assert (newSize.sizeof == 4 || newSize.sizeof == 8,
+				"Change size calculation in ccbi.container.Deque.allocateArray");
+
+			newSize = length;
+			newSize |= (newSize >>>  1);
+			newSize |= (newSize >>>  2);
+			newSize |= (newSize >>>  4);
+			newSize |= (newSize >>>  8);
+			newSize |= (newSize >>> 16);
+
+			static if (newSize.sizeof == 8)
+			newSize |= (newSize >>> 32);
+
+			// oops, overflowed
+			if (++newSize < 0)
+				newSize >>>= 1;
 		}
-		cell peekTail() {
-			++stats.peeks;
 
-			if (empty) {
-				++stats.peekUnderflows;
-				return 0;
-			} else
-				return array[(tail - 1) & (capacity - 1)];
-		}
+		capacity = newSize;
+		array = realloc(array, capacity);
+	}
 
-		void allocateArray(size_t length) {
-			auto newSize = super.DEFAULT_SIZE;
+	void doubleCapacity() {
+		assert (head == tail);
 
-			if (length >= newSize) {
-				static assert (newSize.sizeof == 4 || newSize.sizeof == 8,
-					"Change size calculation in ccbi.container.Deque.allocateArray");
+		++stats.resizes;
 
-				newSize = length;
-				newSize |= (newSize >>>  1);
-				newSize |= (newSize >>>  2);
-				newSize |= (newSize >>>  4);
-				newSize |= (newSize >>>  8);
-				newSize |= (newSize >>> 16);
+		// elems to the right of head
+		auto r = capacity - head;
 
-				static if (newSize.sizeof == 8)
-				newSize |= (newSize >>> 32);
+		auto newArray = malloc!(cell)(capacity * 2);
+		newArray[0..r     ] = array[head..head+r];
+		newArray[r..r+head] = array[0   ..head  ];
 
-				// oops, overflowed
-				if (++newSize < 0)
-					newSize >>>= 1;
-			}
-
-			capacity = newSize;
-			array = realloc(array, capacity);
-		}
-
-		void doubleCapacity() {
-			assert (head == tail);
-
-			++stats.resizes;
-
-			// elems to the right of head
-			auto r = capacity - head;
-
-			auto newArray = malloc!(cell)(capacity * 2);
-			newArray[0..r     ] = array[head..head+r];
-			newArray[r..r+head] = array[0   ..head  ];
-
-			head  = 0;
-			tail  = capacity;
-			array = newArray;
-			capacity *= 2;
-		}
+		head  = 0;
+		tail  = capacity;
+		array = newArray;
+		capacity *= 2;
 	}
 }

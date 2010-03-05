@@ -22,38 +22,44 @@ mixin (Fingerprint!(
 template MODE() {
 
 void ctor() {
-	if (cip.stackStack) {
-		foreach (inout s; cip.stackStack)
-			if (auto st = cast(Stack!(cell))s)
-				s = new Deque(&dequeStats, st);
-		cip.stack = cip.stackStack.top;
+	auto deque = cip.stack.isDeque;
 
-	} else if (auto st = cast(Stack!(cell))cip.stack)
-		cip.stack = new Deque(&dequeStats, st);
+	if (cip.stackStack) {
+		foreach (inout s; *cip.stackStack) {
+			assert (deque == s.isDeque);
+			if (!deque) {
+				s.isDeque = true;
+				s.deque = Deque(&dequeStats, s.stack);
+			}
+		}
+	} else if (!deque) {
+		cip.stack.isDeque = true;
+		cip.stack.deque = Deque(&dequeStats, cip.stack.stack);
+	}
 }
 
 void dtor() {
 	// Leaving modes on after unloading is bad practice IMHO, but it could
 	// happen...
-	if (cip.stack.mode & (INVERT_MODE | QUEUE_MODE))
+	if (cip.stack.deque.mode & (INVERT_MODE | QUEUE_MODE))
 		return;
 
 	if (cip.stackStack) {
-		foreach (inout s; cip.stackStack) {
-			assert (cast(Deque)s);
-			s = new Stack!(cell)(&stackStats, cast(Deque)s);
+		foreach (inout s; *cip.stackStack) {
+			assert (s.isDeque);
+			s.isDeque = false;
+			s.stack = Stack!(cell)(&stackStats, s.deque);
 		}
-		cip.stack = cip.stackStack.top;
 	} else {
-		assert (cast(Deque)cip.stack);
-		cip.stack = new Stack!(cell)(&stackStats, cast(Deque)cip.stack);
+		assert (cip.stack.isDeque);
+		cip.stack.stack = Stack!(cell)(&stackStats, cip.stack.deque);
 	}
 }
 
 // Toggle Hovermode, Toggle Switchmode, Toggle Invertmode, Toggle Queuemode
 void toggleHovermode () { cip.mode ^= IP.HOVER;  }
 void toggleSwitchmode() { cip.mode ^= IP.SWITCH; }
-void toggleInvertmode() { auto q = cast(Deque)(cip.stack); assert (q !is null); q.mode ^= INVERT_MODE; }
-void toggleQueuemode () { auto q = cast(Deque)(cip.stack); assert (q !is null); q.mode ^= QUEUE_MODE;  }
+void toggleInvertmode() { assert (cip.stack.isDeque); cip.stack.deque.mode ^= INVERT_MODE; }
+void toggleQueuemode () { assert (cip.stack.isDeque); cip.stack.deque.mode ^= QUEUE_MODE;  }
 
 }

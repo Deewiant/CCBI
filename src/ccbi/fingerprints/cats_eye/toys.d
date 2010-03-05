@@ -282,17 +282,17 @@ void canOpener() {
 }
 
 // doric column
-void doricColumn() { with (cip.stack) push(pop + cast(cell)1); }
+void doricColumn() { with (*cip.stack) push(pop + cast(cell)1); }
 
 // toilet seat
-void toiletSeat()  { with (cip.stack) push(pop - cast(cell)1); }
+void toiletSeat()  { with (*cip.stack) push(pop - cast(cell)1); }
 
 // lightning bolt
-void lightningBolt() { with (cip.stack) push(-pop); }
+void lightningBolt() { with (*cip.stack) push(-pop); }
 
 // pair of stilts
 void pairOfStilts() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell b = pop,
 		     a = pop;
 
@@ -304,13 +304,13 @@ void pairOfStilts() {
 }
 
 void gable() {
-	with (cip.stack) for (cell n = pop, c = pop; n--;)
+	with (*cip.stack) for (cell n = pop, c = pop; n--;)
 		push(c);
 }
 
 // pair of shoes
 void pairOfShoes() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		auto y = pop, x = pop;
 		push(x+y, x-y);
 	}
@@ -319,7 +319,7 @@ void pairOfShoes() {
 // pitchfork head
 void pitchforkHead() {
 	cell sum = 0;
-	foreach (c; cip.stack)
+	foreach (c; *cip.stack)
 		sum += c;
 	cip.stack.clear;
 	cip.stack.push(sum);
@@ -327,7 +327,7 @@ void pitchforkHead() {
 
 void mailbox() {
 	cell prod = 1;
-	foreach (c; cip.stack)
+	foreach (c; *cip.stack)
 		prod *= c;
 	cip.stack.clear;
 	cip.stack.push(prod);
@@ -339,7 +339,7 @@ void calipers() {
 
 		Coords t = popOffsetVector();
 
-		with (cip.stack) {
+		with (*cip.stack) {
 			// j's location not in spec...
 			j = pop;
 			i = pop;
@@ -358,7 +358,7 @@ void counterclockwise() {
 
 		Coords o = popOffsetVector();
 
-		with (cip.stack) {
+		with (*cip.stack) {
 			// j's location not in spec...
 			j = pop;
 			i = pop;

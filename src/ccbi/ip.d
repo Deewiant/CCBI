@@ -46,7 +46,12 @@ struct IP(cell dim, bool befunge93) {
 			static if (GOT_IIPC)
 				parentID = 0;
 
-			stack = new Stack!(.cell)(stackStats);
+			static if (!befunge93) {
+				stack = new typeof(*stack);
+				stack.isDeque = false;
+				stack.stack = typeof(stack.stack)(stackStats);
+			} else
+				stack = typeof(stack)(stackStats);
 
 			cursor = typeof(cursor)(pos, delta, s);
 
@@ -61,34 +66,47 @@ struct IP(cell dim, bool befunge93) {
 		*copy = *this;
 
 		with (*copy) {
-			alias Container!(.cell) CC;
-			alias Stack    !(.cell) Ctack;
+			bool deque = stack.isDeque;
 
-			bool deque = cast(Deque)stack !is null;
+			alias Stack!(.cell) Ctack;
 
 			if (stackCount > 1) {
 				// deep copy stack stack
-				stackStack = new typeof(stackStack)(stackStack);
+				auto oldSS = stackStack;
+				stackStack = new typeof(*stackStack);
+				*stackStack = typeof(*stackStack)(*oldSS);
 
-				foreach (inout stack; stackStack) {
-					assert(deque == (cast(Deque)stack !is null));
-					stack = deque
-						? cast(CC)new Deque(*cast(Deque*)&stack)
-						: cast(CC)new Ctack(*cast(Ctack*)&stack);
+				foreach (inout stack; *stackStack) {
+					assert (deque == stack.isDeque);
+					auto old = stack;
+					stack = new typeof(*stack);
+					if (deque)
+						stack.deque = Deque(old.deque);
+					else
+						stack.stack = Ctack(old.stack);
 				}
-
 				stack = stackStack.top;
 			} else {
-				// deep copy stack
-				stack = deque
-					? cast(CC)new Deque(*cast(Deque*)&stack)
-					: cast(CC)new Ctack(*cast(Ctack*)&stack);
+				// deep copy stack, nullify stack stack (which we already copied
+				// earlier)
+				stackStack = null;
+
+				auto old = stack;
+				stack = new typeof(*stack);
+				if (deque)
+					stack.deque = Deque(old.deque);
+				else
+					stack.stack = Ctack(old.stack);
 			}
 
 			// deep copy semantics
-			foreach (ref sem; semantics)
-				if (sem && !sem.empty)
-					sem = new typeof(sem)(sem);
+			foreach (ref sem; semantics) {
+				if (sem && !sem.empty) {
+					auto old = sem;
+					sem = new typeof(*sem);
+					*sem = typeof(*sem)(*old);
+				}
+			}
 
 			// deep copy mapping
 			static if (GOT_IMAP)
@@ -122,15 +140,11 @@ struct IP(cell dim, bool befunge93) {
 	}
 
 	static if (!befunge93)
-	size_t stackCount() {
+	size_t stackCount()
+	out (result) {
+		assert (result >= 1);
+	} body {
 		return stackStack ? stackStack.size : 1;
-	}
-
-	Container!(.cell) newStack() {
-		return (cast(Deque)stack
-			? cast(Container!(.cell))new Deque        (stack.stats)
-			: cast(Container!(.cell))new Stack!(.cell)(stack.stats)
-		);
 	}
 
 	Coords pos()         { return cursor.pos; }
@@ -153,11 +167,14 @@ struct IP(cell dim, bool befunge93) {
 	static if (GOT_IIPC)
 		.cell parentID = void;
 
-	Container!(.cell) stack;
+	static if (befunge93)
+		Stack!(.cell) stack;
+	else
+		CellContainer* stack;
 
 	static if (!befunge93) {
-		Stack!(typeof(stack)) stackStack = null;
-		Stack!(Semantics)[26] semantics;
+		Stack!(CellContainer*)* stackStack;
+		Stack!(Semantics)*[26] semantics;
 	}
 
 	static if (GOT_IMAP)

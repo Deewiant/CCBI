@@ -86,10 +86,10 @@ template Utils() {
 alias .Coords!(dim) Coords;
 
 void popVector(out Coords c) {
-	with (cip.stack) with (c) {
-		static if (dim >= 3) z = cast(cell)pop;
-		static if (dim >= 2) y = cast(cell)pop;
-		                     x = cast(cell)pop;
+	with (c) {
+		static if (dim >= 3) z = cast(cell)cip.stack.pop;
+		static if (dim >= 2) y = cast(cell)cip.stack.pop;
+		                     x = cast(cell)cip.stack.pop;
 	}
 }
 void popOffsetVector(out Coords c) {
@@ -109,16 +109,14 @@ Coords popOffsetVector() {
 }
 
 void pushVector(Coords c) {
-	with (cip.stack) {
-		static if (dim == 3)
-			push(c.x, c.y, c.z);
-		else static if (dim == 2)
-			push(c.x, c.y);
-		else static if (dim == 1)
-			push(c.x);
-		else
-			static assert (false);
-	}
+	static if (dim == 3)
+		cip.stack.push(c.x, c.y, c.z);
+	else static if (dim == 2)
+		cip.stack.push(c.x, c.y);
+	else static if (dim == 1)
+		cip.stack.push(c.x);
+	else
+		static assert (false);
 }
 void pushOffsetVector(Coords c) {
 	static if (!befunge93)

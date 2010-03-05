@@ -177,6 +177,34 @@ template Concat(x...) {
 	else
 		const Concat = x[0] ~ Concat!(x[1..$]);
 }
+template Intercalate(char[] s, x...) {
+	static if (x.length > 1)
+		const Intercalate = x[0] ~ s ~ Intercalate!(s, x[1..$]);
+
+	else static if (x.length == 1)
+		const Intercalate = x[0];
+	else
+		const Intercalate = "";
+}
+
+template Find(char c, char[] s, size_t i = 0) {
+	static if (i < s.length) {
+		static if (s[i] == c)
+			const Find = i;
+		else
+			const Find = Find!(c, s, i+1);
+	} else
+		const Find = s.length;
+}
+template FindLast(char c, char[] s) {
+	static if (s.length) {
+		static if (s[$-1] == c)
+			const FindLast = s.length - 1;
+		else
+			const FindLast = FindLast!(c, s[0..$-1]);
+	} else
+		const FindLast = s.length;
+}
 
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2288
 template Switch(Case...) {

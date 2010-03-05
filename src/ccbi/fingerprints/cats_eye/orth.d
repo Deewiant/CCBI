@@ -29,13 +29,13 @@ mixin (Fingerprint!(
 template ORTH() {
 
 // bitwise AND, bitwise OR, bitwise EXOR
-void bitAnd() { with (cip.stack) push(pop & pop); }
-void bitOr () { with (cip.stack) push(pop | pop); }
-void bitXor() { with (cip.stack) push(pop ^ pop); }
+void bitAnd() { with (*cip.stack) push(pop & pop); }
+void bitOr () { with (*cip.stack) push(pop | pop); }
+void bitXor() { with (*cip.stack) push(pop ^ pop); }
 
 // ortho get
 void orthoGet() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		Coords c;
 		with (c) {
 			                     x = pop;
@@ -48,7 +48,7 @@ void orthoGet() {
 
 // ortho put
 void orthoPut() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		Coords c;
 		with (c) {
 			                     x = pop;

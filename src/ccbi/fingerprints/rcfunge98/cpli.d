@@ -26,7 +26,7 @@ template CPLI() {
 import tango.math.Math : sqrt;
 
 void cplxAdd() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -36,7 +36,7 @@ void cplxAdd() {
 }
 
 void cplxSub() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -46,7 +46,7 @@ void cplxSub() {
 }
 
 void cplxMul() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -56,7 +56,7 @@ void cplxMul() {
 }
 
 void cplxDiv() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell bi = pop,
 		     br = pop,
 		     ai = pop,
@@ -72,7 +72,7 @@ void cplxDiv() {
 }
 
 void cplxAbs() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell i = pop,
 		     r = pop;
 		push(cast(cell)sqrt(cast(real)(r*r + i*i)));
@@ -80,7 +80,7 @@ void cplxAbs() {
 }
 
 void cplxOut() {
-	with (cip.stack) {
+	with (*cip.stack) {
 		cell i = pop,
 		     r = pop;
 
