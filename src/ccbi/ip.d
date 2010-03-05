@@ -37,8 +37,7 @@ struct IP(cell dim, bool befunge93) {
 	static typeof(this) opCall(
 		Coords pos,
 		FungeSpace* s,
-		ContainerStats* stackStats,
-		ContainerStats* semanticStats)
+		ContainerStats* stackStats)
 	{
 		auto x = new IP;
 		with (*x) {
@@ -48,10 +47,6 @@ struct IP(cell dim, bool befunge93) {
 				parentID = 0;
 
 			stack = new Stack!(.cell)(stackStats);
-
-			static if (!befunge93)
-				foreach (inout sem; semantics)
-					sem = new typeof(sem)(semanticStats, 2u);
 
 			cursor = typeof(cursor)(pos, delta, s);
 
@@ -92,7 +87,8 @@ struct IP(cell dim, bool befunge93) {
 
 			// deep copy semantics
 			foreach (ref sem; semantics)
-				sem = new typeof(sem)(sem);
+				if (sem && !sem.empty)
+					sem = new typeof(sem)(sem);
 
 			// deep copy mapping
 			static if (GOT_IMAP)

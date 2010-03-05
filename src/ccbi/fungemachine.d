@@ -118,7 +118,7 @@ private:
 		static if (befunge93)
 			pos.y = 1;
 
-		auto ip = IP.opCall(pos, &state.space, &stackStats, &semanticStats);
+		auto ip = IP.opCall(pos, &state.space, &stackStats);
 
 		static if (befunge93)
 			tip = cip = ip;
@@ -322,7 +322,7 @@ private:
 			++stats.fingExecutionCount;
 
 			auto stack = cip.semantics[c - 'A'];
-			if (stack.empty)
+			if (!stack || stack.empty)
 				return unimplemented;
 
 			auto sem = stack.top;

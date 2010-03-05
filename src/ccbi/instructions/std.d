@@ -1208,7 +1208,12 @@ Request loadSemantics() {
 
 	foreach (i; ins) {
 		assert (isSemantics(cast(cell)i));
-		cip.semantics[i - 'A'].push(Semantics(fingerprint, i));
+
+		auto sem = cip.semantics[i - 'A'];
+		if (!sem)
+			sem = cip.semantics[i - 'A'] = new typeof(sem)(&semanticStats, 2u);
+
+		sem.push(Semantics(fingerprint, i));
 	}
 
 	cip.stack.push(fingerprint, 1);
@@ -1246,7 +1251,12 @@ void unloadSemantics() {
 	bool rev = false;
 	foreach (i; ins) {
 		assert (isSemantics(cast(cell)i));
-		try unloadedFingerprintIns(cip.semantics[i - 'A'].pop.fingerprint);
+
+		auto sem = cip.semantics[i - 'A'];
+		if (!sem || sem.empty)
+			continue;
+
+		try unloadedFingerprintIns(sem.pop.fingerprint);
 		catch { rev = true; }
 	}
 
