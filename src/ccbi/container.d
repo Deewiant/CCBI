@@ -4,6 +4,7 @@
 
 module ccbi.container;
 
+import tango.core.Memory : GC;
 import tango.core.Exception : onOutOfMemoryError;
 import c = tango.stdc.stdlib;
 
@@ -14,19 +15,37 @@ private {
 	// Just like with the Funge-Space, using the C heap reduces memory usage to
 	// a half or less than what it would be with the GC. Also, not initializing
 	// unused elements is a very noticeable speedup.
+	//
+	// NOTE! Classes/interfaces are reported to the GC but pointers are not!
 	T* malloc(T)(size_t n) {
 		auto p = cast(T*)c.malloc(n * T.sizeof);
 		if (!p)
 			onOutOfMemoryError();
+
+		static if (is(T == class) || is(T == interface))
+			GC.addRange(p, n * T.sizeof);
+
 		return p;
 	}
 	T* realloc(T)(T* p0, size_t n) {
 		auto p = cast(T*)c.realloc(p0, n * T.sizeof);
 		if (!p)
 			onOutOfMemoryError();
+
+		static if (is(T == class) || is(T == interface)) {
+			if (p != p0) {
+				GC.removeRange(p0);
+				GC.addRange(p, n * T.sizeof);
+			}
+		}
+
 		return p;
 	}
-	alias c.free free;
+	void free(T)(T* p) {
+		c.free(p);
+		static if (is(T == class) || is(T == interface))
+			GC.removeRange(p);
+	}
 }
 
 abstract class Container(T) {
