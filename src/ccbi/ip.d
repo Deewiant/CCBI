@@ -38,7 +38,6 @@ struct IP(cell dim, bool befunge93) {
 		Coords pos,
 		FungeSpace* s,
 		ContainerStats* stackStats,
-		ContainerStats* stackStackStats,
 		ContainerStats* semanticStats)
 	{
 		auto x = new IP;
@@ -49,11 +48,6 @@ struct IP(cell dim, bool befunge93) {
 				parentID = 0;
 
 			stack = new Stack!(.cell)(stackStats);
-
-			static if (!befunge93) {
-				stackStack = new typeof(stackStack)(stackStackStats, 1u);
-				stackStack.push(stack);
-			}
 
 			static if (!befunge93)
 				foreach (inout sem; semantics)
@@ -72,21 +66,27 @@ struct IP(cell dim, bool befunge93) {
 		*copy = *this;
 
 		with (*copy) {
-			// deep copy stack stack
-			stackStack = new typeof(stackStack)(stackStack);
+			alias Container!(.cell) CC;
+			alias Stack    !(.cell) Ctack;
 
 			bool deque = cast(Deque)stack !is null;
 
-			foreach (inout stack; stackStack) {
-				alias Container!(.cell) CC;
-				alias Stack    !(.cell) Ctack;
+			if (stackCount > 1) {
+				// deep copy stack stack
+				stackStack = new typeof(stackStack)(stackStack);
 
-				stack = (deque
+				foreach (inout stack; stackStack)
+					stack = deque
+						? cast(CC)new Deque(cast(Deque)stack)
+						: cast(CC)new Ctack(cast(Ctack)stack);
+
+				stack = stackStack.top;
+			} else {
+				// deep copy stack
+				stack = deque
 					? cast(CC)new Deque(cast(Deque)stack)
-					: cast(CC)new Ctack(cast(Ctack)stack)
-				);
+					: cast(CC)new Ctack(cast(Ctack)stack);
 			}
-			stack = stackStack.top;
 
 			// deep copy semantics
 			foreach (ref sem; semantics)
@@ -123,6 +123,11 @@ struct IP(cell dim, bool befunge93) {
 			: cursor.skipMarkers    (delta);
 	}
 
+	static if (!befunge93)
+	size_t stackCount() {
+		return stackStack ? stackStack.size : 1;
+	}
+
 	Container!(.cell) newStack() {
 		return (cast(Deque)stack
 			? cast(Container!(.cell))new Deque        (stack.stats)
@@ -153,7 +158,7 @@ struct IP(cell dim, bool befunge93) {
 	Container!(.cell) stack;
 
 	static if (!befunge93) {
-		Stack!(typeof(stack)) stackStack;
+		Stack!(typeof(stack)) stackStack = null;
 		Stack!(Semantics)[26] semantics;
 	}
 

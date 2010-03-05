@@ -264,7 +264,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				"Tick: {} -- IPs: {} -- Index/ID: {}/{} -- Stacks: {} -- Mode: {}"
 				~ NewlineString,
 				state.tick, ipCount, index, ip.id,
-				ip.stackStack.size, modeString(ip));
+				ip.stackCount, modeString(ip));
 	}
 
 	showInfo(tip, index);
@@ -394,8 +394,11 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 							continue;
 
 					char[] str = "[".dup;
-					foreach (st; &ip.stackStack.bottomToTop)
-						str ~= Serr.layout.convert("{} ", st.size);
+					if (ip.stackStack)
+						foreach (st; &ip.stackStack.bottomToTop)
+							str ~= Serr.layout.convert("{} ", st.size);
+					else
+						str ~= Serr.layout.convert("{} ", ip.stack.size);
 					str[$-1] = ']';
 
 					Serr.format(
@@ -408,7 +411,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						"          Instruction: ",
 						i, ip.pos, ip.delta, ip.offset,
 						ip.id, modeString(ip),
-						ip.stackStack.size, str
+						ip.stackCount, str
 					);
 					printCell(
 						state.space[ip.pos], "", NewlineString~NewlineString, " ");
@@ -554,11 +557,14 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				static if (befunge93)
 					printStack(ip.stack, 0);
 				else {
-					Serr(ip.stackStack.size)(" stack(s):").newline;
+					Serr(ip.stackCount)(" stack(s):").newline;
 
-					size_t i = 1;
-					foreach (st; &ip.stackStack.topToBottom)
-						printStack(st, i++);
+					if (ip.stackStack) {
+						size_t i = 1;
+						foreach (st; &ip.stackStack.topToBottom)
+							printStack(st, i++);
+					} else
+						printStack(ip.stack, 1);
 				}
 				Serr.newline;
 				break;

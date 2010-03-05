@@ -22,12 +22,14 @@ mixin (Fingerprint!(
 template MODE() {
 
 void ctor() {
-	foreach (inout s; cip.stackStack) {
-		auto st = cast(Stack!(cell))s;
-		if (st)
-			s = new Deque(&dequeStats, st);
-	}
-	cip.stack = cip.stackStack.top;
+	if (cip.stackStack) {
+		foreach (inout s; cip.stackStack)
+			if (auto st = cast(Stack!(cell))s)
+				s = new Deque(&dequeStats, st);
+		cip.stack = cip.stackStack.top;
+
+	} else if (auto st = cast(Stack!(cell))cip.stack)
+		cip.stack = new Deque(&dequeStats, st);
 }
 
 void dtor() {
@@ -36,11 +38,16 @@ void dtor() {
 	if (cip.stack.mode & (INVERT_MODE | QUEUE_MODE))
 		return;
 
-	foreach (inout s; cip.stackStack) {
-		assert (cast(Deque)s);
-		s = new Stack!(cell)(&stackStats, cast(Deque)s);
+	if (cip.stackStack) {
+		foreach (inout s; cip.stackStack) {
+			assert (cast(Deque)s);
+			s = new Stack!(cell)(&stackStats, cast(Deque)s);
+		}
+		cip.stack = cip.stackStack.top;
+	} else {
+		assert (cast(Deque)cip.stack);
+		cip.stack = new Stack!(cell)(&stackStats, cast(Deque)cip.stack);
 	}
-	cip.stack = cip.stackStack.top;
 }
 
 // Toggle Hovermode, Toggle Switchmode, Toggle Invertmode, Toggle Queuemode

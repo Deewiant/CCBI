@@ -118,9 +118,7 @@ private:
 		static if (befunge93)
 			pos.y = 1;
 
-		auto ip = IP.opCall(
-			pos, &state.space,
-			&stackStats, &stackStackStats, &semanticStats);
+		auto ip = IP.opCall(pos, &state.space, &stackStats, &semanticStats);
 
 		static if (befunge93)
 			tip = cip = ip;
@@ -389,9 +387,12 @@ private:
 			if (state.ips.length > 1) {
 				state.ips.removeAt(idx);
 
-				foreach (stack; ip.stackStack)
-					delete stack;
-				delete ip.stackStack;
+				if (ip.stackStack) {
+					foreach (stack; ip.stackStack)
+						delete stack;
+					delete ip.stackStack;
+				} else
+					delete ip.stack;
 
 				// Not in the below case because quitting handles that
 				++stats.ipStopped;

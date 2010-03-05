@@ -479,6 +479,11 @@ Request beginBlock() {
 	if (cip.mode & cip.SWITCH)
 		cip.unsafeCell = '}';
 
+	if (!cip.stackStack) {
+		cip.stackStack = new typeof(cip.stackStack)(&stackStackStats, 1u);
+		cip.stackStack.push(cip.stack);
+	}
+
 	try cip.stackStack.push(cip.newStack());
 	catch {
 		return reverse();
@@ -518,7 +523,7 @@ void endBlock() {
 	if (cip.mode & cip.SWITCH)
 		cip.unsafeCell = '{';
 
-	if (cip.stackStack.size == 1)
+	if (!cip.stackStack || cip.stackStack.size == 1)
 		return reverse();
 
 	auto oldStack  = cip.stackStack.pop;
@@ -544,7 +549,7 @@ void endBlock() {
 
 // Stack under Stack
 void stackUnderStack() {
-	if (cip.stackStack.size == 1)
+	if (!cip.stackStack || cip.stackStack.size == 1)
 		return reverse();
 
 	cell count = cip.stack.pop;
@@ -993,7 +998,7 @@ void getSysInfo() {
 		auto oldStackSize = cast(cell)cip.stack.size;
 
 		auto minNeeded =
-			GUARANTEED_SIZE + (cip.stackStack.size - 1) +
+			GUARANTEED_SIZE + (cip.stackCount - 1) +
 			envCache.length + argsCache.length;
 
 		auto p = cip.stack.reserve(minNeeded);
@@ -1026,11 +1031,14 @@ void getSysInfo() {
 
 		// Stack sizes
 
-		foreach (stack; &cip.stackStack.topToBottom)
-			*p++ = cast(cell)stack.size;
+		if (cip.stackStack) {
+			foreach (stack; &cip.stackStack.topToBottom)
+				*p++ = cast(cell)stack.size;
+			*(p-1) = oldStackSize;
+		} else
+			*p++ = oldStackSize;
 
-		*(p-1) = oldStackSize;
-		*p++ = cast(cell)cip.stackStack.size;
+		*p++ = cast(cell)cip.stackCount;
 
 		// Time + date
 
@@ -1100,7 +1108,7 @@ void getSysInfo() {
 					now.time.seconds));
 		}
 
-		case 9 + dim*5 + 2: return cip.stack.push(cast(cell)cip.stackStack.size);
+		case 9 + dim*5 + 2: return cip.stack.push(cast(cell)cip.stackCount);
 		default: break;
 	}
 	arg -= 9 + dim*5 + 2 + 1;
@@ -1109,10 +1117,15 @@ void getSysInfo() {
 
 	// A stack size?
 
-	if (arg < cip.stackStack.size)
-		return cip.stack.push(cast(cell)cip.stackStack.at(arg).size);
+	if (arg < cip.stackCount) {
+		// We might not have a stack stack, so special case the TOSS
+		if (arg == 0)
+			return cip.stack.push(cast(cell)cip.stack.size);
+		else
+			return cip.stack.push(cast(cell)cip.stackStack.at(arg).size);
+	}
 
-	arg -= cip.stackStack.size;
+	arg -= cip.stackCount;
 
 	// A character from a command line argument?
 
