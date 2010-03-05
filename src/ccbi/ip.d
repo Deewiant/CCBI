@@ -75,17 +75,19 @@ struct IP(cell dim, bool befunge93) {
 				// deep copy stack stack
 				stackStack = new typeof(stackStack)(stackStack);
 
-				foreach (inout stack; stackStack)
+				foreach (inout stack; stackStack) {
+					assert(deque == (cast(Deque)stack !is null));
 					stack = deque
-						? cast(CC)new Deque(cast(Deque)stack)
-						: cast(CC)new Ctack(cast(Ctack)stack);
+						? cast(CC)new Deque(*cast(Deque*)&stack)
+						: cast(CC)new Ctack(*cast(Ctack*)&stack);
+				}
 
 				stack = stackStack.top;
 			} else {
 				// deep copy stack
 				stack = deque
-					? cast(CC)new Deque(cast(Deque)stack)
-					: cast(CC)new Ctack(cast(Ctack)stack);
+					? cast(CC)new Deque(*cast(Deque*)&stack)
+					: cast(CC)new Ctack(*cast(Ctack*)&stack);
 			}
 
 			// deep copy semantics
