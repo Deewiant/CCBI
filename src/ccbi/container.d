@@ -4,14 +4,28 @@
 
 module ccbi.container;
 
+import tango.core.Exception : onOutOfMemoryError;
 import c = tango.stdc.stdlib;
 
 import ccbi.cell;
 import ccbi.stats;
 
 private {
-	T*  malloc(T)(      size_t n) { return cast(T*)c. malloc(   n * T.sizeof); }
-	T* realloc(T)(T* p, size_t n) { return cast(T*)c.realloc(p, n * T.sizeof); }
+	// Just like with the Funge-Space, using the C heap reduces memory usage to
+	// a half or less than what it would be with the GC. Also, not initializing
+	// unused elements is a very noticeable speedup.
+	T* malloc(T)(size_t n) {
+		auto p = cast(T*)c.malloc(n * T.sizeof);
+		if (!p)
+			onOutOfMemoryError();
+		return p;
+	}
+	T* realloc(T)(T* p0, size_t n) {
+		auto p = cast(T*)c.realloc(p0, n * T.sizeof);
+		if (!p)
+			onOutOfMemoryError();
+		return p;
+	}
 	alias c.free free;
 }
 
