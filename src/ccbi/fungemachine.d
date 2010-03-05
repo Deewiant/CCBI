@@ -386,9 +386,9 @@ private:
 		static if (befunge93)
 			return false;
 		else {
-			state.ips.removeAt(idx);
+			if (state.ips.length > 1) {
+				state.ips.removeAt(idx);
 
-			if (state.ips.length > 0) {
 				foreach (stack; ip.stackStack)
 					delete stack;
 				delete ip.stackStack;
