@@ -57,7 +57,7 @@ struct IP(cell dim, bool befunge93) {
 
 			static if (!befunge93)
 				foreach (inout sem; semantics)
-					sem = new typeof(sem)(semanticStats);
+					sem = new typeof(sem)(semanticStats, 2u);
 
 			cursor = typeof(cursor)(pos, delta, s);
 
