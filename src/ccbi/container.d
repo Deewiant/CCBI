@@ -482,7 +482,17 @@ struct Deque {
 
 
 	cell* reserve(size_t n) {
-		assert (false, "TODO");
+		// XXX: this is broken but does the job in many cases
+		stats.pushes += n;
+
+		while (capacity < size + n)
+			doubleCapacity();
+
+		assert (head < tail, "reserve not supported with queue usage");
+
+		auto ptr = &array[head+size];
+		head += n;
+		return ptr;
 	}
 
 	cell at(size_t i) {
@@ -610,6 +620,7 @@ private:
 		auto newArray = malloc!(cell)(capacity * 2);
 		newArray[0..r     ] = array[head..head+r];
 		newArray[r..r+head] = array[0   ..head  ];
+		.free(array);
 
 		head  = 0;
 		tail  = capacity;
