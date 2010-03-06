@@ -62,6 +62,8 @@ otherwise specified.
 Vectors, including positions and sizes, are specified with their coordinates
 separated by spaces, e.g. '0 0' for the origin.
 
+Stacks are printed with the topmost element to the right.
+
 (h)elp
    Show this help text
 e(x)plain
