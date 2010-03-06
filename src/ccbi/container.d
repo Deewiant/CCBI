@@ -301,6 +301,8 @@ struct Stack(T) {
 
 
 	T* reserve(size_t n) {
+		stats.pushes += n;
+
 		if (capacity < n + head) {
 			capacity = n + head;
 			array = realloc(array, capacity);
