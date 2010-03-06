@@ -44,8 +44,9 @@ void pushN() {
 
 	cip.stack.push(0);
 
+	auto p = cip.stack.reserve(n);
 	while (n--) {
-		cip.stack.push(state.space[c]);
+		*p++ = state.space[c];
 		c += d;
 	}
 }

@@ -49,27 +49,28 @@ void forthPick() {
 		if (u >= s)
 			push(0);
 		else
-			push(elementsBottomToTop[s - (u+1)]);
+			push(at(s - (u+1)));
 	}
 }
 
 // move u-th from top to top
 void forthRoll() {
 	with (*cip.stack) {
-		auto u = pop,
+		auto u = pop + 1, // zero-based from top
 		     s = size;
 
 		// TODO: -ROLL for negative
-		if (u >= s)
+		if (u > s)
 			push(0);
 		else {
-			auto elems = elementsBottomToTop;
-			auto xu = elems[s - (u+1)];
+			auto xu = at(s - u);
 
-			pop(u+1);
+			// Move the top u elements left by one
+			mapTopN(u, (cell[] a) {
+				memmove(a.ptr, a.ptr + 1, (a.length - 1) * cell.sizeof);
+			}, null);
 
-			foreach (c; elems[s-u..$])
-				push(c);
+			pop(1);
 			push(xu);
 		}
 	}

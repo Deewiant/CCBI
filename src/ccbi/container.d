@@ -130,6 +130,15 @@ struct CellContainer {
 
 	mixin (F!("ContainerStats*", "stats"));
 
+	mixin (F!("void", "free"));
+
+	mixin (F!("int", "opApply", "int delegate(inout cell c) f"));
+
+	mixin (F!("int", "topToBottom", "int delegate(inout cell c) f"));
+	mixin (F!("int", "bottomToTop", "int delegate(inout cell c) f"));
+
+	mixin (F!("cell[]", "elementsBottomToTop"));
+
 	// Abstraction-breaking stuff
 
 	// Makes sure that there's capacity for at least the given number of cells.
@@ -144,14 +153,14 @@ struct CellContainer {
 	// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
 	mixin (F!("cell", "at", "size_t i"));
 
-	mixin (F!("void", "free"));
-
-	mixin (F!("int", "opApply", "int delegate(inout cell c) dg"));
-
-	mixin (F!("int", "topToBottom", "int delegate(inout cell c) dg"));
-	mixin (F!("int", "bottomToTop", "int delegate(inout cell c) dg"));
-
-	mixin (F!("cell[]", "elementsBottomToTop"));
+	// Calls the first given function over consecutive sequences of the top n
+	// elements, whose union is the top n elements. Traverses bottom-to-top.
+	//
+	// If n is greater than the size, instead first calls the second given
+	// function with the difference of n and the size, then proceeds to call the
+	// first function as though the size had been passed as n.
+	mixin (F!("void", "mapTopN",
+		"size_t n", "void delegate(cell[]) f", "void delegate(size_t) g"));
 }
 
 /+ The stack is, by default, a Stack instead of a Deque even though the MODE
@@ -307,6 +316,14 @@ struct Stack(T) {
 
 	T at(size_t i) { return array[i]; }
 
+	void mapTopN(size_t n, void delegate(T[]) f, void delegate(size_t) g) {
+		if (n <= head)
+			f(array[head-n .. head]);
+		else {
+			g(n - head);
+			f(array[0 .. head]);
+		}
+	}
 
 
 	int opApply(int delegate(inout T t) dg) {
@@ -467,6 +484,10 @@ struct Deque {
 	}
 
 	cell at(size_t i) {
+		assert (false, "TODO");
+	}
+
+	void mapTopN(size_t n, void delegate(cell[]) f, void delegate(size_t) g) {
 		assert (false, "TODO");
 	}
 

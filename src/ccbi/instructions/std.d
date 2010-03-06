@@ -460,22 +460,18 @@ void clearStack() { cip.stack.clear(); }
 
 static if (!befunge93) {
 
-cell[] stdStackStackBuf;
-
 // Begin Block
 Request beginBlock() {
-	alias stdStackStackBuf buf;
-
 	if (cip.mode & cip.SWITCH)
 		cip.unsafeCell = '}';
 
-	if (!cip.stackStack) {
-		cip.stackStack = new typeof(*cip.stackStack);
-		*cip.stackStack = typeof(*cip.stackStack)(&stackStackStats, 1u);
-		cip.stackStack.push(cip.stack);
-	}
-
 	try {
+		if (!cip.stackStack) {
+			cip.stackStack = new typeof(*cip.stackStack);
+			*cip.stackStack = typeof(*cip.stackStack)(&stackStackStats, 1u);
+			cip.stackStack.push(cip.stack);
+		}
+
 		auto stack = new typeof(*cip.stack);
 		*stack = typeof(*stack)(
 			cip.stack.isDeque, cip.stack.isDeque ? &dequeStats : &stackStats);
@@ -485,27 +481,35 @@ Request beginBlock() {
 		return reverse();
 	}
 
-	if (cip.stack.isDeque)
-		cip.stackStack.top.deque.mode = cip.stack.deque.mode;
+	auto soss = cip.stack;
+	auto toss = cip.stackStack.top;
 
-	auto n = cip.stack.pop;
+	if (soss.isDeque)
+		toss.deque.mode = soss.deque.mode;
+
+	auto n = soss.pop;
 
 	if (n > 0) {
-		if (n > buf.length)
-			buf.length = n;
+		auto p = toss.reserve(n);
 
 		// order must be preserved
-		for (size_t i = n; i--;)
-			buf[i] = cip.stack.pop;
-		foreach (c; buf[0..n])
-			cip.stackStack.top.push(c);
-	} else
-		while (n++)
-			cip.stack.push(0);
+		soss.mapTopN(n, (cell[] a) {
+			p[0 .. a.length] = a;
+			p += a.length;
+		},
+		(size_t n) {
+			p[0..n] = 0;
+			p += n;
+		});
+		soss.pop(n);
+	} else {
+		n = -n;
+		soss.reserve(n)[0..n] = 0;
+	}
 
 	pushVector(cip.offset);
 
-	cip.stack = cip.stackStack.top;
+	cip.stack = toss;
 
 	cip.move();
 	cip.offset = cip.pos;
@@ -515,8 +519,6 @@ Request beginBlock() {
 
 // End Block
 void endBlock() {
-	alias stdStackStackBuf buf;
-
 	if (cip.mode & cip.SWITCH)
 		cip.unsafeCell = '{';
 
@@ -534,15 +536,18 @@ void endBlock() {
 	popVector(cip.offset);
 
 	if (n > 0) {
-		if (n > buf.length)
-			buf.length = n;
+		auto p = cip.stack.reserve(n);
 
 		// order must be preserved
-		for (size_t i = n; i--;)
-			buf[i] = oldStack.pop;
-		foreach (c; buf[0..n])
-			cip.stack.push(c);
-	} else
+		oldStack.mapTopN(n, (cell[] a) {
+			p[0 .. a.length] = a;
+			p += a.length;
+		},
+		(size_t n) {
+			p[0..n] = 0;
+			p += n;
+		});
+	} else if (n < 0)
 		cip.stack.pop(-n);
 }
 
@@ -560,12 +565,31 @@ void stackUnderStack() {
 	if (cip.stack.isDeque)
 		soss.deque.mode = cip.stack.deque.mode;
 
-	if (count > 0)
-		while (count--)
-			cip.stack.push(soss.pop);
-	else if (count < 0)
-		while (count++)
-			soss.push(cip.stack.pop);
+	if (count > 0) {
+		auto p = cip.stack.reserve(count) + count - 1;
+		soss.mapTopN(count, (cell[] a) {
+			foreach (c; a)
+				*p-- = c;
+		},
+		(size_t n) {
+			p -= n;
+			p[0..n] = 0;
+		});
+		soss.pop(count);
+
+	} else if (count < 0) {
+		count = -count;
+		auto p = soss.reserve(count) + count - 1;
+		cip.stack.mapTopN(count, (cell[] a) {
+			foreach (c; a)
+				*p-- = c;
+		},
+		(size_t n) {
+			p -= n;
+			p[0..n] = 0;
+		});
+		cip.stack.pop(count);
+	}
 }
 
 }

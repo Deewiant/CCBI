@@ -318,8 +318,11 @@ void pairOfStilts() {
 }
 
 void gable() {
-	with (*cip.stack) for (cell n = pop, c = pop; n--;)
-		push(c);
+	with (*cip.stack) {
+		auto n = pop;
+		auto c = pop;
+		reserve(n)[0..n] = c;
+	}
 }
 
 // pair of shoes
@@ -379,9 +382,11 @@ void counterclockwise() {
 
 			Coords c = o;
 
+			auto p = reserve(i*j);
+
 			for (c.y = o.y + j; c.y-- > o.y;)
 			for (c.x = o.x + i; c.x-- > o.x;)
-				push(state.space[c]);
+				*p++ = state.space[c];
 		}
 	} else reverse;
 }
