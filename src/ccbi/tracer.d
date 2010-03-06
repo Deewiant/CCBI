@@ -540,7 +540,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						Serr.format("{,2:},", i);
 
 					auto n = st.size;
-					Serr.format("{,4:} element(s):", i, n)(" [");
+					Serr.format("{,4:} element(s):", n)(" [");
 
 					auto j = n-1;
 					foreach (c; &st.bottomToTop) {
