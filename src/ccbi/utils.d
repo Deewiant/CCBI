@@ -83,6 +83,8 @@ size_t findIndex(T)(T[] a, T v) {
 
 template Utils() {
 
+import tango.stdc.string : strlen;
+
 alias .Coords!(dim) Coords;
 
 void popVector(out Coords c) {
@@ -156,16 +158,19 @@ void pushStringz(char[] s) {
 }
 void pushStringz(char* s) {
 	if (s) {
-		while (*s++){}
-		while (*s)
-			cip.stack.push(cast(cell)*s--);
+		auto l = strlen(s) + 1;
+		auto p = cip.stack.reserve(l);
+		s = s + l - 1;
+		while (l--)
+			*p++ = cast(cell)*s--;
 	} else
 		cip.stack.push(0);
 }
 
 void pushString(in char[] s) {
+	auto p = cip.stack.reserve(s.length);
 	foreach_reverse (c; s)
-		cip.stack.push(cast(cell)c);
+		*p++ = cast(cell)c;
 }
 
 }
