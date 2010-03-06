@@ -598,10 +598,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					break;
 				}
 
-				auto posE = pos.extend(0);
-				auto end = posE; end += size.extend(1);
-
-				state.space.binaryPut(Serr, posE, end);
+				state.space.binaryPut(Serr, pos, pos + size);
 				Serr.newline;
 				break;
 			}

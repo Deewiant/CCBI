@@ -29,13 +29,6 @@ struct Coords(cell dim) {
 		return s;
 	}
 
-	Coords!(3) extend(cell val) {
-		Coords!(3) c;
-		c.v[0..dim] = v;
-		c.v[dim..$] = val;
-		return c;
-	}
-
 	int opEquals(cell c) {
 		foreach (x; v)
 			if (x != c)

@@ -17,7 +17,7 @@ import ccbi.random;
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
 // should be below StdInsFunc
 // Tuple!('x', "blaa") -> Tuple!("'a'", `"blaa"`)
-template WrapForCasing(ins...) {
+private template WrapForCasing(ins...) {
 	static if (ins.length) {
 		static assert (ins.length > 1, "WrapForCasing :: odd list");
 
@@ -758,11 +758,6 @@ void outputFile() {
 	static if (dim >= 2) if (vb.y < 0) return reverse;
 	                     if (vb.x < 0) return reverse;
 
-	// extend va and vb to 3 dimensions for simplicity
-	auto
-		vaE = va.extend(0),
-		vbE = vb.extend(1);
-
 	File f;
 	try f = new typeof(f)(filename, f.WriteCreate);
 	catch {
@@ -774,99 +769,136 @@ void outputFile() {
 		f.flush.close;
 	}
 
-	auto max = vaE + vbE;
+	auto max = va + vb;
 
 	if (flags & 1) {
 		// treat as linear text file, meaning...
 
-		auto arraySize = max - vaE;
+		static if (dim == 3) auto toBeWritten = new char[][][](vb.z, vb.y, vb.x);
+		static if (dim == 2) auto toBeWritten = new char[][]  (      vb.y, vb.x);
+		static if (dim == 1) auto toBeWritten = new char[]    (            vb.x);
 
-		auto toBeWritten = new char[][][](arraySize.z, arraySize.y, arraySize.x);
+		const char[] X =
+			"for (c.x = va.x; c.x < max.x; ++c.x) {"
+			"	static if (dim == 1) auto row = toBeWritten;"
+			"	row[c.x - va.x] = cast(char)state.space[c];"
+			"}";
+		const char[] Y =
+			"for (c.y = va.y; c.y < max.y; ++c.y) {"
+			"	static if (dim <= 2) auto rect = toBeWritten;"
+			"	auto row = rect[c.y - va.y];"
+			"	" ~ X ~
+			"}";
 
-		Coords c;
-		for (cell z = vaE.z; z < max.z; ++z) {
-			auto rect = toBeWritten[z - vaE.z];
+		Coords c = void;
 
-			static if (dim >= 3) c.z = z;
+		static if (dim == 3) {
+			for (c.z = va.z; c.z < max.z; ++c.z) {
+				auto rect = toBeWritten[c.z - va.z];
 
-			for (cell y = vaE.y; y < max.y; ++y) {
-				auto row = rect[y - vaE.y];
-
-				static if (dim >= 2) c.y = y;
-
-				for (cell x = vaE.x; x < max.x; ++x) {
-					c.x = x;
-					row[x - vaE.x] = cast(char)state.space[c];
-				}
+				mixin (Y);
 			}
-		}
+		} else static if (dim == 2)
+			mixin (Y);
+		else static if (dim == 1)
+			mixin (X);
 
-		bool atEOF = true;
-		auto l = toBeWritten.length;
+		static if (dim == 3) {
 
-		foreach_reverse (inout rect; toBeWritten) {
+			bool atEOF = true;
+			auto l = toBeWritten.length;
 
-			// End Of Rectangle
-			bool atEOR = true;
-			auto l2 = rect.length;
+			foreach_reverse (inout rect; toBeWritten) {
 
-			foreach_reverse (inout row; rect) {
+				// End Of Rectangle
+				bool atEOR = true;
+				auto l2 = rect.length;
 
-				// ...remove whitespace before EOL...
+				// ...see comments in OutputLinearRect...
+				mixin (OutputLinearRect!("l2", "rect", "atEOR"));
 
-				// since this may be a 1000x1-type "row" with many line breaks
-				// within, we have to treat each "sub-row" as well
-
-				// TODO: don't use splitLines here, may split on UTF-8 line breaks
-				// in a future Tango version, which we don't want, only \n \r \r\n
-				auto lines = splitLines(row);
-				foreach (inout line; lines)
-					line = stripr(line);
-
-				row = join(lines, NewlineString);
-
-				// ...and EOL before EOR...
-				if (atEOR) {
-					if (row.length == 0)
-						--l2;
+				// ...and remove EOR before EOF.
+				if (atEOF) {
+					if (rect.length == 0)
+						--l;
 					else
-						atEOR = false;
+						atEOF = false;
 				}
 			}
-			rect.length = l2;
+			toBeWritten.length = l;
 
-			// we put an ending line break anyway
-			if (rect.length)
-				rect[$-1] = stripr(rect[$-1]);
+			if (toBeWritten.length) {
+				foreach (row; toBeWritten[0])
+					file.append(row).append(NewlineString);
 
-			// ...and EOR before EOF
-			if (atEOF) {
-				if (rect.length == 0)
-					--l;
-				else
-					atEOF = false;
+				foreach (rect; toBeWritten[1..$]) {
+					// put a form feed between rectangles, not after each one
+					file.append(\f);
+
+					foreach (row; rect)
+						file.append(row).append(NewlineString);
+				}
 			}
-		}
-		toBeWritten.length = l;
 
-		if (toBeWritten.length) {
-			foreach (row; toBeWritten[0])
+		} else static if (dim == 2) {
+
+			bool atEOF = true;
+			auto l = toBeWritten.length;
+
+			// ...see comments in OutputLinearRect.
+			mixin (OutputLinearRect!("l", "toBeWritten", "atEOF"));
+
+			foreach (row; toBeWritten)
 				file.append(row).append(NewlineString);
 
-			foreach (rect; toBeWritten[1..$]) {
-				// put a form feed between rectangles, not after each one
-				file.append(\f);
+		} else static if (dim == 1) {
+			// ...remove whitespace before EOL.
 
-				foreach (row; rect)
-					file.append(row).append(NewlineString);
-			}
+			// since this may be a 1000x1-type "row" with many line breaks
+			// within, we have to treat each "sub-row" as well
+
+			// TODO: don't use splitLines here, may split on UTF-8 line breaks
+			// in a future Tango version, which we don't want, only \n \r \r\n
+			auto lines = splitLines(toBeWritten);
+			foreach (line; lines)
+				file.append(stripr(line)).append(NewlineString);
 		}
-
 	} else {
 		// no flag: write everything in a block of size vb, including spaces
 		// put form feeds and line breaks only between rects/lines
-		state.space.binaryPut(file, vaE, max);
+		state.space.binaryPut(file, va, max);
 	}
+}
+private template OutputLinearRect(char[] len, char[] rect, char[] atEOR) {
+	const OutputLinearRect =
+		"foreach_reverse (inout row; " ~rect~ ") {"
+
+			// ..remove whitespace before EOL...
+
+			// since this may be a 1000x1-type "row" with many line breaks
+			// within, we have to treat each "sub-row" as well
+
+			// TODO: don't use splitLines here, may split on UTF-8 line breaks
+			// in a future Tango version, which we don't want, only \n \r \r\n
+		"	auto lines = splitLines(row);"
+		"	foreach (inout line; lines)"
+		"		line = stripr(line);"
+
+		"	row = join(lines, NewlineString);"
+
+			// ...and EOL before EOR...
+		"	if (" ~atEOR~ ") {"
+		"		if (row.length == 0)"
+		"			--" ~len~ ";"
+		"		else"
+		"			" ~atEOR~ " = false;"
+		"	}"
+		"}"
+		~rect~ ".length = " ~len~ ";"
+
+		// we put an ending line break anyway; strip the last one
+		"if (" ~rect~ ".length)"
+		"	" ~rect~ "[$-1] = stripr(" ~rect~ "[$-1]);";
 }
 
 }
@@ -957,7 +989,7 @@ void computeEnvCache() { // {{{
 	}
 } // }}}
 
-template SimpleVectorCases(char[] vec, cell offset, cell i = 0) {
+private template SimpleVectorCases(char[] vec, cell offset, cell i = 0) {
 	static if (i < dim)
 		const SimpleVectorCases =
 			"case " ~ToString!(offset+i)~ ":"
@@ -966,7 +998,7 @@ template SimpleVectorCases(char[] vec, cell offset, cell i = 0) {
 	else
 		const SimpleVectorCases = "";
 }
-template BoundsVectorCases(cell offset, cell i = 0) {
+private template BoundsVectorCases(cell offset, cell i = 0) {
 	static if (i < dim*2)
 		const BoundsVectorCases = "case " ~ToString!(offset+i)~ ":"
 			~ BoundsVectorCases!(offset, i+1);

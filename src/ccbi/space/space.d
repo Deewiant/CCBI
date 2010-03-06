@@ -1339,36 +1339,41 @@ private:
 	// Puts form feeds / line breaks only between rects/lines.
 	// Doesn't trim trailing spaces or anything like that.
 	// Doesn't close the given OutputStream.
-	public void binaryPut(OutputStream file, Coords!(3) beg, Coords!(3) end) {
+	public void binaryPut(OutputStream file, Coords beg, Coords end) {
 		scope tfile = new TypedOutput!(ubyte)(file);
 		scope (exit) tfile.flush;
 
 		Coords c = void;
-		ubyte b  = void;
-		for (cell z = beg.z; z < end.z;) {
+		ubyte b = void;
 
-			static if (dim >= 3) c.z = z;
+		const char[] X =
+			"for (c.x = beg.x; c.x < end.x; ++c.x) {"
+			"	b = cast(ubyte)(*this)[c];"
+			"	tfile.write(b);"
+			"}";
 
-			for (cell y = beg.y; y < end.y;) {
+		const char[] Y =
+			"for (c.y = beg.y; c.y < end.y;) {"
+			"	" ~ X ~
+			"	if (++c.y != end.y) foreach (ch; NewlineString) {"
+			"		b = ch;"
+			"		tfile.write(b);"
+			"	}"
+			"}";
 
-				static if (dim >= 2) c.y = y;
-
-				for (cell x = beg.x; x < end.x; ++x) {
-					c.x = x;
-					b = cast(ubyte)(*this)[c];
-					tfile.write(b);
-				}
-				if (++y != end.y) foreach (ch; NewlineString) {
-					b = ch;
+		static if (dim == 3) {
+			for (c.z = beg.z; c.z < end.z;) {
+				mixin (Y);
+				if (++c.z != end.z) {
+					b = '\f';
 					tfile.write(b);
 				}
 			}
+		} else static if (dim == 2)
+			mixin (Y);
 
-			if (++z != end.z) {
-				b = '\f';
-				tfile.write(b);
-			}
-		}
+		else static if (dim == 1)
+			mixin (X);
 	}
 }
 

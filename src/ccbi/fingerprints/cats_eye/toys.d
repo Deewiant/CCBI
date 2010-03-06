@@ -60,35 +60,39 @@ template PopThree() {
 		// But nah, most likely it's user error
 		static if (dim >= 3) if (d.z < 0) return reverse;
 		static if (dim >= 2) if (d.y < 0) return reverse;
-		                     if (d.x < 0) return reverse;
-
-		Coords!(3) de = d.extend(1);`;
+		                     if (d.x < 0) return reverse;`;
 }
 
 void bracelet() {
 	mixin (PopThree!());
 
-	for (auto z = 0; z < de.z; ++z) {
-		for (auto y = 0; y < de.y; ++y) {
-			for (auto x = 0; x < de.x; ++x, ++t.x, ++o.x)
-				state.space[t] = state.space[o];
+	const char[] X =
+		"for (auto x = 0; x < d.x; ++x, ++t.x, ++o.x)"
+		"	state.space[t] = state.space[o];";
 
-			t.x -= de.x;
-			o.x -= de.x;
-			static if (dim >= 2) {
-				++t.y;
-				++o.y;
-			}
-		}
-		static if (dim >= 2) {
-			t.y -= de.y;
-			o.y -= de.y;
-		}
-		static if (dim >= 3) {
+	const char[] Y =
+		"for (auto y = 0; y < d.y; ++y) {"
+		"	" ~X~
+		"	t.x -= d.x;"
+		"	o.x -= d.x;"
+		"	++t.y;"
+		"	++o.y;"
+		"}";
+
+	static if (dim == 3) {
+		for (auto z = 0; z < d.z; ++z) {
+
+			mixin (Y);
+
+			t.y -= d.y;
+			o.y -= d.y;
 			++t.z;
 			++o.z;
 		}
-	}
+	} else static if (dim == 2)
+		mixin (Y);
+	else static if (dim == 1)
+		mixin (X);
 }
 void scissors() {
 	mixin (PopThree!());
@@ -96,58 +100,65 @@ void scissors() {
 	t += d;
 	o += d;
 
-	for (auto z = de.z; z--;) {
-		static if (dim >= 3) {
+	const char[] X =
+		"for (auto x = d.x; x--;) {"
+		"	--t.x;"
+		"	--o.x;"
+		"	state.space[t] = state.space[o];"
+		"}";
+
+	const char[] Y =
+		"for (auto y = d.y; y--;) {"
+		"	--t.y;"
+		"	--o.y;"
+		"	" ~X~
+		"	t.x += d.x;"
+		"	o.x += d.x;"
+		"}";
+
+	static if (dim == 3) {
+		for (auto z = d.z; z--;) {
 			--t.z;
 			--o.z;
+			mixin (Y);
+			t.y += d.y;
+			o.y += d.y;
 		}
-		for (auto y = de.y; y--;) {
-			static if (dim >= 2) {
-				--t.y;
-				--o.y;
-			}
-
-			for (auto x = de.x; x--;) {
-				--t.x;
-				--o.x;
-				state.space[t] = state.space[o];
-			}
-
-			t.x += de.x;
-			o.x += de.x;
-		}
-		static if (dim >= 2) {
-			t.y += de.y;
-			o.y += de.y;
-		}
-	}
+	} else static if (dim == 2)
+		mixin (Y);
+	else static if (dim == 1)
+		mixin (X);
 }
 void kittycat() {
 	mixin (PopThree!());
 
-	for (auto z = 0; z < de.z; ++z) {
-		for (auto y = 0; y < de.y; ++y) {
-			for (auto x = 0; x < de.x; ++x, ++t.x, ++o.x) {
-				state.space[t] = state.space[o];
-				state.space[o] = ' ';
-			}
+	const char[] X =
+		"for (auto x = 0; x < d.x; ++x, ++t.x, ++o.x) {"
+		"	state.space[t] = state.space[o];"
+		"	state.space[o] = ' ';"
+		"}";
 
-			t.x -= de.x;
-			o.x -= de.x;
-			static if (dim >= 2) {
-				++t.y;
-				++o.y;
-			}
-		}
-		static if (dim >= 2) {
-			t.y -= de.y;
-			o.y -= de.y;
-		}
-		static if (dim >= 3) {
+	const char[] Y =
+		"for (auto y = 0; y < d.y; ++y) {"
+		"	" ~X~
+		"	t.x -= d.x;"
+		"	o.x -= d.x;"
+		"	++t.y;"
+		"	++o.y;"
+		"}";
+
+	static if (dim == 3) {
+		for (auto z = 0; z < d.z; ++z) {
+			mixin (Y);
+			t.y -= d.y;
+			o.y -= d.y;
 			++t.z;
 			++o.z;
 		}
-	}
+	} else static if (dim == 2)
+		mixin (Y);
+	else static if (dim == 1)
+		mixin (X);
 }
 void dixiecup() {
 	mixin (PopThree!());
@@ -155,32 +166,35 @@ void dixiecup() {
 	t += d;
 	o += d;
 
-	for (auto z = de.z; z--;) {
-		static if (dim >= 3) {
+	const char[] X =
+		"for (auto x = d.x; x--;) {"
+		"	--t.x;"
+		"	--o.x;"
+		"	state.space[t] = state.space[o];"
+		"	state.space[o] = ' ';"
+		"}";
+
+	const char[] Y =
+		"for (auto y = d.y; y--;) {"
+		"	--t.y;"
+		"	--o.y;"
+		"	" ~X~
+		"	t.x += d.x;"
+		"	o.x += d.x;"
+		"}";
+
+	static if (dim == 3) {
+		for (auto z = d.z; z--;) {
 			--t.z;
 			--o.z;
+			mixin (Y);
+			t.y += d.y;
+			o.y += d.y;
 		}
-		for (auto y = de.y; y--;) {
-			static if (dim >= 2) {
-				--t.y;
-				--o.y;
-			}
-
-			for (auto x = de.x; x--;) {
-				--t.x;
-				--o.x;
-				state.space[t] = state.space[o];
-				state.space[o] = ' ';
-			}
-
-			t.x += de.x;
-			o.x += de.x;
-		}
-		static if (dim >= 2) {
-			t.y += de.y;
-			o.y += de.y;
-		}
-	}
+	} else static if (dim == 2)
+		mixin (Y);
+	else static if (dim == 1)
+		mixin (X);
 }
 
 void chicane() {
