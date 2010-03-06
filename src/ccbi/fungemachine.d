@@ -388,9 +388,8 @@ private:
 				state.ips.removeAt(idx);
 
 				if (ip.stackStack) {
-					foreach (ref stack; *ip.stackStack) {
+					foreach (stack; *ip.stackStack) {
 						stack.free();
-						// stack must be ref for this delete to be valid
 						delete stack;
 					}
 					ip.stackStack.free();

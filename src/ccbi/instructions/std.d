@@ -549,6 +549,9 @@ void endBlock() {
 		});
 	} else if (n < 0)
 		cip.stack.pop(-n);
+
+	oldStack.free();
+	delete oldStack;
 }
 
 // Stack under Stack
