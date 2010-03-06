@@ -68,7 +68,8 @@ void forthRoll() {
 
 			pop(u+1);
 
-			push(elems[s-u..$]);
+			foreach (c; elems[s-u..$])
+				push(c);
 			push(xu);
 		}
 	}

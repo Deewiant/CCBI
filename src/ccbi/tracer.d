@@ -725,7 +725,8 @@ char[] stackString(in IP ip) {
 
 	auto finalShow = onesToShow[$-numShown..$].reverse;
 
-	ip.stack.pushHead(finalShow);
+	foreach (c; finalShow)
+		ip.stack.pushHead(c);
 
 	assert (ip.stack.size >= numShown);
 

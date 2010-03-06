@@ -111,10 +111,19 @@ struct CellContainer {
 
 	mixin (F!("cell", "top"));
 
-	mixin (F!("void", "push", "cell[] xs..."));
-
+	void push(T...)(T xs) {
+		if (isDeque)
+			deque.push(xs);
+		else
+			stack.push(xs);
+	}
 	// different to push() in invertmode, needed for tracing and copying
-	mixin (F!("void", "pushHead", "cell[] xs..."));
+	void pushHead(T...)(T xs) {
+		if (isDeque)
+			deque.pushHead(xs);
+		else
+			stack.pushHead(xs);
+	}
 
 	mixin (F!("size_t", "size"));
 	mixin (F!("bool", "empty"));
@@ -165,7 +174,7 @@ struct CellContainer {
 
 struct Stack(T) {
 	private {
-		T* array;            
+		T* array;
 		size_t capacity;
 		size_t head;
 		ContainerStats* stats;
@@ -259,7 +268,7 @@ struct Stack(T) {
 		return array[head-1];
 	}
 
-	void push(T[] ts...) {
+	void push(U...)(U ts) {
 		stats.pushes += ts.length;
 
 		auto neededRoom = head + ts.length;
@@ -272,11 +281,10 @@ struct Stack(T) {
 			array = realloc(array, capacity);
 		}
 
-		auto nhead = head + ts.length;
-		array[head..nhead] = ts;
-		head = nhead;
+		foreach (t; ts)
+			array[head++] = cast(T)t;
 	}
-	void pushHead(T[] ts...) { push(ts); }
+	void pushHead(U...)(U ts) { push(ts); }
 
 	size_t size() { return head; }
 	bool empty()  { return head == 0; }
@@ -373,7 +381,8 @@ struct Deque {
 
 			allocateArray(s.size);
 
-			push(s.elementsBottomToTop);
+			foreach (c; &s.bottomToTop)
+				push(c);
 		}
 		return x;
 	}
@@ -431,18 +440,18 @@ struct Deque {
 			return peekHead();
 	}
 
-	void push(cell[] ts...) {
+	void push(T...)(T ts) {
 		if (mode & INVERT_MODE)
 			pushTail(ts);
 		else
 			pushHead(ts);
 	}
-	void pushHead(cell[] cs...) {
+	void pushHead(C...)(C cs) {
 		stats.pushes += cs.length;
 
 		foreach (c; cs) {
 			head = (head - 1) & (capacity - 1);
-			array[head] = c;
+			array[head] = cast(cell)c;
 			if (head == tail)
 				doubleCapacity();
 		}
@@ -499,11 +508,11 @@ struct Deque {
 
 private:
 
-	void pushTail(cell[] cs...) {
+	void pushTail(C...)(C cs) {
 		stats.pushes += cs.length;
 
 		foreach (c; cs) {
-			array[tail] = c;
+			array[tail] = cast(cell)c;
 			tail = (tail + 1) & (capacity - 1);
 			if (head == tail)
 				doubleCapacity();
