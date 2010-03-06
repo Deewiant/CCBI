@@ -48,8 +48,7 @@ struct IP(cell dim, bool befunge93) {
 
 			static if (!befunge93) {
 				stack = new typeof(*stack);
-				stack.isDeque = false;
-				stack.stack = typeof(stack.stack)(stackStats);
+				*stack = typeof(*stack)(false, stackStats);
 			} else
 				stack = typeof(stack)(stackStats);
 
