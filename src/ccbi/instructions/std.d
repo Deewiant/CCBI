@@ -283,16 +283,82 @@ Request iterate() {
 			cip.stack.pop(n);
 			return r;
 
+		case ':': {
+			// pop and n+1 because of the empty stack case
+			auto c = cip.stack.pop;
+			auto p = cip.stack.reserve(n + 1);
+			p[0..n+1] = c;
+			return r;
+		}
+
+		case '\\':
+			with (*cip.stack) {
+				auto a = pop, b = pop;
+				if (n & 1)
+					push(b, a);
+				else
+					push(a, b);
+			}
+			return r;
+
+		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': {
+			auto p = cip.stack.reserve(n);
+			p[0..n] = cast(cell)(i - '0');
+			return r;
+		}
+
+		case 'a', 'b', 'c', 'd', 'e', 'f': {
+			auto p = cip.stack.reserve(n);
+			p[0..n] = cast(cell)(i - 'a');
+			return r;
+		}
+
+		case 'm':
+			static if (dim < 3)
+				goto case 'r';
+		case '|':
+			static if (dim < 2)
+				goto case 'r';
+		case '_':
+			cip.stack.pop(n-1);
+			return executeStandard(i);
+
+		case 'x':
+			cip.stack.pop(dim * (n-1));
+			absoluteVector();
+			return r;
+
 		case 'h', 'l':
 			static if (dim < 3)
 				goto case 'r';
-
 		case 'v', '^':
 			static if (dim < 2)
 				goto case 'r';
-
 		case '<', '>', 'n', '?', '@', 'q':
 			return executeStandard(i);
+
+		case '[':
+			switch (n % 4) {
+				case 0: break;
+				case 1: turnLeft;  break;
+				case 2: reverse;   break;
+				case 3: turnRight; break;
+			}
+			return r;
+
+		case ']':
+			switch (n % 4) {
+				case 0: break;
+				case 1: turnRight; break;
+				case 2: reverse;   break;
+				case 3: turnLeft;  break;
+			}
+			return r;
+
+		case '"':
+			if (n & 1)
+				toggleStringMode();
+			return r;
 
 		case 'r':
 			if (n & 1)
