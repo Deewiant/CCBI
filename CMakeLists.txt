@@ -125,6 +125,10 @@ option(CCBI_LINK_TANGO_USER
 set(TANGO_DIR "" CACHE PATH "Tango root directory, required only by CCBI_LINK_TANGO_RT.")
 
 if(CCBI_LINK_TANGO_RT)
+	if(VENDOR STREQUAL "ldc")
+		list(APPEND D_LINK_FLAGS -nodefaultlib)
+	endif()
+
 	if(NOT IS_DIRECTORY "${TANGO_DIR}")
 		message(FATAL_ERROR "TANGO_DIR '${TANGO_DIR}' does not exist! Fix that or disable CCBI_LINK_TANGO_RT.")
 	endif()
