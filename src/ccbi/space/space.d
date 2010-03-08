@@ -73,9 +73,11 @@ struct FungeSpace(cell dim, bool befunge93) {
 	static typeof(*this) opCall(Stats* stats, Array source) {
 		typeof(*this) x;
 		x.stats = stats;
+		// Not being in with is WORKAROUND:
+		// http://www.dsource.org/projects/ldc/ticket/397
+		// http://www.dsource.org/projects/ldc/ticket/400
+		x.load(source, null, InitCoords!(0), false);
 		with (x) {
-			// FungeSpace. is WORKAROUND: http://www.dsource.org/projects/ldc/ticket/397
-			load(source, null, FungeSpace.InitCoords!(0), false);
 			if (boxen.length) {
 				lastBeg = boxen[0].beg;
 				lastEnd = boxen[0].end;
