@@ -101,9 +101,6 @@ struct CellContainer {
 
 	mixin (F!("cell", "pop"));
 
-	// different to pop() in queuemode, needed for tracing
-	mixin (F!("cell", "popHead"));
-
 	// pop n elements, ignoring their values
 	mixin (F!("void", "pop", "size_t n"));
 
@@ -116,13 +113,6 @@ struct CellContainer {
 			deque.push(xs);
 		else
 			stack.push(xs);
-	}
-	// different to push() in invertmode, needed for tracing and copying
-	void pushHead(T...)(T xs) {
-		if (isDeque)
-			deque.pushHead(xs);
-		else
-			stack.pushHead(xs);
 	}
 
 	mixin (F!("size_t", "size"));
@@ -248,8 +238,6 @@ struct Stack(T) {
 			return array[--head];
 	}
 
-	T popHead() { return pop(); }
-
 	void pop(size_t i)  {
 		stats.pops          += i;
 		stats.popUnderflows += i;
@@ -298,7 +286,6 @@ struct Stack(T) {
 		foreach (t; ts)
 			array[head++] = cast(T)t;
 	}
-	void pushHead(U...)(U ts) { push(ts); }
 
 	size_t size() { return head; }
 	bool empty()  { return head == 0; }
@@ -330,6 +317,10 @@ struct Stack(T) {
 			g(n - head);
 			f(array[0 .. head]);
 		}
+	}
+	void mapFirstNHead(size_t n, void delegate(T[]) f, void delegate(size_t) g)
+	{
+		return mapFirstN(n, f, g);
 	}
 
 

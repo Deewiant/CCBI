@@ -717,21 +717,19 @@ void printCell(
 
 char[] stackString(in IP ip) {
 	cell[8] onesToShow;
-	auto numShown = min(ip.stack.size, onesToShow.length);
 
-	for (auto i = numShown; i--;)
-		onesToShow[$-i-1] = ip.stack.popHead;
+	size_t zeroes = 0;
+	auto p = onesToShow.ptr;
 
-	auto finalShow = onesToShow[$-numShown..$].reverse;
+	ip.stack.mapFirstNHead(onesToShow.length,
+		(cell[] a) { p[0..a.length] = a; p += a.length; },
+		(size_t n) { zeroes = n; });
 
-	foreach (c; finalShow)
-		ip.stack.pushHead(c);
-
-	assert (ip.stack.size >= numShown);
+	auto finalShow = onesToShow[0 .. p - onesToShow.ptr];
 
 	char[] stackStr = "[".dup;
 
-	for (size_t j = 0; j < onesToShow.length - numShown; ++j)
+	while (zeroes--)
 		stackStr ~= "  - ";
 
 	foreach (c; finalShow)
