@@ -259,7 +259,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 			COMMAND clang "${C_SRC}" -c -emit-llvm "-o${C_OBJ}")
 	endforeach()
 
-	# Link .bc's, fix weak to linkonce (LDC...), optimize
+	# Link .bc's, optimize
 
 	if(CCBI_LINK_TANGO_RT)
 		set(INTERNALIZE_OPT "")
