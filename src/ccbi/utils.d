@@ -126,6 +126,8 @@ void pushOffsetVector(Coords c) {
 	pushVector(c);
 }
 
+static if (!befunge93) {
+
 // TODO: this is not thread safe
 static char[] popStringBuf;
 static this() { popStringBuf = new char[80]; }
@@ -156,21 +158,18 @@ void pushStringz(char[] s) {
 	cip.stack.push(0);
 	pushString(s);
 }
-void pushStringz(char* s) {
-	if (s) {
-		auto l = strlen(s) + 1;
-		auto p = cip.stack.reserve(l);
-		s = s + l - 1;
-		while (l--)
-			*p++ = cast(cell)*s--;
-	} else
-		cip.stack.push(0);
-}
 
 void pushString(in char[] s) {
 	auto p = cip.stack.reserve(s.length);
-	foreach_reverse (c; s)
-		*p++ = cast(cell)c;
+
+	if (cip.stack.mode & INVERT_MODE)
+		foreach (c; s)
+			*p++ = cast(cell)c;
+	else
+		foreach_reverse (c; s)
+			*p++ = cast(cell)c;
+}
+
 }
 
 }
