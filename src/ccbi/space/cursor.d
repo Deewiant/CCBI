@@ -58,7 +58,8 @@ public:
 
 	cell get()
 	out (c) {
-		assert ((*space)[pos] == c);
+		debug (ExpensiveCursorChecks)
+			assert ((*space)[pos] == c);
 	} body {
 		if (!inBox()) {
 			auto p = pos;
@@ -73,7 +74,8 @@ public:
 	in {
 		assert (inBox());
 	} out (c) {
-		assert ((*space)[pos] == c);
+		debug (ExpensiveCursorChecks)
+			assert ((*space)[pos] == c);
 	} body {
 		++space.stats.space.lookups;
 		return bak ? space.bak[pos]
@@ -82,7 +84,8 @@ public:
 
 	void set(cell c)
 	out {
-		assert ((*space)[pos] == c);
+		debug (ExpensiveCursorChecks)
+			assert ((*space)[pos] == c);
 	} body {
 		if (!inBox()) {
 			auto p = pos;
@@ -95,7 +98,8 @@ public:
 	in {
 		assert (inBox());
 	} out {
-		assert ((*space)[pos] == c);
+		debug (ExpensiveCursorChecks)
+			assert ((*space)[pos] == c);
 	} body {
 		++space.stats.space.assignments;
 		bak ? space.bak[pos] = c
