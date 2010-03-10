@@ -79,6 +79,7 @@ struct IP(cell dim, bool befunge93) {
 					assert (deque == stack.isDeque);
 					auto old = stack;
 					stack = new typeof(*stack);
+					stack.isDeque = deque;
 					if (deque)
 						stack.deque = Deque(old.deque);
 					else
@@ -92,6 +93,7 @@ struct IP(cell dim, bool befunge93) {
 
 				auto old = stack;
 				stack = new typeof(*stack);
+				stack.isDeque = deque;
 				if (deque)
 					stack.deque = Deque(old.deque);
 				else
