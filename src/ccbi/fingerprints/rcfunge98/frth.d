@@ -66,7 +66,7 @@ void forthRoll() {
 			auto xu = at(s - u);
 
 			// Move the top u elements left by one
-			mapTopN(u, (cell[] a) {
+			mapFirstN(u, (cell[] a) {
 				memmove(a.ptr, a.ptr + 1, (a.length - 1) * cell.sizeof);
 			}, null);
 

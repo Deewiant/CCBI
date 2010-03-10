@@ -558,8 +558,7 @@ Request beginBlock() {
 	if (n > 0) {
 		auto p = toss.reserve(n);
 
-		// order must be preserved
-		soss.mapTopN(n, (cell[] a) {
+		soss.mapFirstN(n, (cell[] a) {
 			p[0 .. a.length] = a;
 			p += a.length;
 		},
@@ -568,7 +567,7 @@ Request beginBlock() {
 			p += n;
 		});
 		soss.pop(n);
-	} else {
+	} else if (n < 0) {
 		n = -n;
 		soss.reserve(n)[0..n] = 0;
 	}
@@ -604,8 +603,7 @@ void endBlock() {
 	if (n > 0) {
 		auto p = cip.stack.reserve(n);
 
-		// order must be preserved
-		oldStack.mapTopN(n, (cell[] a) {
+		oldStack.mapFirstN(n, (cell[] a) {
 			p[0 .. a.length] = a;
 			p += a.length;
 		},
@@ -613,6 +611,8 @@ void endBlock() {
 			p[0..n] = 0;
 			p += n;
 		});
+		// Don't need to pop from oldStack as we're about to free it anyway
+
 	} else if (n < 0)
 		cip.stack.pop(-n);
 

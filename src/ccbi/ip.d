@@ -60,6 +60,13 @@ struct IP(cell dim, bool befunge93) {
 	}
 
 	static if (!befunge93)
+	invariant {
+		if (this.stackStack)
+			foreach (stack; *stackStack)
+				assert (stack.isDeque == this.stack.isDeque);
+	}
+
+	static if (!befunge93)
 	typeof(this) deepCopy(bool active = true, FungeSpace* s = null) {
 		auto copy = new IP;
 		*copy = *this;

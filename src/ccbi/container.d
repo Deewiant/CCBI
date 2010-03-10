@@ -7,7 +7,9 @@ module ccbi.container;
 import tango.core.Memory : GC;
 import tango.core.Exception : onOutOfMemoryError;
 import tango.core.Tuple;
+import tango.math.Math : max;
 import c = tango.stdc.stdlib;
+import tango.stdc.string : memmove;
 
 import ccbi.cell;
 import ccbi.stats;
@@ -49,8 +51,6 @@ private {
 			GC.removeRange(p);
 	}
 }
-
-private const size_t DEFAULT_SIZE = 0100;
 
 private template F(char[] ty, char[] f, args...) {
 	static if (args.length)
@@ -148,10 +148,12 @@ struct CellContainer {
 	// Returns a pointer to the top of the array overlaying the storage that
 	// backs this Container, guaranteeing that following the pointer there is
 	// space for least the given number of Ts.
+	//
+	// Altogether, this is an optimization on top of "push".
+	//
+	// Beware invertmode! If invertmode is enabled, you should fill the data
+	// after the pointer appropriately (i.e. in reverse order)!
 	mixin (F!("cell*", "reserve", "size_t n"));
-
-	// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
-	mixin (F!("cell", "at", "size_t i"));
 
 	// Calls the first given function over consecutive sequences of the top n
 	// elements, whose union is the top n elements. Traverses bottom-to-top.
@@ -159,28 +161,31 @@ struct CellContainer {
 	// If n is greater than the size, instead first calls the second given
 	// function with the difference of n and the size, then proceeds to call the
 	// first function as though the size had been passed as n.
-	mixin (F!("void", "mapTopN",
+	//
+	// Altogether, this is an optimization on top of "pop".
+	//
+	// But once again, beware modes! In queuemode, you will get the /bottom/ n
+	// elements, still in bottom-to-top order, and the second function will be
+	// called /after/ the first with the size difference, not before!
+	mixin (F!("void", "mapFirstN",
 		"size_t n", "void delegate(cell[]) f", "void delegate(size_t) g"));
+
+	// Non-queuemode mapFirstN: used in tracing
+	mixin (F!("void", "mapFirstNHead",
+		"size_t n", "void delegate(cell[]) f", "void delegate(size_t) g"));
+
+	// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
+	// Another optimization on top of "pop".
+	mixin (F!("cell", "at", "size_t i"));
+
+	byte mode() { return isDeque ? deque.mode : 0; }
 }
 
-/+ The stack is, by default, a Stack instead of a Deque even though the MODE
- + fingerprint needs a Deque.
- + This is because of the following performance measurement:
- +
- +   Operation    Iterations    Time (ms) (Stack)    Time (ms) (Deque)    Ratio
- +
- +    push(int)   10 000 000           680                 2790            4.1
- +     pop(1)     10 000 000            45                  125            2.8
- +    push(int)   50 000 000        343265
- +     pop(1)     50 000 000           235
- +
- + (Time is +- 5 ms, averaged over two runs for the 10 000 000 case, ratio is
- + to one decimal point)
- +
- + Thus, until we really need the Deque functionality, it's smarter to use the
- + Stack.
- +/
-
+// The stack is, by default, a Stack instead of a Deque even though the MODE
+// fingerprint needs a Deque.
+//
+// This is because a simple Stack is measurably faster when the full Deque
+// functionality is not needed.
 struct Stack(T) {
 	private {
 		T* array;
@@ -189,7 +194,7 @@ struct Stack(T) {
 		ContainerStats* stats;
 	}
 
-	static typeof(*this) opCall(ContainerStats* stats, size_t n = DEFAULT_SIZE)
+	static typeof(*this) opCall(ContainerStats* stats, size_t n = 0100)
 	{
 		typeof(*this) x;
 		x.stats = stats;
@@ -318,7 +323,7 @@ struct Stack(T) {
 
 	T at(size_t i) { return array[i]; }
 
-	void mapTopN(size_t n, void delegate(T[]) f, void delegate(size_t) g) {
+	void mapFirstN(size_t n, void delegate(T[]) f, void delegate(size_t) g) {
 		if (n <= head)
 			f(array[head-n .. head]);
 		else {
@@ -358,57 +363,146 @@ enum : byte {
 	QUEUE_MODE  = 1 << 1
 }
 
-// only used if the MODE fingerprint is loaded
+// Only used if the MODE fingerprint is loaded.
+//
+// Chunk-style implementation: keeps a doubly linked list of chunks, each of
+// which contains an array of data. Grows forwards as a stack and backwards as
+// a queue.
+//
+// Abnormally, new chunks are only created when growing backwards: when growing
+// forwards, the headmost chunk is merely resized.
 struct Deque {
 	private {
-		// Same order of members as in Stack!(cell)... may or may not lead to
-		// better codegen with the union in CellContainer
-		cell* array;
-		size_t capacity;
-		size_t head;
-		ContainerStats* stats;
+		struct Chunk {
+			cell* array;     // Typically not resizable
+			size_t capacity; // Typically constant
 
-		size_t tail;
+			// head: the index of one past the topmost value: (0, capacity]
+			// tail: the index of the bottommost value:       [0,capacity)
+			//
+			// Note that head can be zero and tail can be the
+			// capacity when the chunk is empty.
+			size_t head, tail;
+
+			Chunk* next, prev;
+
+			size_t size() { return head - tail; }
+		}
+		// tail may have a nonnull prev and head may have a nonnull next: this is
+		// so that if we keep pop/pushing one cell at a chunk boundary we don't
+		// have to constantly reallocate.
+		Chunk* head, tail;
+
+		ContainerStats* stats;
 	}
-	byte mode;
+	byte mode = 0;
+
+	// Have to be a bit conservative here since after free() a lot of stuff is
+	// invalidated. Otherwise both head and tail are nonnull, for example.
+	invariant {
+		if (head != tail) {
+			assert (head);
+			assert (tail);
+			assert (tail.head == tail.capacity);
+			assert (head.tail == 0);
+		}
+		if (tail && tail.prev)
+			assert (!tail.prev.prev);
+		if (head && head.next)
+			assert (!head.next.next);
+		for (auto c = tail; c; c = c.next)
+			assert (c.tail <= c.head);
+	}
+
+	private const size_t
+		DEFAULT_SIZE  = 0100,
+		NEW_TAIL_SIZE = 020000;
 
 	static typeof(*this) opCall(ContainerStats* stats, size_t n = DEFAULT_SIZE)
 	{
 		typeof(*this) x;
 		x.stats = stats;
-		x.allocateArray(n);
+		x.head = x.tail = malloc!(Chunk)(1);
+
+		with (*x.head) {
+			capacity = n;
+			array = malloc!(cell)(capacity);
+			head = tail = 0;
+			next = prev = null;
+		}
 		return x;
 	}
 
 	static typeof(*this) opCall(Deque q) {
 		typeof(*this) x;
 		with (x) {
-			stats    = q.stats;
-			mode     = q.mode;
-			tail     = q.tail;
-			head     = q.head;
-			capacity = q.capacity;
-			array    = malloc!(cell)(capacity);
+			stats = q.stats;
+			mode  = q.mode;
+
+			tail = malloc!(Chunk)(1);
+
+			// We don't care about q.tail.prev even if it exists
+			tail.prev = null;
+
+			for (auto qc = q.tail, c = tail;;) {
+				c.head = qc.head;
+				c.tail = qc.tail;
+				c.capacity = qc.capacity;
+				with (*c) {
+					array = malloc!(cell)(capacity);
+					array[tail..head] = qc.array[tail..head];
+				}
+				if (qc == q.head) {
+					c.next = null;
+					head = c;
+					break;
+				}
+				c.next = malloc!(Chunk)(1);
+				c.next.prev = c;
+				c  =  c.next;
+				qc = qc.next;
+			}
 		}
 		return x;
 	}
 	static typeof(*this) opCall(ContainerStats* stats, Stack!(cell) s) {
 		typeof(*this) x;
 		x.stats = stats;
-		with (x) {
-			assert (mode == 0);
+		x.head = x.tail = malloc!(Chunk)(1);
 
-			allocateArray(s.size);
-
-			foreach (c; &s.bottomToTop)
-				push(c);
+		with (*x.head) {
+			capacity = max(s.size, DEFAULT_SIZE);
+			array = malloc!(cell)(capacity);
+			array[0..s.size] = s.array[0..s.size];
+			tail = 0;
+			head = s.size;
+			next = prev = null;
 		}
 		return x;
 	}
 
-	void free() { .free(array); }
+	void free() {
+		.free(tail.array);
+		if (tail.prev) {
+			.free(tail.prev.array);
+			.free(tail.prev);
+		}
+		if (tail.next) for (auto c = tail.next;;) {
+			.free(c.array);
+			.free(c.prev);
+			if (c.next)
+				c = c.next;
+			else {
+				.free(c);
+				break;
+			}
+		}
+		head = tail = null;
+	}
 
 	cell pop() {
+		++stats.pops;
+
 		if (mode & QUEUE_MODE)
 			return popTail();
 		else
@@ -418,213 +512,465 @@ struct Deque {
 	void pop(size_t i)  {
 		stats.pops += i;
 
-		if (!empty) {
-			if (mode & QUEUE_MODE) while (i--) {
-				tail = (tail - 1) & (capacity - 1);
-				if (empty)
-					break;
-			} else while (i--) {
-				head = (head + 1) & (capacity - 1);
-				if (empty)
-					break;
+		if (mode & QUEUE_MODE) for (;;) {
+			if (i < tail.size) {
+				tail.tail += i;
+				return;
 			}
-		}
+			i -= tail.size;
+			if (!dropTailChunk())
+				break;
 
+		} else for (;;) {
+			if (i <= head.size) {
+				head.head -= i;
+				return;
+			}
+			i -= head.size;
+			if (!dropHeadChunk())
+				break;
+		}
 		stats.popUnderflows += i;
 	}
-	cell popHead() {
-		++stats.pops;
-
+	private cell popHead() {
 		if (empty) {
 			++stats.popUnderflows;
 			return 0;
 		}
 
-		auto h = array[head];
-		head = (head + 1) & (capacity - 1);
-		return h;
+		auto c = head.array[--head.head];
+
+		if (head.head <= head.tail)
+			dropHeadChunk();
+
+		return c;
+	}
+	private cell popTail() {
+		if (empty) {
+			++stats.popUnderflows;
+			return 0;
+		}
+
+		auto c = tail.array[tail.tail++];
+
+		if (tail.tail >= tail.head)
+			dropTailChunk();
+
+		return c;
 	}
 
 	void clear() {
 		++stats.clears;
-		stats.cleared += size;
 
-		head = tail = 0;
+		stats.cleared += tail.size;
+
+		// Drop back down to one chunk, which might as well be the current tail.
+		//
+		// Note that we might still have a tail.prev alive, which is fine.
+		if (head != tail) {
+			auto c = tail.next;
+
+			stats.cleared += c.size;
+			.free(c.array);
+
+			for (c = c.next;;) {
+				stats.cleared += c.size;
+				.free(c.array);
+				.free(c.prev);
+				if (c.next)
+					c = c.next;
+				else {
+					.free(c);
+					break;
+				}
+			}
+			tail.next = null;
+			head = tail;
+		}
+		tail.head = tail.tail = 0;
 	}
 
 	cell top() {
+		++stats.peeks;
+
 		if (mode & QUEUE_MODE)
 			return peekTail();
 		else
 			return peekHead();
 	}
+	private cell peekHead() {
+		if (empty) {
+			++stats.peekUnderflows;
+			return 0;
+		}
+		return head.array[head.head-1];
+	}
+	private cell peekTail() {
+		if (empty) {
+			++stats.peekUnderflows;
+			return 0;
+		}
+		return tail.array[tail.tail];
+	}
 
-	void push(T...)(T ts) {
+	void push(C...)(C ts) {
 		if (mode & INVERT_MODE)
 			pushTail(ts);
 		else
 			pushHead(ts);
 	}
-	void pushHead(C...)(C cs) {
+	private void pushHead(C...)(C cs) {
 		stats.pushes += cs.length;
 
-		foreach (c; cs) {
-			head = (head - 1) & (capacity - 1);
-			array[head] = cast(cell)c;
-			if (head == tail)
-				doubleCapacity();
+		auto newHead = head.head + cs.length;
+		if (newHead > head.capacity) {
+			++stats.resizes;
+
+			head.capacity = 2 * head.capacity +
+				(newHead > 2 * head.capacity ? newHead :  0);
+
+			head.array = realloc(head.array, head.capacity);
 		}
+
+		foreach (c; cs)
+			head.array[head.head++] = cast(cell)c;
+	}
+	private void pushTail(C...)(C cs) {
+		stats.pushes += cs.length;
+
+		size_t i = 0;
+
+		auto newTail = tail.tail - cs.length;
+		if (newTail > tail.capacity) {
+			if (head == tail && head.size == 0 && cs.length <= head.capacity) {
+				// We can fixup the position in the chunk instead of having to
+				// resort to resizing
+				head.head = head.tail = max(cs.length, head.capacity / 2);
+			} else {
+				++stats.resizes;
+
+				// Tuple hacks, equivalent to:
+				// while (tail.tail > 0) tail.array[--tail.tail] = cs[i++].
+				// i.e. push what we can into the current tail.
+				foreach (j, c; cs) {
+					if (tail.tail > 0)
+						tail.array[--tail.tail] = cast(cell)c;
+					else {
+						i = j;
+						break;
+					}
+				}
+
+				newTailChunk(cs.length - i);
+			}
+		}
+
+		// Another tuple hacks, equivalent to foreach (c; cs[i..$]).
+		foreach (j, c; cs)
+			if (j >= i)
+				tail.array[--tail.tail] = cast(cell)c;
 	}
 
-	size_t size() { return (tail - head) & (capacity - 1); }
-	bool empty()  { return tail == head; }
+	bool empty() { return head == tail && head.head <= head.tail; }
+	size_t size() {
+		size_t n = 0;
+		for (auto c = tail; c; c = c.next)
+			n += c.size;
+		return n;
+	}
 
 
 
 	cell* reserve(size_t n) {
-		// XXX: this is broken but does the job in many cases
 		stats.pushes += n;
 
-		while (capacity < size + n)
-			doubleCapacity();
+		if (mode & INVERT_MODE)
+			return reserveTail(n);
+		else
+			return reserveHead(n);
+	}
+	private cell* reserveHead(size_t n) {
 
-		assert (head < tail, "reserve not supported with queue usage");
+		auto newHead = head.head + n;
+		if (head.capacity < newHead) {
+			head.capacity = newHead;
+			head.array = realloc(head.array, head.capacity);
+		}
 
-		auto ptr = &array[head+size];
-		head += n;
+		auto ptr = &head.array[head.head];
+		head.head = newHead;
 		return ptr;
+	}
+	private cell* reserveTail(size_t n) {
+
+		// Tricky.
+
+		// If it fits in the tail chunk directly, just give that.
+		auto newTail = tail.tail - n;
+		if (newTail < tail.capacity) {
+			tail.tail = newTail;
+			return &tail.array[tail.tail];
+		}
+
+		if (head == tail && head.size == 0 && n <= head.capacity) {
+			// Just fixup the position in the chunk
+			head.head = max(n, head.capacity / 2);
+			head.tail = head.head - n;
+			return &head.array[head.tail];
+		}
+
+		const EXPENSIVE_RESIZE_LIMIT = NEW_TAIL_SIZE * 32;
+
+		// If tail is small enough, resize it. More expensive than resizing the
+		// head because we need to move the data to the right place. Thus also
+		// pad it out to avoid having to resize it again in the near future.
+		if (tail.size <= EXPENSIVE_RESIZE_LIMIT) {
+			with (*tail) {
+				capacity = 2 * capacity + (n > 2 * capacity ? n : 0);
+				array = realloc(array, capacity);
+			}
+
+			if (head != tail) with (*tail) {
+				// Need to move the data to the end
+				if (capacity - size < head)
+					array[capacity - size .. capacity] = array[tail..head];
+				else
+					memmove(&array[capacity - size], &array[tail], size);
+
+				tail = capacity - size;
+				head = capacity;
+
+			} else with (*tail) {
+				// Moving to the very end of the capacity might not be what we
+				// want... leave an equal amount of free space at the beginning and
+				// the end
+				auto space = (capacity - n - size) / 2;
+
+				if (capacity - space < tail && space + n < head)
+					array[space + n .. capacity - space] = array[tail..head];
+				else
+					memmove(&array[space + n], &array[tail], size);
+
+				tail = space + n;
+				head = capacity - space;
+			}
+			return &tail.array[tail.tail];
+		}
+
+		// If there is a tail.next and tail and tail.next are small enough,
+		// resize tail.next (expensive again), copy tail into tail.next, and use
+		// the now-empty tail.
+		if (tail.next && tail.size <= EXPENSIVE_RESIZE_LIMIT/2
+		              && tail.next.size <= EXPENSIVE_RESIZE_LIMIT/2)
+		{
+			tail.next.capacity = 2 * tail.next.capacity +
+				(tail.size > 2 * tail.next.capacity ? tail.size : 0);
+
+			tail.next.array = realloc(tail.next.array, tail.next.capacity);
+
+			with (*tail.next) {
+				if (capacity - size < head)
+					array[capacity - size .. capacity] = array[tail..head];
+				else
+					memmove(&array[capacity - size], &array[tail], size);
+
+				tail = capacity - size;
+				head = capacity;
+			}
+			tail.next.array[0..tail.size] = tail.array[tail.tail..tail.head];
+
+			with (*tail) {
+				if (capacity < n) {
+					capacity = 2 * capacity + (n > 2 * capacity ? n : 0);
+					array = realloc(array, capacity);
+				}
+				tail = capacity - n;
+				head = capacity;
+				return &array[tail];
+			}
+		}
+
+		// Tail has no suitable neighbour and/or is too large to justify the
+		// expensive size increasing: instead shrink tail's capacity to its
+		// current size and use a different chunk for the reserve request.
+
+		// First move the data to the beginning of tail so that the realloc
+		// doesn't lose any of it.
+		with (*tail) if (tail > 0) {
+			if (size < tail)
+				array[0..size] = array[tail..head];
+			else
+				memmove(&array[0], &array[tail], size);
+		}
+
+		tail.capacity = tail.size;
+		tail.array = realloc(tail.array, tail.capacity);
+
+		newTailChunk(n);
+
+		tail.tail = tail.capacity - n;
+		return &tail.array[tail.tail];
 	}
 
 	cell at(size_t i) {
-		assert (false, "TODO");
+		for (auto c = tail;; c = c.next) {
+			if (i < c.size)
+				return c.array[i];
+			else
+				i -= c.capacity;
+		}
 	}
 
-	void mapTopN(size_t n, void delegate(cell[]) f, void delegate(size_t) g) {
-		assert (false, "TODO");
+	void mapFirstN(size_t n, void delegate(cell[]) f, void delegate(size_t) g) {
+		if (mode & QUEUE_MODE)
+			return mapFirstNTail(n, f, g);
+		else
+			return mapFirstNHead(n, f, g);
+	}
+	private void mapFirstNHead(
+		size_t n, void delegate(cell[]) f, void delegate(size_t) g)
+	{
+		if (n <= head.size)
+			return f(head.array[head.head-n .. head.head]);
+
+		// Didn't fit into the head chunk... since we want to map from tail to
+		// head, find the tailmost relevant chunk and the start position in it.
+		auto tailMost = head.prev;
+		n -= head.size;
+		while (tailMost && n > tailMost.size) {
+			n -= tailMost.size;
+			tailMost = tailMost.prev;
+		}
+
+		if (!tailMost) {
+			// Ran out of chunks: underflow by n
+			g(n);
+			tailMost = tail;
+		} else if (n > 0) {
+			// Didn't run out of chunks but want only n out of the last one
+			f(tailMost.array[tailMost.head-n .. tailMost.head]);
+			tailMost = tailMost.next;
+		}
+
+		do {
+			f(tailMost.array[tailMost.tail .. tailMost.head]);
+			tailMost = tailMost.next;
+		} while (tailMost);
+	}
+	private void mapFirstNTail(
+		size_t n, void delegate(cell[]) f, void delegate(size_t) g)
+	{
+		for (auto c = tail; c; c = c.next) {
+			if (n <= c.size)
+				return f(c.array[c.tail .. n + c.tail]);
+
+			f(c.array[c.tail..c.head]);
+			n -= c.size;
+		}
+		g(n);
 	}
 
 
 
 	int opApply(int delegate(inout cell t) dg) {
-		int r = 0;
-		for (size_t i = head; i != tail; i = (i + 1) & (capacity - 1))
-			if (r = dg(array[i]), r)
-				break;
-		return r;
+		for (auto ch = tail; ch; ch = ch.next)
+			foreach (inout c; ch.array[ch.tail..ch.head])
+				if (auto r = dg(c))
+					return r;
+		return 0;
 	}
 
 	int topToBottom(int delegate(inout cell t) dg) {
-		return opApply(dg);
+		for (auto ch = head; ch; ch = ch.prev)
+			foreach_reverse (inout c; ch.array[ch.tail..ch.head])
+				if (auto r = dg(c))
+					return r;
+		return 0;
 	}
 
 	int bottomToTop(int delegate(inout cell t) dg) {
-		int r = 0;
-		for (size_t i = tail; i != head; i = (i - 1) & (capacity - 1))
-			if (r = dg(array[i]), r)
-				break;
-		return r;
+		return opApply(dg);
 	}
 
 	cell[] elementsBottomToTop() {
 		auto elems = new cell[size];
 
-		if (head < tail)
-			elems[0..size] = array[head..head + size];
-		else if (head > tail) {
-			auto lh = capacity - head;
-			elems[ 0..lh]        = array[head..capacity];
-			elems[lh..lh + tail] = array[0..tail];
+		auto p = elems.ptr;
+		for (auto c = tail; c; c = c.next) {
+			p[0..c.size] = c.array[c.tail..c.head];
+			p += c.size;
+		}
+		return elems;
+	}
+
+
+	// Helpers
+
+	private void newTailChunk(size_t minSize) {
+		with (*tail) if (size == 0) {
+			// Just resize the existing tail.
+
+			// We shouldn't get into this situation unless something has detected
+			// the capacity to be insufficient...
+			assert (capacity < minSize);
+
+			head = tail = capacity = minSize;
+			array = realloc(array, capacity);
+			return;
 		}
 
-		return elems.reverse;
-	}
-
-private:
-
-	void pushTail(C...)(C cs) {
-		stats.pushes += cs.length;
-
-		foreach (c; cs) {
-			array[tail] = cast(cell)c;
-			tail = (tail + 1) & (capacity - 1);
-			if (head == tail)
-				doubleCapacity();
-		}
-	}
-
-	cell popTail() {
-		++stats.pops;
-
-		if (empty) {
-			++stats.popUnderflows;
-			return 0;
+		if (tail.prev) {
+			// We have an extra chunk ready and waiting: use that
+			with (*tail.prev) {
+				if (capacity < minSize) {
+					capacity = minSize;
+					array = realloc(array, capacity);
+				}
+				head = tail = capacity;
+			}
+			tail = tail.prev;
+			return;
 		}
 
-		tail = (tail - 1) & (capacity - 1);
-		return array[tail];
+		auto c = malloc!(Chunk)(1);
+		with (*c) {
+			head = tail = capacity = max(minSize, NEW_TAIL_SIZE);
+			array = malloc!(cell)(capacity);
+			prev = null;
+		}
+		c.next = tail;
+		tail = tail.prev = c;
 	}
-
-	cell peekHead() {
-		++stats.peeks;
-
-		if (empty) {
-			++stats.peekUnderflows;
-			return 0;
-		} else
-			return array[head];
-	}
-	cell peekTail() {
-		++stats.peeks;
-
-		if (empty) {
-			++stats.peekUnderflows;
-			return 0;
-		} else
-			return array[(tail - 1) & (capacity - 1)];
-	}
-
-	void allocateArray(size_t length) {
-		auto newSize = DEFAULT_SIZE;
-
-		if (length >= newSize) {
-			static assert (newSize.sizeof == 4 || newSize.sizeof == 8,
-				"Change size calculation in ccbi.container.Deque.allocateArray");
-
-			newSize = length;
-			newSize |= (newSize >>>  1);
-			newSize |= (newSize >>>  2);
-			newSize |= (newSize >>>  4);
-			newSize |= (newSize >>>  8);
-			newSize |= (newSize >>> 16);
-
-			static if (newSize.sizeof == 8)
-			newSize |= (newSize >>> 32);
-
-			// oops, overflowed
-			if (++newSize < 0)
-				newSize >>>= 1;
+	private bool dropHeadChunk() {
+		if (head == tail) {
+			head.head = head.tail = 0;
+			return false;
 		}
 
-		capacity = newSize;
-		array = realloc(array, capacity);
+		auto c = head;
+		head = head.prev;
+		head.next = null;
+
+		.free(c.array);
+		.free(c);
+		return true;
 	}
+	private bool dropTailChunk() {
+		if (head == tail) {
+			tail.head = tail.tail = tail.capacity;
+			return false;
+		}
 
-	void doubleCapacity() {
-		assert (head == tail);
+		// Keep the old tail in case we'll be needing it soon, but leave at most
+		// one unused tail chunk
+		if (tail.prev) {
+			.free(tail.prev.array);
+			.free(tail.prev);
 
-		++stats.resizes;
-
-		// elems to the right of head
-		auto r = capacity - head;
-
-		auto newArray = malloc!(cell)(capacity * 2);
-		newArray[0..r     ] = array[head..head+r];
-		newArray[r..r+head] = array[0   ..head  ];
-		.free(array);
-
-		head  = 0;
-		tail  = capacity;
-		array = newArray;
-		capacity *= 2;
+			tail.prev = null;
+		}
+		tail.head = tail.tail = tail.capacity;
+		tail = tail.next;
+		return true;
 	}
 }
