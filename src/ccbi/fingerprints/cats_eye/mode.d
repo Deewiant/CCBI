@@ -52,6 +52,7 @@ void dtor() {
 		}
 	} else {
 		assert (cip.stack.isDeque);
+		cip.stack.isDeque = false;
 		cip.stack.stack = Stack!(cell)(&stackStats, cip.stack.deque);
 	}
 }
