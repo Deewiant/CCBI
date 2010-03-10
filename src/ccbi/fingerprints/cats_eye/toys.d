@@ -384,9 +384,15 @@ void counterclockwise() {
 
 			auto p = reserve(i*j);
 
-			for (c.y = o.y + j; c.y-- > o.y;)
-			for (c.x = o.x + i; c.x-- > o.x;)
-				*p++ = state.space[c];
+			if (cip.stack.mode & INVERT_MODE) {
+				p += i*j - 1;
+				for (c.y = o.y + j; c.y-- > o.y;)
+				for (c.x = o.x + i; c.x-- > o.x;)
+					*p-- = state.space[c];
+			} else
+				for (c.y = o.y + j; c.y-- > o.y;)
+				for (c.x = o.x + i; c.x-- > o.x;)
+					*p++ = state.space[c];
 		}
 	} else reverse;
 }
