@@ -556,6 +556,16 @@ Request beginBlock() {
 	auto n = soss.pop;
 
 	if (n > 0) {
+		// Funge-98: "[The { instruction] copies [the] elements as a block, so
+		// order is preserved."
+		//
+		// That's pretty clear even though it actually modifies the push/pop
+		// order when queuemode != invertmode.
+		//
+		// No mode: [... 1,2,3] --> [... 1,2,3]
+		// Mode QI: [1,2,3 ...] --> [1,2,3 ...]
+		// Mode Q:  [1,2,3 ...] --> [... 1,2,3]
+		// Mode I:  [... 1,2,3] --> [1,2,3 ...]
 		auto p = toss.reserve(n);
 
 		soss.mapFirstN(n, (cell[] a) {
@@ -601,6 +611,8 @@ void endBlock() {
 	popVector(cip.offset);
 
 	if (n > 0) {
+		// As in the { case, just with a different source and target stack.
+
 		auto p = cip.stack.reserve(n);
 
 		oldStack.mapFirstN(n, (cell[] a) {
@@ -634,30 +646,52 @@ void stackUnderStack() {
 	if (cip.stack.isDeque)
 		soss.deque.mode = cip.stack.deque.mode;
 
-	if (count > 0) {
-		auto p = cip.stack.reserve(count) + count - 1;
-		soss.mapTopN(count, (cell[] a) {
-			foreach (c; a)
-				*p-- = c;
-		},
-		(size_t n) {
-			p -= n;
-			p[0..n] = 0;
-		});
-		soss.pop(count);
+	typeof(cip.stack) src, tgt;
 
+	if (count > 0) {
+		src = soss;
+		tgt = cip.stack;
 	} else if (count < 0) {
 		count = -count;
-		auto p = soss.reserve(count) + count - 1;
-		cip.stack.mapTopN(count, (cell[] a) {
-			foreach (c; a)
-				*p-- = c;
-		},
-		(size_t n) {
-			p -= n;
-			p[0..n] = 0;
-		});
-		cip.stack.pop(count);
+		src = cip.stack;
+		tgt = soss;
+	} else
+		return;
+
+	switch (cip.stack.mode) {
+		case 0:                        // [... 3,2,1] --> [... 1,2,3]
+		case QUEUE_MODE | INVERT_MODE: // [1,2,3 ...] --> [3,2,1 ...]
+		{
+			auto p = tgt.reserve(count) + count - 1;
+
+			src.mapFirstN(count, (cell[] a) {
+				foreach (c; a)
+					*p-- = c;
+			},
+			(size_t n) {
+				p -= n;
+				p[0..n] = 0;
+			});
+			src.pop(count);
+			break;
+		}
+
+		case QUEUE_MODE:  // [1,2,3 ...] --> [... 1,2,3]
+		case INVERT_MODE: // [... 3,2,1] --> [3,2,1 ...]
+		{
+			auto p = tgt.reserve(count);
+
+			src.mapFirstN(count, (cell[] a) {
+				p[0..a.length] = a;
+				p += a.length;
+			},
+			(size_t n) {
+				p[0..n] = 0;
+				p += n;
+			});
+			src.pop(count);
+			break;
+		}
 	}
 }
 
