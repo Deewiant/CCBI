@@ -52,7 +52,7 @@ foreach(arg ${DC_ARGS})
 endforeach()
 
 set(CCBI_BUILD_TYPE "Release" CACHE STRING
-    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, sed, and (for C wrappers) clang; highly recommended); Release-LLVM-Safer (less LTO, less buggy).")
+    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, and (for C wrappers) clang; highly recommended); Release-LLVM-Safer (less LTO, less buggy).")
 
 option(ENABLE_BEFUNGE93  "Build support for Befunge-93." ON)
 option(ENABLE_FUNGE98_1 "Build support for Unefunge-98 (one-dimensional Funge-98)." OFF)
@@ -234,6 +234,10 @@ endif()
 set(CCBI_BIN "${CCBI_BINARY_DIR}/bin/ccbi${CMAKE_EXECUTABLE_SUFFIX}")
 set(OBJDIR "${CCBI_BINARY_DIR}/obj")
 
+if(VENDOR STREQUAL "ldc")
+	list(APPEND D_FLAGS -linkonce-templates)
+endif()
+
 if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 
 	# Build the .bc
@@ -275,8 +279,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC_OPT}"
 		DEPENDS "${CCBI_BC}" ${C_OBJS}
-		COMMAND llvm-link "${CCBI_BC}" ${C_OBJS} | llvm-dis
-		        | sed "s/= weak/= linkonce/;s/define weak/define linkonce/" | llvm-as
+		COMMAND llvm-link "${CCBI_BC}" ${C_OBJS}
 		        | opt -std-compile-opts -unroll-allow-partial ${LTO}
 		        > "${CCBI_BC_OPT}")
 
