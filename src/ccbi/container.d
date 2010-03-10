@@ -165,7 +165,11 @@ struct CellContainer {
 		"size_t n", "void delegate(cell[]) f", "void delegate(size_t) g"));
 
 	// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
+	//
 	// Another optimization on top of "pop".
+	//
+	// And as usual: in queuemode, you'll get the x'th element from the top, not
+	// the bottom.
 	mixin (F!("cell", "at", "size_t i"));
 
 	byte mode() { return isDeque ? deque.mode : 0; }
@@ -697,11 +701,11 @@ struct Deque {
 		// Tricky.
 
 		// If it fits in the tail chunk directly, just give that.
-		auto newTail = tail.tail - n;
+		{auto newTail = tail.tail - n;
 		if (newTail < tail.capacity) {
 			tail.tail = newTail;
 			return &tail.array[tail.tail];
-		}
+		}}
 
 		if (head == tail && head.size == 0 && n <= head.capacity) {
 			// Just fixup the position in the chunk
@@ -735,16 +739,20 @@ struct Deque {
 				// Moving to the very end of the capacity might not be what we
 				// want... leave an equal amount of free space at the beginning and
 				// the end
-				auto space = (capacity - n - size) / 2;
+				auto space = (capacity - (size + n)) / 2;
+				auto odd   = (capacity - (size + n)) % 2;
 
-				if (capacity - space < tail && space + n < head)
-					array[space + n .. capacity - space] = array[tail..head];
+				auto oldTailTgt = space + n + odd;
+
+				if (head <= space + n)
+					array[oldTailTgt .. oldTailTgt + size] = array[tail..head];
 				else
-					memmove(&array[space + n], &array[tail], size);
+					memmove(&array[oldTailTgt], &array[tail], size);
 
-				tail = space + n;
+				tail = oldTailTgt - n;
 				head = capacity - space;
 			}
+			assert (tail.size >= n);
 			return &tail.array[tail.tail];
 		}
 
@@ -760,7 +768,7 @@ struct Deque {
 			tail.next.array = realloc(tail.next.array, tail.next.capacity);
 
 			with (*tail.next) {
-				if (capacity - size < head)
+				if (head <= capacity - size)
 					array[capacity - size .. capacity] = array[tail..head];
 				else
 					memmove(&array[capacity - size], &array[tail], size);
@@ -788,7 +796,7 @@ struct Deque {
 		// First move the data to the beginning of tail so that the realloc
 		// doesn't lose any of it.
 		with (*tail) if (tail > 0) {
-			if (size < tail)
+			if (size <= tail)
 				array[0..size] = array[tail..head];
 			else
 				memmove(&array[0], &array[tail], size);
@@ -804,11 +812,14 @@ struct Deque {
 	}
 
 	cell at(size_t i) {
+		if (mode & QUEUE_MODE)
+			i = size-1 - i;
+
 		for (auto c = tail;; c = c.next) {
 			if (i < c.size)
-				return c.array[i];
+				return c.array[c.tail + i];
 			else
-				i -= c.capacity;
+				i -= c.size;
 		}
 	}
 

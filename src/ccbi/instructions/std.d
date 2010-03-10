@@ -1149,39 +1149,31 @@ void getSysInfo() {
 		// We're going to push everything: reserve space for it all and copy it
 		// on
 
+		auto oldStackSize = cast(cell)cip.stack.size;
+
 		// Top 9 cells; 5 vectors; another 3 cells; at least one stack size;
 		// command line arguments terminated by double null; environment
 		// variables terminated by null
 		const GUARANTEED_SIZE = 9 + 5*dim + 3 + 1 + 2 + 1;
 
-		auto oldStackSize = cast(cell)cip.stack.size;
+		if (!envCache)
+			computeEnvCache();
+		if (!argsCache)
+			computeArgsCache();
 
-		auto minNeeded =
+		auto p = cip.stack.reserve(
 			GUARANTEED_SIZE + (cip.stackCount - 1) +
-			envCache.length + argsCache.length;
+			envCache.length + argsCache.length);
 
-		auto p = cip.stack.reserve(minNeeded);
+		auto origP = p;
 
 		// Environment
-
-		if (!envCache) {
-			computeEnvCache();
-			// Need to adjust by minNeeded since we haven't written that yet
-			p = cip.stack.reserve(envCache.length) - minNeeded;
-		}
 
 		*p++ = 0;
 		p[0..envCache.length] = envCache;
 		p += envCache.length;
 
 		// Command line arguments
-
-		if (!argsCache) {
-			computeArgsCache();
-			// Ditto above minNeeded adjustment, but we did write the null
-			// terminator which is part of that
-			p = cip.stack.reserve(argsCache.length) - minNeeded + 1;
-		}
 
 		*p++ = 0;
 		*p++ = 0;
@@ -1233,12 +1225,21 @@ void getSysInfo() {
 		// Constant env info
 		p[0..SYSINFO_CONSTANT_TOP.length] = SYSINFO_CONSTANT_TOP;
 
+		// Cheap solution to invertmode
+		if (cip.stack.mode & INVERT_MODE)
+			origP[0 .. p + SYSINFO_CONSTANT_TOP.length - origP].reverse;
+
 		// And done.
 		return;
 	}
 
 	// We know we're only going to push a single cell: find out which one it
 	// will be.
+	//
+	// This code doesn't change with invertmode or queuemode: while the
+	// description in the spec lends itself to all kinds of interpretations for
+	// the cases of various modes, I'm going with the example "3y will act as if
+	// only the handprint was pushed onto the stack".
 
 	--arg;
 	switch (arg) {
