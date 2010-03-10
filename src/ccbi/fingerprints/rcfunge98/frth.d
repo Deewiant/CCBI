@@ -65,12 +65,22 @@ void forthRoll() {
 		else {
 			auto xu = at(s - u);
 
-			// Move the top u elements left by one
-			mapFirstN(u, (cell[] a) {
-				memmove(a.ptr, a.ptr + 1, (a.length - 1) * cell.sizeof);
-			}, null);
-
+			// These null function arguments are valid because we know that we
+			// can't underflow
+			if (cip.stack.mode & QUEUE_MODE) {
+				// Move the bottom u elements right by one
+				mapFirstN(u, (cell[] a) {
+					memmove(a.ptr + 1, a.ptr, (a.length - 1) * cell.sizeof);
+				}, null);
+			} else {
+				// Move the top u elements left by one
+				mapFirstN(u, (cell[] a) {
+					memmove(a.ptr, a.ptr + 1, (a.length - 1) * cell.sizeof);
+				}, null);
+			}
+			// Remove leftover nonsense on stack
 			pop(1);
+
 			push(xu);
 		}
 	}
