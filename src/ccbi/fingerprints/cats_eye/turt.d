@@ -518,7 +518,7 @@ void printDrawing() {
 
 			dotElem.attribute(null, "class", *s);
 		} else
-			dotElem.attribute(null, "fill", colourS);
+			dotElem.attribute(null, "fill", colourS.dup);
 	} // }}}
 	void printPath(uint colour, Point[] ps) { // {{{
 
