@@ -156,7 +156,7 @@ struct Turtle {
 		// if we are to start drawing now, but last move we didn't draw, add a
 		// non-drawing path node to here before moving
 		if (penDown && movedWithoutDraw)
-			pic.addPath(p, false, 0);
+			pic.addPath(p, false, colour);
 
 		tc
 			dx = cast(tc)round(cos * distance),
@@ -201,34 +201,53 @@ struct Turtle {
 }
 
 struct Drawing {
-
-	struct Path {
-		Point p;
-		bool penDown;
+	struct Part {
+		bool isDot;
 		uint colour;
-
-		Path* next;
+		union {
+			Point dot;
+			Point[] path;
+		}
 	}
 
-	uint[Point] dots;
+	// Order matters! A red dot on top of a blue line is different from a blue
+	// line on top of a red dot.
+	Part[] parts;
+
 	uint[uint] dotColourCounts;
 
 	Point min = {0,0}, max = {0,0};
 
-	Path* pathBeg, path;
-
 	const uint TRANSPARENT = 0xff000000;
 	auto bgColour = TRANSPARENT;
 
+	// No two consecutive calls will have penDown = false
 	void addPath(Point pt, bool penDown, uint colour) {
-		Path* p = new Path;
-		*p = Path(pt, penDown, colour);
 
-		if (pathBeg is null)
-			pathBeg = p;
-		else
-			path.next = p;
-		path = p;
+		if (penDown) {
+			// We should get a !penDown call first
+			assert (parts.length > 0);
+			assert (!parts[$-1].isDot);
+
+			if (parts[$-1].colour == colour)
+				return parts[$-1].path ~= pt;
+		}
+
+		// Make a new path.
+		Part part;
+		part.isDot = false;
+		part.colour = colour;
+
+		// Be sure when it comes to unions...
+		part.path = null;
+
+		// Start from where we last ended
+		if (penDown)
+			part.path ~= parts[$-1].path[$-1];
+
+		part.path ~= pt;
+
+		parts ~= part;
 	}
 }
 // }}}
@@ -248,33 +267,25 @@ Turtle turt;
 // If we've moved to a location with the pen up, and the pen is now down, it
 // may be that we'll move to another location with the pen down. Thus there's
 // no need to add a point unless the pen is lifted up or we need to look at the
-// drawing.
+// drawing: in these cases, call tryAddPoint.
 void tryAddPoint() {
 	if (turt.movedWithoutDraw && turt.penDown)
 		addPoint();
 }
 
-uint dotColour(uint c) {
-	auto p = c in turt.pic.dotColourCounts;
-	if (p)
-		++*p;
-	else
-		turt.pic.dotColourCounts[c] = 1;
-	return c;
-}
-
 void addPoint() {
-	// replace an old point if possible
-	auto oldColour = turt.p in turt.pic.dots;
-	if (oldColour) {
-		if (*oldColour != turt.colour) {
-			--turt.pic.dotColourCounts[*oldColour];
-			turt.pic.dots[turt.p] = dotColour(turt.colour);
-		}
-		return;
-	}
+	auto count = turt.colour in turt.pic.dotColourCounts;
+	if (count)
+		++*count;
+	else
+		turt.pic.dotColourCounts[turt.colour] = 1;
 
-	turt.pic.dots[turt.p] = dotColour(turt.colour);
+	Drawing.Part part;
+	part.isDot = true;
+	part.colour = turt.colour;
+	part.dot = turt.p;
+
+	turt.pic.parts ~= part;
 	turt.newDraw();
 }
 
@@ -282,12 +293,11 @@ void clearWithColour(uint c) {
 	turt.pic.bgColour = c;
 
 	turt.pic.min = turt.pic.max = Point(0,0);
-	turt.pic.dots = null;
+	turt.pic.parts.length = 0;
 	turt.pic.dotColourCounts = null;
-	delete turt.pic.pathBeg;
 }
 // }}}
-// {{{ instructions
+// {{{ Instructions
 
 // Turn Left, Turn Right, Set Heading
 void turnLeft()   { turt.heading -= toRad(cip.stack.pop); turt.normalize(); }
@@ -303,8 +313,12 @@ void penPosition() {
 	switch (cip.stack.pop) {
 		case 0:
 			tryAddPoint();
-			turt.penDown = false; break;
-		case 1: turt.penDown = true; break;
+			turt.penDown = false;
+			break;
+		case 1:
+			turt.penDown = true;
+			break;
+
 		default: reverse(); break;
 	}
 }
@@ -418,8 +432,7 @@ void printDrawing() {
 		.attribute(null, "type", "text/css");
 
 	char[] styleData =
-		"path{fill:none;stroke-width:1px;"
-		"stroke-linecap:round;stroke-linejoin:round}";
+		"path{fill:none;stroke-linecap:round;stroke-linejoin:round}";
 
 	root
 		.element(null, "title")
@@ -436,78 +449,11 @@ void printDrawing() {
 			.attribute(null, "height", heightS)
 			.attribute(null, "fill",   toCSSColour(turt.pic.bgColour).dup);
 
-	if (auto p = turt.pic.pathBeg) {
-		typeof(root) newPath(uint colour) {
-			return root
-				.element  (null, "path")
-				.attribute(null, "stroke", toCSSColour(colour).dup);
-		}
-
-		auto path = newPath(p.colour);
-
-		char[] pathdata;
-
-		// need to move to the start if we draw immediately
-		if (p.penDown)
-			pathdata ~= "M0,0";
-
-		pathdata ~= NewlineString;
-
-		// SVG suggests a maximum line length of 255
-		ubyte i = 0;
-		const typeof(i) NODES_PER_LINE = 10;
-
-		for (auto prev = p; p; prev = p, p = p.next) {
-
-			auto drawing = p != turt.pic.path || p.penDown;
-
-			if (drawing && i++ >= NODES_PER_LINE) {
-				// remove the trailing space from the last line
-				pathdata.length = pathdata.length - 1;
-
-				pathdata ~= NewlineString;
-				i = 0;
-			}
-
-			if (p.penDown) {
-				// start a new path if the colour changes
-				if (p.colour != prev.colour) {
-					path.attribute(null, "d", pathdata[0..$-1]);
-
-					path = newPath(p.colour);
-					pathdata = "M";
-					pathdata ~= tcToString(prev.p.x);
-					pathdata ~= ",";
-					pathdata ~= tcToString(prev.p.y);
-					pathdata ~= " ";
-					pathdata ~= NewlineString;
-					i = 0;
-				}
-
-				pathdata ~= "L";
-
-			// if the last one doesn't draw anything, skip it, it's useless
-			// (i.e. if !p.penDown && p == pic.path)
-			} else if (p != turt.pic.path)
-				pathdata ~= "M";
-
-			if (drawing) {
-				pathdata ~= tcToString(p.p.x);
-				pathdata ~= ",";
-				pathdata ~= tcToString(p.p.y);
-				pathdata ~= " ";
-			}
-		}
-
-		path.attribute(null, "d", pathdata[0..$-1]);
-	}
-
 	char[][uint] colours;
 	ushort cCnt = 1;
 	char[12] classBuf = ".c4294967295";
 
-	foreach (dot, colour; turt.pic.dots) {
-
+	void printDot(uint colour, Point dot) { // {{{
 		auto dotElem = root
 			.element  (null, "circle")
 			.attribute(null, "cx",   tcToString(dot.x).dup)
@@ -573,6 +519,51 @@ void printDrawing() {
 			dotElem.attribute(null, "class", *s);
 		} else
 			dotElem.attribute(null, "fill", colourS);
+	} // }}}
+	void printPath(uint colour, Point[] ps) { // {{{
+
+		assert (ps.length > 0);
+
+		// Doesn't draw anything: ignore it
+		if (ps.length == 1)
+			return;
+
+		auto path = root.element  (null, "path")
+		                .attribute(null, "stroke", toCSSColour(colour).dup);
+
+		char[] pathdata = "M";
+
+		pathdata ~= tcToString(ps[0].x);
+		pathdata ~= ",";
+		pathdata ~= tcToString(ps[0].y);
+		pathdata ~= " L";
+
+		// SVG suggests a maximum line length of 255
+		ubyte i = 1;
+		const typeof(i) NODES_PER_LINE = 10;
+
+		foreach (p; ps[1..$]) {
+			if (i++ >= NODES_PER_LINE) {
+				// remove the trailing space from the previous line
+				pathdata.length = pathdata.length - 1;
+
+				pathdata ~= NewlineString;
+				i = 0;
+			}
+
+			pathdata ~= tcToString(p.x);
+			pathdata ~= ",";
+			pathdata ~= tcToString(p.y);
+			pathdata ~= " ";
+		}
+		path.attribute(null, "d", pathdata[0..$-1]);
+	} // }}}
+
+	foreach (part; turt.pic.parts) {
+		if (part.isDot)
+			printDot(part.colour, part.dot);
+		else
+			printPath(part.colour, part.path);
 	}
 
 	style.data(styleData);
