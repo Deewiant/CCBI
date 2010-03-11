@@ -67,19 +67,18 @@ version (trefunge98) {
 } else
 	const char[] TREFUNGE_HELP = "";
 
-version (funge93_and_98) {
+version (funge93_and_98)
 	const char[] BEFUNGE93_HELP = `
 
-     --befunge-93        Adhere to the Befunge-93 documentation instead of the
+     --befunge93         Adhere to the Befunge-93 documentation instead of the
                          Funge-98 specification.`;
+else version (befunge93)
+	const char[] BEFUNGE93_HELP = `
 
-	const char[] BEFUNGE93_OVERRIDE = `
-
-                         Overrides --befunge-93.`;
-} else {
+     --befunge93         Adhere to the Befunge-93 documentation instead of the
+                         Funge-98 specification. This is the default.`;
+else
 	const char[] BEFUNGE93_HELP = "";
-	const char[] BEFUNGE93_OVERRIDE = "";
-}
 
 version (statistics)
 	const char[] STAT_HELP = `
@@ -405,7 +404,7 @@ int main(char[][] args) {
 	version (trefunge98) argp("trefunge").aliased('3').bind({ dim = 3; });
 
 	version (befunge93)
-		argp("befunge-93").bind({ befunge93Mode = true; });
+		argp("befunge93").bind({ befunge93Mode = true; });
 
 	version (statistics)
 		argp("stats")       .aliased('s').bind({ flags.useStats = true; });
