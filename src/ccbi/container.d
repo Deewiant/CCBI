@@ -243,11 +243,10 @@ struct Stack(T) {
 	}
 
 	void pop(size_t i)  {
-		stats.pops          += i;
-		stats.popUnderflows += i;
+		stats.pops += i;
 
 		if (i >= head) {
-			stats.popUnderflows -= head;
+			stats.popUnderflows += i - head;
 			head = 0;
 		} else
 			head -= i;
@@ -300,6 +299,8 @@ struct Stack(T) {
 		stats.pushes += n;
 
 		if (capacity < n + head) {
+			++stats.resizes;
+
 			capacity = n + head;
 			array = realloc(array, capacity);
 		}
@@ -498,6 +499,11 @@ struct Deque {
 	cell pop() {
 		++stats.pops;
 
+		if (empty) {
+			++stats.popUnderflows;
+			return 0;
+		}
+
 		if (mode & QUEUE_MODE)
 			return popTail();
 		else
@@ -528,11 +534,6 @@ struct Deque {
 		stats.popUnderflows += i;
 	}
 	private cell popHead() {
-		if (empty) {
-			++stats.popUnderflows;
-			return 0;
-		}
-
 		auto c = head.array[--head.head];
 
 		if (head.head <= head.tail)
@@ -541,11 +542,6 @@ struct Deque {
 		return c;
 	}
 	private cell popTail() {
-		if (empty) {
-			++stats.popUnderflows;
-			return 0;
-		}
-
 		auto c = tail.array[tail.tail++];
 
 		if (tail.tail >= tail.head)
@@ -588,35 +584,26 @@ struct Deque {
 	cell top() {
 		++stats.peeks;
 
+		if (empty) {
+			++stats.peekUnderflows;
+			return 0;
+		}
+
 		if (mode & QUEUE_MODE)
-			return peekTail();
+			return tail.array[tail.tail];
 		else
-			return peekHead();
-	}
-	private cell peekHead() {
-		if (empty) {
-			++stats.peekUnderflows;
-			return 0;
-		}
-		return head.array[head.head-1];
-	}
-	private cell peekTail() {
-		if (empty) {
-			++stats.peekUnderflows;
-			return 0;
-		}
-		return tail.array[tail.tail];
+			return head.array[head.head-1];
 	}
 
-	void push(C...)(C ts) {
-		if (mode & INVERT_MODE)
-			pushTail(ts);
-		else
-			pushHead(ts);
-	}
-	private void pushHead(C...)(C cs) {
+	void push(C...)(C cs) {
 		stats.pushes += cs.length;
 
+		if (mode & INVERT_MODE)
+			pushTail(cs);
+		else
+			pushHead(cs);
+	}
+	private void pushHead(C...)(C cs) {
 		auto newHead = head.head + cs.length;
 		if (newHead > head.capacity) {
 			++stats.resizes;
@@ -631,8 +618,6 @@ struct Deque {
 			head.array[head.head++] = cast(cell)c;
 	}
 	private void pushTail(C...)(C cs) {
-		stats.pushes += cs.length;
-
 		size_t i = 0;
 
 		auto newTail = tail.tail - cs.length;
@@ -642,8 +627,6 @@ struct Deque {
 				// resort to resizing
 				head.head = head.tail = max(cs.length, head.capacity / 2);
 			} else {
-				++stats.resizes;
-
 				// Tuple hacks, equivalent to:
 				// while (tail.tail > 0) tail.array[--tail.tail] = cs[i++].
 				// i.e. push what we can into the current tail.
@@ -688,6 +671,8 @@ struct Deque {
 
 		auto newHead = head.head + n;
 		if (head.capacity < newHead) {
+			++stats.resizes;
+
 			head.capacity = newHead;
 			head.array = realloc(head.array, head.capacity);
 		}
@@ -721,6 +706,8 @@ struct Deque {
 		// pad it out to avoid having to resize it again in the near future.
 		if (tail.size <= EXPENSIVE_RESIZE_LIMIT) {
 			with (*tail) {
+				++stats.resizes;
+
 				capacity = 2 * capacity + (n > 2 * capacity ? n : 0);
 				array = realloc(array, capacity);
 			}
@@ -762,6 +749,8 @@ struct Deque {
 		if (tail.next && tail.size <= EXPENSIVE_RESIZE_LIMIT/2
 		              && tail.next.size <= EXPENSIVE_RESIZE_LIMIT/2)
 		{
+			++stats.resizes;
+
 			tail.next.capacity = 2 * tail.next.capacity +
 				(tail.size > 2 * tail.next.capacity ? tail.size : 0);
 
@@ -780,6 +769,8 @@ struct Deque {
 
 			with (*tail) {
 				if (capacity < n) {
+					++stats.resizes;
+
 					capacity = 2 * capacity + (n > 2 * capacity ? n : 0);
 					array = realloc(array, capacity);
 				}
@@ -801,6 +792,8 @@ struct Deque {
 			else
 				memmove(&array[0], &array[tail], size);
 		}
+
+		++stats.resizes;
 
 		tail.capacity = tail.size;
 		tail.array = realloc(tail.array, tail.capacity);
@@ -909,6 +902,8 @@ struct Deque {
 	// Helpers
 
 	private void newTailChunk(size_t minSize) {
+		++stats.resizes;
+
 		with (*tail) if (size == 0) {
 			// Just resize the existing tail.
 
