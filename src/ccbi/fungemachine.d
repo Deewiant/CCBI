@@ -240,18 +240,9 @@ private:
 	Request executeInstruction() {
 		++stats.executionCount;
 
-		cell c;
+		cip.gotoNextInstruction();
 
-		static if (befunge93) {
-			if (cip.pos.x < 0 || cip.pos.x >= 80 ||
-			    cip.pos.y < 0 || cip.pos.y >= 25)
-				cip.gotoNextInstruction();
-		} else {
-			c = cip.cell;
-			if (c == ' ' || c == ';')
-				cip.gotoNextInstruction();
-		}
-		c = cip.unsafeCell;
+		auto c = cip.unsafeCell;
 
 		if (c == '"')
 			cip.mode ^= IP.STRING;

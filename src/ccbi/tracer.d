@@ -159,12 +159,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	auto ipPositions = new Coords[ips.length];
 	foreach (i, ip; ips) {
 		auto p = ip.pos;
-		auto c = ip.cell;
-		static if (befunge93) {
-			if (p.x < 0 || p.x >= 80 || p.y < 0 || p.y >= 25)
-				ip.gotoNextInstruction;
-		} else if (c == ' ' || c == ';')
-				ip.gotoNextInstruction;
+		ip.gotoNextInstruction();
 		ipPositions[i] = ip.pos;
 		ip.pos = p;
 	}

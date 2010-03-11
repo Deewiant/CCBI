@@ -263,12 +263,8 @@ Request iterate() {
 	if (n <= 0)
 		return r;
 
-	auto i = cip.cell;
-
-	if (i == ' ' || i == ';') {
-		cip.gotoNextInstruction();
-		i = cip.unsafeCell;
-	}
+	cip.gotoNextInstruction();
+	auto i = cip.unsafeCell;
 
 	// k executes its operand from where k is
 	// and doesn't move past it

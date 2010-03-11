@@ -146,7 +146,14 @@ struct IP(cell dim, bool befunge93) {
 			if (mode & STRING)
 				return cursor.skipToLastSpace(delta);
 
-		cursor.skipMarkers(delta);
+		static if (befunge93) {
+			if (pos.x < 0 || pos.x >= 80 || pos.y < 0 || pos.y >= 25)
+				cursor.skipMarkers(delta);
+		} else {
+			auto c = cell;
+			if (c == ' ' || c == ';')
+				cursor.skipMarkers(delta);
+		}
 	}
 
 	static if (!befunge93)
