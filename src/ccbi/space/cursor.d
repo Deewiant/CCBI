@@ -188,6 +188,12 @@ public:
 		`;
 	}
 
+	static if (befunge93) {
+		void skipMarkers(Coords delta)
+		in   { assert (!inBox()); }
+		out  { assert ( inBox()); }
+		body { pos = space.jumpToBox(pos, delta, box, boxIdx); }
+	} else
 	void skipMarkers(Coords delta)
 	in {
 		assert (get() == ' ' || get() == ';');
@@ -231,6 +237,7 @@ semicolon:
 			}
 		} while (unsafeGet() == ' ')
 	}
+	static if (!befunge93)
 	bool skipSpaces(Coords delta) {
 		version (detectInfiniteLoops)
 			if (delta == 0)
@@ -259,6 +266,7 @@ semicolon:
 		}
 		return true;
 	}
+	static if (!befunge93)
 	bool skipSemicolons(Coords delta, ref bool inMid) {
 		version (detectInfiniteLoops)
 			if (delta == 0)
@@ -316,6 +324,7 @@ continuePrevBox:
 		}
 		return true;
 	}
+	static if (!befunge93)
 	void skipToLastSpace(Coords delta) {
 
 		mixin DetectInfiniteLoopDecls!();

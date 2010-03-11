@@ -242,7 +242,11 @@ private:
 
 		cell c;
 
-		static if (!befunge93) {
+		static if (befunge93) {
+			if (cip.pos.x < 0 || cip.pos.x >= 80 ||
+			    cip.pos.y < 0 || cip.pos.y >= 25)
+				cip.gotoNextInstruction();
+		} else {
 			c = cip.cell;
 			if (c == ' ' || c == ';')
 				cip.gotoNextInstruction();

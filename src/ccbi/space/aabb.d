@@ -601,4 +601,3 @@ in {
 		if (b.beg.v[i] > x) end.v[i] = min(b.beg.v[i]-l, end.v[i]);
 	}
 }
-

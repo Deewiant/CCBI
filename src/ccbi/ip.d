@@ -142,9 +142,11 @@ struct IP(cell dim, bool befunge93) {
 	void reverse() { delta *= -1; }
 
 	void gotoNextInstruction() {
-		mode & STRING
-			? cursor.skipToLastSpace(delta)
-			: cursor.skipMarkers    (delta);
+		static if (!befunge93)
+			if (mode & STRING)
+				return cursor.skipToLastSpace(delta);
+
+		cursor.skipMarkers(delta);
 	}
 
 	static if (!befunge93)
