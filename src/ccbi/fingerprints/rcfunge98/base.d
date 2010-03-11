@@ -44,9 +44,11 @@ void output(char[] fmt)() {
 		if (state.tick < ioAfter)
 			return cip.stack.pop(1);
 
-	Sout(intToString(cip.stack.pop, fmt));
-	ubyte b = ' ';
-	Cout.write(b);
+	try Sout(intToString(cip.stack.pop, fmt));
+	catch {
+		return reverse;
+	}
+	cput(' ');
 }
 
 void outputBase() {
@@ -77,9 +79,14 @@ void outputBase() {
 			result[i++] = DIGITS[val % base];
 	}
 
-	Sout(result[0..i].reverse);
-	ubyte b = ' ';
-	Cout.write(b);
+	bool rev = false;
+	foreach_reverse (c; result[0..i])
+		if (!cputDirect(c))
+			rev = true;
+	rev = !cputDirect(' ') || rev;
+
+	if (rev)
+		reverse;
 }
 
 // TODO: unify this with std.inputDecimal()
@@ -93,7 +100,7 @@ void inputBase() {
 		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 
-	Sout.flush();
+	try Sout.flush(); catch {}
 
 	auto digits = "0123456789abcdefghijklmnopqrstuvwxyz"[0..base];
 	char c;

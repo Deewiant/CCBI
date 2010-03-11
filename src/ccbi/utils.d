@@ -87,6 +87,15 @@ import tango.stdc.string : strlen;
 
 alias .Coords!(dim) Coords;
 
+void cput(ubyte c) {
+	if (!cputDirect(c))
+		reverse;
+}
+bool cputDirect(ubyte c) {
+	try return Sout.write((&c)[0..1]) == c.sizeof;
+	catch { return false; }
+}
+
 void popVector(out Coords c) {
 	with (c) {
 		static if (dim >= 3) z = cast(cell)cip.stack.pop;

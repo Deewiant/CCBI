@@ -138,6 +138,8 @@ ubyte cget() {
 }
 void cunget(ubyte c) { unget = c; }
 
+// cput is in Utils
+
 T[] stripr(T)(T[] s) {
 	size_t i = s.length;
 	foreach_reverse (c; s) {

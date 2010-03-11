@@ -88,12 +88,14 @@ void cplxOut() {
 			if (state.tick < ioAfter)
 				return;
 
-		Sout(r);
-		if (i > 0) {
-			ubyte b = '+';
-			Cout.write(b);
+		try {
+			Sout(r);
+			if (i > 0 && !cputDirect('+'))
+				return reverse;
+			Sout(i)("i ");
+		} catch {
+			reverse;
 		}
-		Sout(i)("i ");
 	}
 }
 

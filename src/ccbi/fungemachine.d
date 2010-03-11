@@ -6,7 +6,7 @@ module ccbi.fungemachine;
 
 debug import tango.core.tools.TraceExceptions;
 
-import tango.core.Exception       : OutOfMemoryException;
+import tango.core.Exception       : IOException, OutOfMemoryException;
 import tango.core.Thread;
 import tango.core.Tuple;
 import tango.io.Console           : Cin;
@@ -14,9 +14,10 @@ import tango.io.Stdout;
 import tango.io.device.Array      : Array;
 import tango.io.stream.Buffered   : BufferedOutput;
 import tango.io.stream.Format;
-import tango.io.stream.Typed      : TypedOutput;
 import tango.stdc.string          : memmove;
 import tango.text.convert.Integer : format;
+
+version (Posix) import tango.stdc.posix.signal;
 
 import ccbi.container;
 import ccbi.exceptions;
@@ -42,7 +43,6 @@ mixin (InsImports!());
 //
 // Other than that, have an executeMiniFunge to handle the differences
 
-private  TypedOutput!(ubyte) Cout;
 private FormatOutput!(char)  Sout, Serr;
 static this() {
 	Sout = new typeof(Sout)(
@@ -51,14 +51,14 @@ static this() {
 		Stderr.layout, new BufferedOutput(new RawCoutFilter!(true ), 32*1024));
 
 	Sin = new typeof(Sin)(Cin.stream);
-
-	Cout = new typeof(Cout)(Sout.stream);
 }
 static ~this() {
 	// Tango only flushes tango.io.Console.{Cout,Cerr}
 	// we capture output before it gets that far
-	Sout.flush;
-	Serr.flush;
+	try {
+		Sout.flush;
+		Serr.flush;
+	} catch {}
 }
 
 final class FungeMachine(cell dim, bool befunge93) {
@@ -126,6 +126,9 @@ private:
 			state.startIdx = state.ips.length = 1;
 			tip = state.ips[0] = ip;
 		}
+
+		version (Posix)
+			signal(SIGPIPE, SIG_IGN);
 	}
 
 	public int run() {
@@ -227,10 +230,10 @@ private:
 			debug e.writeOut((char[] s) { Serr.print(s); });
 		}
 
-		version (statistics) if (flags.useStats) {
+		version (statistics) if (flags.useStats) try {
 			Sout.flush;
 			printStats(Serr);
-		}
+		} catch (IOException) {}
 		return returnVal;
 	}
 

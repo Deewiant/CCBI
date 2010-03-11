@@ -441,9 +441,13 @@ void divide() {
 	if (fst)
 		cip.stack.push(snd / fst);
 	else static if (befunge93) {
-		Sout.flush;
-		Serr("CCBI :: division by zero encountered. Input wanted result: ");
-		Serr.flush;
+		try {
+			Sout.flush;
+			Serr("CCBI :: division by zero encountered. Input wanted result: ");
+			Serr.flush;
+		} catch {
+			return reverse;
+		}
 		reallyInputDecimal();
 	} else
 		cip.stack.push(0);
@@ -457,9 +461,13 @@ void remainder() {
 	if (fst)
 		cip.stack.push(snd % fst);
 	else static if (befunge93) {
-		Sout.flush;
-		Serr("CCBI :: modulo by zero encountered. Input wanted result: ");
-		Serr.flush;
+		try {
+			Sout.flush;
+			Serr("CCBI :: modulo by zero encountered. Input wanted result: ");
+			Serr.flush;
+		} catch {
+			return reverse;
+		}
 		reallyInputDecimal();
 	} else
 		cip.stack.push(0);
@@ -720,9 +728,10 @@ void outputDecimal() {
 		if (state.tick < ioAfter)
 			return;
 
-	Sout(n);
-	ubyte c = ' ';
-	Cout.write(c);
+	try Sout(n);
+	catch { return reverse; }
+
+	cput(' ');
 }
 
 // Output Character
@@ -733,11 +742,13 @@ void outputCharacter() {
 		if (state.tick < ioAfter)
 			return;
 
-	Cout.write(c);
+	cput(c);
 
 	// TODO: maybe make this optional?
-	if (c == '\n')
-		Sout.flush;
+	if (c == '\n') {
+		try Sout.flush;
+		catch { reverse; }
+	}
 }
 
 // Input Decimal
@@ -746,7 +757,7 @@ void inputDecimal() {
 		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 
-	Sout.flush();
+	try Sout.flush(); catch {}
 
 	reallyInputDecimal();
 }
@@ -805,7 +816,7 @@ void inputCharacter() {
 		if (state.tick < ioAfter)
 			return cip.stack.push('T');
 
-	Sout.flush();
+	try Sout.flush(); catch {}
 
 	ubyte c;
 
@@ -950,7 +961,7 @@ void outputFile() {
 			}
 			toBeWritten.length = l;
 
-			if (toBeWritten.length) {
+			if (toBeWritten.length) try {
 				foreach (row; toBeWritten[0])
 					file.append(row).append(NewlineString);
 
@@ -961,6 +972,8 @@ void outputFile() {
 					foreach (row; rect)
 						file.append(row).append(NewlineString);
 				}
+			} catch {
+				reverse;
 			}
 
 		} else static if (dim == 2) {
@@ -971,8 +984,11 @@ void outputFile() {
 			// ...see comments in OutputLinearRect.
 			mixin (OutputLinearRect!("l", "toBeWritten", "atEOF"));
 
-			foreach (row; toBeWritten)
+			try foreach (row; toBeWritten)
 				file.append(row).append(NewlineString);
+			catch {
+				reverse;
+			}
 
 		} else static if (dim == 1) {
 			// ...remove whitespace before EOL.
@@ -983,13 +999,18 @@ void outputFile() {
 			// TODO: don't use splitLines here, may split on UTF-8 line breaks
 			// in a future Tango version, which we don't want, only \n \r \r\n
 			auto lines = splitLines(toBeWritten);
-			foreach (line; lines)
+			try foreach (line; lines)
 				file.append(stripr(line)).append(NewlineString);
+			catch {
+				reverse;
+			}
 		}
-	} else {
+	} else try {
 		// no flag: write everything in a block of size vb, including spaces
 		// put form feeds and line breaks only between rects/lines
 		state.space.binaryPut(file, va, max);
+	} catch {
+		reverse;
 	}
 }
 private template OutputLinearRect(char[] len, char[] rect, char[] atEOR) {
