@@ -513,7 +513,7 @@ int main(char[][] args) {
 	try file = new FileMap(filename, File.ReadExisting);
 	catch {
 		try {
-			scope intermediate = new File(filename);
+			scope intermediate = new File(filename, File.ReadExisting);
 			file = new Array(intermediate.load);
 		} catch {
 			Stderr("Couldn't open file '")(filename)("' for reading.").newline;
