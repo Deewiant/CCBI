@@ -525,13 +525,14 @@ void printDrawing() {
 		// Silly compression follows...
 		//
 		// When is:
-		// 	".c".length +
+		// 	L + ".c".length +
 		// 	"{fill:}".length + css +
 		// 	l +
 		// 	uses * ("class='c'".length + l)
 		// less than (uses * ("fill=''".length + css))?
 		//
 		// Where:
+		// 	L is the length of NewlineString
 		// 	uses is the number of times we've used the colour,
 		// 	l is the length of classCount's string representation,
 		// 	css is the length of colourS.
@@ -554,26 +555,27 @@ void printDrawing() {
 		//
 		// (Yes, it could be improved upon by not requiring c followed by a
 		// number, but meh: too complicated.)
+		const L = NewlineString.length;
 		if (
 			(colourS.length == 7 && (
-				(uses >=  5 && classCount <=    9) ||
-				(uses >=  7 && classCount <=   99) ||
-				(uses >= 10 && classCount <=  999) ||
-				(uses >= 21 && classCount <= 9999)
+				(uses >=  5   && classCount <=    9) ||
+				(uses >=  7   && classCount <=   99) ||
+				(uses >= 11   && classCount <=  999) ||
+				(uses >= 22+L && classCount <= 9999)
 			)) ||
 			(colourS.length == 4 && (
-				(uses >= 15 && classCount <=    9)
+				(uses >= 16+L && classCount <=    9)
 			)) ||
 
 			// Not #rrggbb or #rgb but the few string colours
 			(colourS.length == 5 && (
-				(uses >=  8 && classCount <=    9) ||
-				(uses >= 17 && classCount <=   99)
+				(uses >=  9   && classCount <=    9) ||
+				(uses >= 18+L && classCount <=   99)
 			)) ||
 			(colourS.length == 6 && (
-				(uses >=  6 && classCount <=    9) ||
-				(uses >=  9 && classCount <=   99) ||
-				(uses >= 19 && classCount <=  999)
+				(uses >=  6+L && classCount <=    9) ||
+				(uses >= 10   && classCount <=   99) ||
+				(uses >= 20+L && classCount <=  999)
 			))
 		)
 			useClass(colour, colourS, dotElem, "fill");
@@ -597,35 +599,36 @@ void printDrawing() {
 		// "{stroke:}" instead of "fill=''" and "{fill:}" so the inequality is a
 		// bit different:
 		//
-		// css + l(uses + 1) + 11 < css uses
+		// css + l(uses + 1) + 11 + L < css uses
 		//
 		// And so the results change a bit too:
+		const L = NewlineString.length;
 		if (
 			(colourS.length == 7 && (
-				(uses >=  4 && classCount <=      9) ||
-				(uses >=  5 && classCount <=     99) ||
-				(uses >=  6 && classCount <=    999) ||
-				(uses >=  8 && classCount <=   9999) ||
-				(uses >= 12 && classCount <=  99999) ||
-				(uses >= 25 && classCount <= 999999)
+				(uses >=  4   && classCount <=      9) ||
+				(uses >=  5   && classCount <=     99) ||
+				(uses >=  6   && classCount <=    999) ||
+				(uses >=  8   && classCount <=   9999) ||
+				(uses >= 13   && classCount <=  99999) ||
+				(uses >= 26+L && classCount <= 999999)
 			)) ||
 			(colourS.length == 4 && (
-				(uses >=  6 && classCount <=      9) ||
-				(uses >=  9 && classCount <=     99) ||
-				(uses >= 19 && classCount <=    999)
+				(uses >=  6+L && classCount <=      9) ||
+				(uses >= 10   && classCount <=     99) ||
+				(uses >= 20+L && classCount <=    999)
 			)) ||
 			(colourS.length == 5 && (
-				(uses >=  5 && classCount <=      9) ||
-				(uses >=  7 && classCount <=     99) ||
-				(uses >= 10 && classCount <=    999) ||
-				(uses >= 21 && classCount <=   9999)
+				(uses >=  5   && classCount <=      9) ||
+				(uses >=  7   && classCount <=     99) ||
+				(uses >= 11   && classCount <=    999) ||
+				(uses >= 22+L && classCount <=   9999)
 			)) ||
 			(colourS.length == 6 && (
-				(uses >=  4 && classCount <=      9) ||
-				(uses >=  5 && classCount <=     99) ||
-				(uses >=  7 && classCount <=    999) ||
-				(uses >= 11 && classCount <=   9999) ||
-				(uses >= 23 && classCount <=  99999)
+				(uses >=  4+L && classCount <=      9) ||
+				(uses >=  6   && classCount <=     99) ||
+				(uses >=  8   && classCount <=    999) ||
+				(uses >= 12   && classCount <=   9999) ||
+				(uses >= 24+L && classCount <=  99999)
 			))
 		)
 			useClass(colour, colourS, path, "stroke");
