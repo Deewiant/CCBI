@@ -39,20 +39,17 @@ mixin (Fingerprint!(
 
 const TURT_FILE_INIT = "CCBI_TURT.svg";
 
-// {{{ turtle coordinates
+// {{{ Turtle coordinates
 
 // fixed point with 5 decimals
 // tc meaning "turtle coordinate"
 typedef int tc;
 
-// we add a PADDING value to get nice viewBoxes for small drawings
-// the min and max were +-32767_9999 originally due to using SVG Tiny
-// the advantages of that were considered few, and thus they were expanded
-// but only this much, since even this is pretty huge
+// Add padding to get nicer viewBoxes for small drawings
 enum : tc {
-	PADDING = 10,
-	MIN = -999_999_999 + PADDING,
-	MAX =  999_999_999 - PADDING
+	PADDING = 2,
+	MIN = int.min + PADDING,
+	MAX = int.max - PADDING
 }
 
 uint getInt(tc c) { return abs(cast(int)c) / 10000; }
@@ -111,19 +108,19 @@ struct Turtle {
 			dy = cast(tc)round(sin * distance);
 
 		// have to check for under-/overflow...
-		auto nx = p.x + dx;
-		if (nx > MAX)
-			nx = MAX;
-		else if (nx < MIN)
-			nx = MIN;
-		p.x = nx;
+		if (dx > 0 && p.x > MAX - dx)
+			p.x = MAX;
+		else if (dx < 0 && p.x < MIN - dx)
+			p.x = MIN;
+		else
+			p.x += dx;
 
-		auto ny = p.y + dy;
-		if (ny > MAX)
-			ny = MAX;
-		else if (ny < MIN)
-			ny = MIN;
-		p.y = ny;
+		if (dy > 0 && p.y > MAX - dy)
+			p.y = MAX;
+		else if (dy < 0 && p.y < MIN - dy)
+			p.y = MIN;
+		else
+			p.y += dy;
 
 		// a -> ... -> z is equivalent to a -> z if not drawing
 		// so only add path if drawing
