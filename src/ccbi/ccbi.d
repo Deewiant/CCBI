@@ -490,6 +490,21 @@ int main(char[][] args) {
 		     .formatln(USAGE, args[0]);
 		return 1;
 	}
+
+	if (fungeArgs.length > 2) {
+		auto prev = fungeArgs[1];
+		auto prevBlank = prev == "";
+
+		foreach (arg; fungeArgs[2..$]) {
+			auto blank = arg == "";
+			if (prevBlank && blank) {
+				Stderr("CCBI :: a Funge program cannot receive two consecutive empty arguments!").newline;
+				return 1;
+			}
+			prev = arg;
+			prevBlank = blank;
+		}
+	}
 	// }}}
 
 	auto filename = fungeArgs[0];
