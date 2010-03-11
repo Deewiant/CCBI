@@ -213,7 +213,7 @@ struct Drawing {
 	// line on top of a red dot.
 	Part[] parts;
 
-	uint[uint] dotColourCounts;
+	uint[uint] colourCounts;
 
 	Point min = {0,0}, max = {0,0};
 
@@ -233,6 +233,8 @@ struct Drawing {
 		}
 
 		// Make a new path.
+		colourUsed(colour);
+
 		Part part;
 		part.isDot = false;
 		part.colour = colour;
@@ -247,6 +249,14 @@ struct Drawing {
 		part.path ~= pt;
 
 		parts ~= part;
+	}
+
+	void colourUsed(uint colour) {
+		auto count = colour in colourCounts;
+		if (count)
+			++*count;
+		else
+			colourCounts[colour] = 1;
 	}
 }
 // }}}
@@ -275,11 +285,7 @@ void tryAddPoint() {
 }
 
 void addPoint() {
-	auto count = turt.colour in turt.pic.dotColourCounts;
-	if (count)
-		++*count;
-	else
-		turt.pic.dotColourCounts[turt.colour] = 1;
+	turt.pic.colourUsed(turt.colour);
 
 	Drawing.Part part;
 	part.isDot = true;
@@ -295,7 +301,7 @@ void clearWithColour(uint c) {
 
 	turt.pic.min = turt.pic.max = Point(0,0);
 	turt.pic.parts.length = 0;
-	turt.pic.dotColourCounts = null;
+	turt.pic.colourCounts = null;
 }
 // }}}
 // {{{ Instructions
@@ -460,9 +466,41 @@ void printDrawing() {
 			.attribute(null, "fill",   toCSSColour(turt.pic.bgColour).dup);
 
 	char[][uint] colours;
-	ushort cCnt = 1;
+	ushort classCount = 1;
 	char[12] classBuf = ".c4294967295";
 
+	void useClass(uint colour, char[] colourS, typeof(root) elem, char[] prop) { // {{{
+		// We can save space by using a class to denote a colour
+
+		auto s = colour in colours;
+		if (!s) {
+			auto newClass =
+				format(classBuf[".c".length..$], classCount, "d10");
+
+			// left align the number...
+			size_t i = 1;
+			while (newClass[i] == '0' && i < newClass.length)
+				++i;
+			size_t beg = i;
+			for (; i < newClass.length; ++i)
+				newClass[i - beg] = newClass[i];
+
+			newClass = classBuf[0 .. i - beg + ".c".length];
+
+			colours[colour] = newClass[1..$].dup;
+			s = colour in colours;
+
+			styleData ~= NewlineString;
+			styleData ~= newClass;
+			styleData ~= "{";
+			styleData ~= prop;
+			styleData ~= ":";
+			styleData ~= colourS;
+			styleData ~= "}";
+			++classCount;
+		}
+		elem.attribute(null, "class", *s);
+	} // }}}
 	void printDot(uint colour, Point dot) { // {{{
 		auto dotElem = root
 			.element  (null, "circle")
@@ -471,63 +509,64 @@ void printDrawing() {
 			.attribute(null, "r",    ".5");
 
 		auto colourS = toCSSColour(colour);
-
-		auto n = turt.pic.dotColourCounts[colour];
+		auto uses = turt.pic.colourCounts[colour];
 
 		// Silly compression follows...
 		//
-		// when is ".c".length + "{fill:#rrggbb}".length + l + n * ("class='c'".length + l)
-		// less than n * "fill='#rrggbb'".length
-		// where n is n and l is the length of cCnt's string representation
-		// that is, 16+l+n(9+l) < 14n or 16+l+ln < 5n
-		// answers are below
-		// note how, when cCnt exceeds 9999 (l exceeds 4), we have:
-		// fill='#rrggbb'
-		// class='c10000'
-		// and thus there is no advantage thereafter.
-		// similarly, if the colour is #rgb, we have, after 9:
-		// fill='#rgb'
-		// class='c10'
+		// When is:
+		// 	".c".length +
+		// 	"{fill:}".length + css +
+		// 	l +
+		// 	uses * ("class='c'".length + l)
+		// less than (uses * ("fill=''".length + css))?
+		//
+		// Where:
+		// 	uses is the number of times we've used the colour,
+		// 	l is the length of classCount's string representation,
+		// 	css is the length of colourS.
+		//
+		// That is:
+		// 	css + l + uses(l+2) + 9 < css uses
+		//
+		// Answers below.
+		//
+		// Note how, when classCount exceeds 9999 (l exceeds 4), we have:
+		//
+		// fill="#rrggbb"
+		// class="c10000"
+		//
+		// and thus there is no advantage thereafter. And similarly for the other
+		// cases. In particular, note that css == 3 never wins:
+		//
+		// fill="red"
+		// class="c0"
+		//
+		// (Yes, it could be improved upon by not requiring c followed by a
+		// number, but meh: too complicated.)
 		if (
 			(colourS.length == 7 && (
-				(n >=  5 && cCnt <=    9) ||
-				(n >=  7 && cCnt <=   99) ||
-				(n >= 10 && cCnt <=  999) ||
-				(n >= 21 && cCnt <= 9999))
-			) ||
+				(uses >=  5 && classCount <=    9) ||
+				(uses >=  7 && classCount <=   99) ||
+				(uses >= 10 && classCount <=  999) ||
+				(uses >= 21 && classCount <= 9999)
+			)) ||
 			(colourS.length == 4 && (
-				(n >= 15 && cCnt <=    9))
-			)
-		) {
-			// we can save space by using a class
+				(uses >= 15 && classCount <=    9)
+			)) ||
 
-			auto s = colour in colours;
-			if (!s) {
-				auto newClass = format(classBuf[".c".length..$], cCnt, "d10");
-
-				// left align the number...
-				size_t i = 1;
-				while (newClass[i] == '0' && i < newClass.length)
-					++i;
-				size_t beg = i;
-				for (; i < newClass.length; ++i)
-					newClass[i - beg] = newClass[i];
-
-				newClass = classBuf[0 .. i - beg + ".c".length];
-
-				colours[colour] = newClass.dup;
-				s = colour in colours;
-
-				styleData ~= NewlineString;
-				styleData ~= newClass;
-				styleData ~= "{fill:";
-				styleData ~= colourS;
-				styleData ~= "}";
-				++cCnt;
-			}
-
-			dotElem.attribute(null, "class", *s);
-		} else
+			// Not #rrggbb or #rgb but the few string colours
+			(colourS.length == 5 && (
+				(uses >=  8 && classCount <=    9) ||
+				(uses >= 17 && classCount <=   99)
+			)) ||
+			(colourS.length == 6 && (
+				(uses >=  6 && classCount <=    9) ||
+				(uses >=  9 && classCount <=   99) ||
+				(uses >= 19 && classCount <=  999)
+			))
+		)
+			useClass(colour, colourS, dotElem, "fill");
+		else
 			dotElem.attribute(null, "fill", colourS.dup);
 	} // }}}
 	void printPath(uint colour, Point[] ps) { // {{{
@@ -538,8 +577,49 @@ void printDrawing() {
 		if (ps.length == 1)
 			return;
 
-		auto path = root.element  (null, "path")
-		                .attribute(null, "stroke", toCSSColour(colour).dup);
+		auto path = root.element(null, "path");
+
+		auto colourS = toCSSColour(colour);
+		auto uses = turt.pic.colourCounts[colour];
+
+		// Compression like in the dot case. This time we have "stroke=''" and
+		// "{stroke:}" instead of "fill=''" and "{fill:}" so the inequality is a
+		// bit different:
+		//
+		// css + l(uses + 1) + 11 < css uses
+		//
+		// And so the results change a bit too:
+		if (
+			(colourS.length == 7 && (
+				(uses >=  4 && classCount <=      9) ||
+				(uses >=  5 && classCount <=     99) ||
+				(uses >=  6 && classCount <=    999) ||
+				(uses >=  8 && classCount <=   9999) ||
+				(uses >= 12 && classCount <=  99999) ||
+				(uses >= 25 && classCount <= 999999)
+			)) ||
+			(colourS.length == 4 && (
+				(uses >=  6 && classCount <=      9) ||
+				(uses >=  9 && classCount <=     99) ||
+				(uses >= 19 && classCount <=    999)
+			)) ||
+			(colourS.length == 5 && (
+				(uses >=  5 && classCount <=      9) ||
+				(uses >=  7 && classCount <=     99) ||
+				(uses >= 10 && classCount <=    999) ||
+				(uses >= 21 && classCount <=   9999)
+			)) ||
+			(colourS.length == 6 && (
+				(uses >=  4 && classCount <=      9) ||
+				(uses >=  5 && classCount <=     99) ||
+				(uses >=  7 && classCount <=    999) ||
+				(uses >= 11 && classCount <=   9999) ||
+				(uses >= 23 && classCount <=  99999)
+			))
+		)
+			useClass(colour, colourS, path, "stroke");
+		else
+			path.attribute(null, "stroke", colourS.dup);
 
 		char[] pathdata = "M";
 
