@@ -160,8 +160,11 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	foreach (i, ip; ips) {
 		auto p = ip.pos;
 		auto c = ip.cell;
-		if (c == ' ' || c == ';')
-			ip.gotoNextInstruction;
+		static if (befunge93) {
+			if (p.x < 0 || p.x >= 80 || p.y < 0 || p.y >= 25)
+				ip.gotoNextInstruction;
+		} else if (c == ' ' || c == ';')
+				ip.gotoNextInstruction;
 		ipPositions[i] = ip.pos;
 		ip.pos = p;
 	}
@@ -245,7 +248,10 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			state.space[ipPositions[index]], NewlineString ~ "Instruction: ");
 
 		if (ip.pos != ipPositions[index]) {
-			printCell(state.space[ip.pos], " (via marker: ", " at ");
+			static if (befunge93)
+				Serr(" (wrapped around from ");
+			else
+				printCell(state.space[ip.pos], " (via marker: ", " at ");
 			Serr(ip.pos)(')');
 		}
 
