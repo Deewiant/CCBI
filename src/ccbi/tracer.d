@@ -244,7 +244,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 
 		if (ip.pos != ipPositions[index]) {
 			static if (befunge93)
-				Serr(" (wrapped around from ");
+				Serr(" (wrapped around at ");
 			else
 				printCell(state.space[ip.pos], " (via marker: ", " at ");
 			Serr(ip.pos)(')');
@@ -404,20 +404,28 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						str ~= Serr.layout.convert("{} ", ip.stack.size);
 					str[$-1] = ']';
 
+					Serr.format(" IP {,2:} -- Position: {}", i, ipPositions[i]);
+
+					if (ip.pos != ipPositions[i]) {
+						printCell(state.space[ip.pos], " (via marker: ", " at ");
+						Serr(ip.pos)(')');
+					}
+
 					Serr.format(
-						" IP {,2:} -- Position: {} - Delta: {} - Offset: {}"
+						NewlineString ~
+						"          Delta: {} - Offset: {}"
 						~ NewlineString ~
 						"          ID: {} - Mode: {}"
 						~ NewlineString ~
 						"          Stack number/sizes: {}/{}"
 						~ NewlineString ~
 						"          Instruction: ",
-						i, ip.pos, ip.delta, ip.offset,
+						ip.delta, ip.offset,
 						ip.id, modeString(ip),
 						ip.stackCount, str
 					);
 					printCell(
-						state.space[ip.pos], "", NewlineString~NewlineString, " ");
+						state.space[ipPositions[i]], "", NewlineString~NewlineString, " ");
 				}
 				break;
 			}
