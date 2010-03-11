@@ -176,7 +176,6 @@ endif()
 mark_as_advanced(CCBI_LINK_TANGO_RT CCBI_LINK_TANGO_USER TANGO_DIR)
 
 find_program(STRIP strip DOC "Debug symbols stripper, used when CCBI_BUILD_TYPE is not Debug. Unset to disable stripping.")
-mark_as_advanced(STRIP)
 
 ########
 # Gather D sources by running ${DC} -v -o- (requires a nonancient DMD/LDC)
