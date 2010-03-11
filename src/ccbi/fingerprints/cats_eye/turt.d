@@ -52,22 +52,77 @@ enum : tc {
 	MAX = int.max - PADDING
 }
 
-uint getInt(tc c) { return abs(cast(int)c) / 10000; }
-uint getDec(tc c) { return abs(cast(int)c) % 10000; }
-
-unittest {
-	assert (getDec(1) == 1);
-	assert (getInt(1) == 0);
-	assert (getDec( 16383_9999) ==  9999);
-	assert (getInt( 16383_9999) == 16383);
-	assert (getDec(-16383_9999) ==  9999);
-	assert (getInt(-16383_9999) == 16383);
-}
-
 char[] tcToString(tc n) {
-	static assert (MIN >= -999_999_999 && MAX <= 999_999_999);
-	char[10] buf;
-	return itoa(buf, n);
+	static assert (MIN >= int.min && MAX <= int.max);
+
+	static char[11] buf = "-2147483648";
+	if (n >= 0)
+		return itoa(buf, n);
+	else {
+		auto s = itoa(buf, -n);
+		auto ss = (s.ptr - 1)[0 .. s.length+1];
+		ss[0] = '-';
+		return ss;
+	}
+}
+// }}}
+// {{{ Non-template helpers
+real toRad(cell c) { return                 (PI / 180.0) * c;  }
+cell toDeg(real r) { return cast(cell)round((180.0 / PI) * r); }
+
+uint toRGB(cell c) { return cast(uint)(c & ((1 << 24) - 1)); }
+
+char[] toCSSColour(uint c) {
+	const HEX = "0123456789ABCDEF";
+	static char[7] buf = "#rrggbb";
+
+	buf[1] = HEX[c >> 20 & 0xf];
+	buf[2] = HEX[c >> 16 & 0xf];
+	buf[3] = HEX[c >> 12 & 0xf];
+	buf[4] = HEX[c >>  8 & 0xf];
+	buf[5] = HEX[c >>  4 & 0xf];
+	buf[6] = HEX[c >>  0 & 0xf];
+
+	// #rgb if possible
+	if (buf[1] == buf[2] && buf[3] == buf[4] && buf[5] == buf[6]) {
+		buf[2] = buf[3];
+		buf[3] = buf[5];
+		if (buf[1..4] == "f00")
+			return "red";
+		return buf[0..4];
+	}
+	switch (buf[1..$]) {
+		case "008000": return "green";
+		case "008080": return "teal";
+		case "4b0082": return "indigo";
+		case "800000": return "maroon";
+		case "800080": return "purple";
+		case "808000": return "olive";
+		case "808080": return "grey";
+		case "a0522d": return "sienna";
+		case "a52a2a": return "brown";
+		case "c0c0c0": return "silver";
+		case "cd853f": return "peru";
+		case "d2b48c": return "tan";
+		case "da70d6": return "orchid";
+		case "dda0dd": return "plum";
+		case "ee82ee": return "violet";
+		case "f0e68c": return "khaki";
+		case "f0ffff": return "azure";
+		case "f5deb3": return "wheat";
+		case "f5f5dc": return "beige";
+		case "fa8072": return "salmon";
+		case "faf0e6": return "linen";
+		case "ff6347": return "tomato";
+		case "ff7f50": return "coral";
+		case "ffa500": return "orange";
+		case "ffc0cb": return "pink";
+		case "ffd700": return "gold";
+		case "ffe4c4": return "bisque";
+		case "fffafa": return "snow";
+		case "fffff0": return "ivory";
+		default: return buf;
+	}
 }
 // }}}
 // {{{ Point, Turtle, Drawing
@@ -188,65 +243,7 @@ import tango.text.xml.DocPrinter;
 char[] filename = TURT_FILE_INIT;
 Turtle turt;
 
-// {{{ helpers
-
-real toRad(cell c) { return                 (PI / 180.0) * c;  }
-cell toDeg(real r) { return cast(cell)round((180.0 / PI) * r); }
-
-uint toRGB(cell c) { return cast(uint)(c & ((1 << 24) - 1)); }
-
-char[] toCSSColour(uint c) {
-	const HEX = "0123456789ABCDEF";
-	static char[7] buf = "#rrggbb";
-
-	buf[1] = HEX[c >> 20 & 0xf];
-	buf[2] = HEX[c >> 16 & 0xf];
-	buf[3] = HEX[c >> 12 & 0xf];
-	buf[4] = HEX[c >>  8 & 0xf];
-	buf[5] = HEX[c >>  4 & 0xf];
-	buf[6] = HEX[c >>  0 & 0xf];
-
-	// #rgb if possible
-	if (buf[1] == buf[2] && buf[3] == buf[4] && buf[5] == buf[6]) {
-		buf[2] = buf[3];
-		buf[3] = buf[5];
-		if (buf[1..4] == "f00")
-			return "red";
-		return buf[0..4];
-	}
-	switch (buf[1..$]) {
-		case "008000": return "green";
-		case "008080": return "teal";
-		case "4b0082": return "indigo";
-		case "800000": return "maroon";
-		case "800080": return "purple";
-		case "808000": return "olive";
-		case "808080": return "grey";
-		case "a0522d": return "sienna";
-		case "a52a2a": return "brown";
-		case "c0c0c0": return "silver";
-		case "cd853f": return "peru";
-		case "d2b48c": return "tan";
-		case "da70d6": return "orchid";
-		case "dda0dd": return "plum";
-		case "ee82ee": return "violet";
-		case "f0e68c": return "khaki";
-		case "f0ffff": return "azure";
-		case "f5deb3": return "wheat";
-		case "f5f5dc": return "beige";
-		case "fa8072": return "salmon";
-		case "faf0e6": return "linen";
-		case "ff6347": return "tomato";
-		case "ff7f50": return "coral";
-		case "ffa500": return "orange";
-		case "ffc0cb": return "pink";
-		case "ffd700": return "gold";
-		case "ffe4c4": return "bisque";
-		case "fffafa": return "snow";
-		case "fffff0": return "ivory";
-		default: return buf;
-	}
-}
+// {{{ Helpers
 
 // If we've moved to a location with the pen up, and the pen is now down, it
 // may be that we'll move to another location with the pen down. Thus there's
