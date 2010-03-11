@@ -10,6 +10,7 @@ import tango.text.convert.Integer : itoa;
 // WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
 import tango.text.xml.DocPrinter;
 
+import ccbi.container : SmallArray;
 import ccbi.fingerprint;
 
 // 0x54555254: TURT
@@ -205,7 +206,7 @@ struct Drawing {
 		uint colour;
 		union {
 			Point dot;
-			Point[] path;
+			SmallArray!(Point, 8) path;
 		}
 	}
 
@@ -239,12 +240,12 @@ struct Drawing {
 		part.isDot = false;
 		part.colour = colour;
 
-		// Be sure when it comes to unions...
-		part.path = null;
+		// Union: necessary
+		part.path = typeof(part.path).init;
 
 		// Start from where we last ended
 		if (penDown)
-			part.path ~= parts[$-1].path[$-1];
+			part.path ~= parts[$-1].path[parts[$-1].path.size-1];
 
 		part.path ~= pt;
 
@@ -273,6 +274,13 @@ import tango.time.Clock;
 char[] filename = TURT_FILE_INIT;
 Turtle turt;
 
+void dtor() {
+	foreach (part; turt.pic.parts)
+		if (!part.isDot)
+			part.path.free();
+	turt.pic.parts.length = 0;
+}
+
 // {{{ Helpers
 
 // If we've moved to a location with the pen up, and the pen is now down, it
@@ -300,6 +308,9 @@ void clearWithColour(uint c) {
 	turt.pic.bgColour = c;
 
 	turt.pic.min = turt.pic.max = Point(0,0);
+	foreach (part; turt.pic.parts)
+		if (!part.isDot)
+			part.path.free();
 	turt.pic.parts.length = 0;
 	turt.pic.colourCounts = null;
 }
@@ -653,7 +664,7 @@ void printDrawing() {
 		if (part.isDot)
 			printDot(part.colour, part.dot);
 		else
-			printPath(part.colour, part.path);
+			printPath(part.colour, part.path[]);
 	}
 
 	style.data(styleData);

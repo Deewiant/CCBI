@@ -971,3 +971,52 @@ struct Deque {
 		return true;
 	}
 }
+
+// No heap allocation if the length ends up at less than N.
+struct SmallArray(T, size_t N) {
+	private {
+		T[N] smallData;
+		T* data = null;
+		size_t len = 0, capacity = N;
+	}
+
+	void free() { .free(data); }
+
+	size_t size() { return len; }
+	T*     ptr () { return data ? data : smallData.ptr; }
+
+	T opIndex           (size_t i) { assert (i < len); return ptr[i]; }
+	T opIndexAssign(T t, size_t i) { assert (i < len); return ptr[i] = t; }
+
+	void opCatAssign(T t) {
+		if (len >= capacity)
+			growBy(1);
+
+		assert (len < capacity);
+
+		ptr[len++] = t;
+	}
+	void opCatAssign(T[] ts) {
+		auto newLen = len + ts.length;
+		if (newLen > capacity)
+			growBy(capacity - newLen);
+
+		assert (newLen < capacity);
+
+		ptr[len..newLen] = ts;
+		len = newLen;
+	}
+
+	T[] opSlice() { return ptr[0..len]; }
+
+private:
+	void growBy(size_t incr) {
+		capacity = 2 * capacity + (incr > 2 * capacity ? incr : 0);
+
+		if (data == null) {
+			data = malloc!(T)(capacity);
+			data[0..len] = smallData[0..len];
+		} else
+			data = realloc(data, capacity);
+	}
+}
