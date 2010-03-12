@@ -35,6 +35,7 @@ version  (FRTH) public import ccbi.fingerprints.rcfunge98.frth;
 version  (IIPC) public import ccbi.fingerprints.rcfunge98.iipc;
 version  (IMAP) public import ccbi.fingerprints.rcfunge98.imap;
 version  (INDV) public import ccbi.fingerprints.rcfunge98.indv;
+version  (REXP) public import ccbi.fingerprints.rcfunge98.rexp;
 version  (SOCK) public import ccbi.fingerprints.rcfunge98.sock;
 version  (STRN) public import ccbi.fingerprints.rcfunge98.strn;
 version  (SUBR) public import ccbi.fingerprints.rcfunge98.subr;
@@ -77,6 +78,7 @@ private char[] ActiveFingerprints() {
 	version  (IIPC) s ~= `"IIPC",`;
 	version  (IMAP) s ~= `"IMAP",`;
 	version  (INDV) s ~= `"INDV",`;
+	version  (REXP) s ~= `"REXP",`;
 	version  (SOCK) s ~= `"SOCK",`;
 	version  (STRN) s ~= `"STRN",`;
 	version  (SUBR) s ~= `"SUBR",`;
