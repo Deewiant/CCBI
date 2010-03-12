@@ -1383,17 +1383,9 @@ Request loadSemantics() {
 	if (!ins)
 		return reverse();
 
-	foreach (i; ins) {
-		assert (isSemantics(cast(cell)i));
-
-		auto sem = cip.semantics[i - 'A'];
-		if (!sem) {
-			sem = cip.semantics[i - 'A'] = new typeof(*sem);
-			*sem = typeof(*sem)(&semanticStats, 2u);
-		}
-
-		sem.push(Semantics(fingerprint, i));
-	}
+	foreach (i; ins)
+		cip.requireSems(cast(cell)(i - 'A'), &semanticStats)
+		   .push(Semantics(fingerprint, i));
 
 	cip.stack.push(fingerprint, 1);
 

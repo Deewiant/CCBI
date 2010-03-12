@@ -192,6 +192,17 @@ struct IP(cell dim, bool befunge93) {
 	static if (!befunge93) {
 		Stack!(CellContainer*)* stackStack;
 		Stack!(Semantics)*[26] semantics;
+
+		typeof(semantics[0]) requireSems(.cell i, ContainerStats* stats) {
+			assert (isSemantics(cast(.cell)(i + 'A')));
+
+			auto sems = semantics[i];
+			if (!sems) {
+				sems = semantics[i] = new typeof(*sems);
+				*sems = typeof(*sems)(stats, 2u);
+			}
+			return sems;
+		}
 	}
 
 	static if (GOT_IMAP)

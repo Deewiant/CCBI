@@ -27,6 +27,7 @@ version  (DATE) public import ccbi.fingerprints.rcfunge98.date;
 version  (DIRF) public import ccbi.fingerprints.rcfunge98.dirf;
 version  (EVAR) public import ccbi.fingerprints.rcfunge98.evar;
 version  (FILE) public import ccbi.fingerprints.rcfunge98.file;
+version  (FING) public import ccbi.fingerprints.rcfunge98.fing;
 version  (FIXP) public import ccbi.fingerprints.rcfunge98.fixp;
 version  (FPDP) public import ccbi.fingerprints.rcfunge98.fpdp;
 version  (FPSP) public import ccbi.fingerprints.rcfunge98.fpsp;
@@ -68,6 +69,7 @@ private char[] ActiveFingerprints() {
 	version  (DIRF) s ~= `"DIRF",`;
 	version  (EVAR) s ~= `"EVAR",`;
 	version  (FILE) s ~= `"FILE",`;
+	version  (FING) s ~= `"FING",`;
 	version  (FIXP) s ~= `"FIXP",`;
 	version  (FPDP) s ~= `"FPDP",`;
 	version  (FPSP) s ~= `"FPSP",`;

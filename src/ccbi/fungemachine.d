@@ -335,7 +335,7 @@ private:
 
 				FingerprintExecutionCases!(
 					"sem.instruction",
-					"assert (false);",
+					"assert (false, `Unknown instruction in semantic`);",
 					fings),
 				"default: unimplemented; break;"
 			));
