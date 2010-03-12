@@ -68,8 +68,8 @@ version (Windows) {
 		"NCRS :: remember to link with a curses library, such as ncurses.");
 }
 
-void beep   () { if (!ccbi_beep())                 reverse; }
-void refresh() { if (!ccbi_refresh())              reverse; }
+void beep   () { if (!ccbi_beep())    reverse; }
+void refresh() { if (!ccbi_refresh()) reverse; }
 
 void clear() {
 	switch (cip.stack.pop) {

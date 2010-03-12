@@ -204,7 +204,6 @@ if(GOT_FUNGE)
 			string(REGEX REPLACE ".*[.]di[)]$" "" line "${line}")
 			string(REGEX REPLACE "[^(]*[(](.*)[)]$" "\\1" path "${line}")
 
-
 			if(   (NOT CCBI_LINK_TANGO_USER AND path MATCHES "/tango/")
 			   OR (NOT CCBI_LINK_TANGO_RT   AND path MATCHES "/tango/core/")
 			   OR path MATCHES "/${VENDOR}/")
