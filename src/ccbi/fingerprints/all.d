@@ -43,6 +43,17 @@ version  (TERM) public import ccbi.fingerprints.rcfunge98.term;
 version  (TIME) public import ccbi.fingerprints.rcfunge98.time;
 version  (TRDS) public import ccbi.fingerprints.rcfunge98.trds;
 
+alias Tuple!(
+	// Cat's Eye
+	"PERL", "TURT",
+
+	// RC/Funge-98
+	"DIRF", "FILE", "SOCK",
+
+	// GLfunge98
+	"SCKE"
+) SANDBOXED_FINGERPRINTS;
+
 private char[] ActiveFingerprints() {
 	char[] s = "alias Tuple!(";
 
@@ -106,6 +117,9 @@ alias MapTuple!(PrefixName, ALL_FINGERPRINTS) ALL_FINGERPRINT_IDS;
 //
 // foreach fingerprint:
 // 	case HexCode!("<fingerprint>"):
+// 		static if (TupleHas!("<fingerprint>", SANDBOXED_FINGERPRINTS))
+// 			if (flags.sandboxMode)
+// 				return null;
 // 		if (!flags.enabledFings.<fingerprint>)
 // 			return null;
 // 		return <fingerprint>Instructions!();
@@ -113,9 +127,15 @@ private template FingerprintInstructionsCases(fing...) {
 	static if (fing.length)
 		const FingerprintInstructionsCases =
 			`case `~ToString!(HexCode!(fing[0]))~`:`
+
+				~ (TupleHas!(fing[0], SANDBOXED_FINGERPRINTS)
+				   ? "if (flags.sandboxMode) return null;"
+				   : "") ~
+
 				`if (!flags.enabledFings.`~PrefixName!(fing[0])~`)`
 					`return null;`
 				`return `~PrefixName!(fing[0])~`Instructions!();`
+
 			~ FingerprintInstructionsCases!(fing[1..$]);
 	else
 		const FingerprintInstructionsCases = "";

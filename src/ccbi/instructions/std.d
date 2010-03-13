@@ -879,10 +879,13 @@ void outputFile() {
 
 	// va is whence the file is read
 	// vb is the corresponding ending offsets relative to va
-	auto flags = cip.stack.pop;
+	auto textFile = cast(bool)(cip.stack.pop & 1);
 	Coords
 		va = popOffsetVector(),
 		vb = popVector();
+
+	if (flags.sandboxMode)
+		return reverse;
 
 	static if (GOT_TRDS)
 		if (state.tick < ioAfter)
@@ -905,7 +908,7 @@ void outputFile() {
 
 	auto max = va + vb;
 
-	if (flags & 1) {
+	if (textFile) {
 		// treat as linear text file, meaning...
 
 		static if (dim == 3) auto toBeWritten = new char[][][](vb.z, vb.y, vb.x);
@@ -1054,7 +1057,12 @@ static if (!befunge93) {
 
 // Execute
 void execute() {
-	cip.stack.push(cast(cell)system(popStringz()));
+	auto cmd = popStringz();
+	if (flags.sandboxMode) {
+		cip.stack.push(cell.min);
+		return reverse;
+	}
+	cip.stack.push(cast(cell)system(cmd));
 }
 
 }
@@ -1064,8 +1072,8 @@ void execute() {
 
 static if (!befunge93) {
 
-const cell[7] SYSINFO_CONSTANT_TOP =
-	[ dim
+cell[7] sysInfoConstantTop =
+	[ 0 // Marker that this array hasn't yet been verified: dim otherwise
 	, PATH_SEPARATOR
 	  // = is equivalent to C system()
 	, 1
@@ -1078,6 +1086,24 @@ const cell[7] SYSINFO_CONSTANT_TOP =
 	  // i is implemented
 	  // t is implemented
 	, 0b01111 ];
+
+// Sandbox mode modifies some of them; otherwise they'd be constant.
+void computeConstantTop() {
+	if (sysInfoConstantTop[0])
+		return;
+
+	sysInfoConstantTop[0] = dim;
+
+	if (!flags.sandboxMode)
+		return;
+
+	// = is unavailable
+	sysInfoConstantTop[$-5] = 0;
+
+	// = and o are unavailable
+	assert (sysInfoConstantTop[$-1] == 0b01111);
+	sysInfoConstantTop[$-1] = 0b00011;
+}
 
 cell[] envCache, argsCache;
 
@@ -1173,10 +1199,9 @@ void getSysInfo() {
 		// variables terminated by null
 		const GUARANTEED_SIZE = 9 + 5*dim + 3 + 1 + 2 + 1;
 
-		if (!envCache)
-			computeEnvCache();
-		if (!argsCache)
-			computeArgsCache();
+		computeEnvCache();
+		computeArgsCache();
+		computeConstantTop();
 
 		auto p = cip.stack.reserve(
 			GUARANTEED_SIZE + (cip.stackCount - 1) +
@@ -1240,11 +1265,11 @@ void getSysInfo() {
 		*p++ = cip.id;
 
 		// Constant env info
-		p[0..SYSINFO_CONSTANT_TOP.length] = SYSINFO_CONSTANT_TOP;
+		p[0..sysInfoConstantTop.length] = sysInfoConstantTop;
 
 		// Cheap solution to invertmode
 		if (cip.stack.mode & INVERT_MODE)
-			origP[0 .. p + SYSINFO_CONSTANT_TOP.length - origP].reverse;
+			origP[0 .. p + sysInfoConstantTop.length - origP].reverse;
 
 		// And done.
 		return;
@@ -1260,10 +1285,13 @@ void getSysInfo() {
 
 	--arg;
 	switch (arg) {
-		static assert (SYSINFO_CONSTANT_TOP.length == 7);
-		case 0,1,2,3,4,5,6: return cip.stack.push(SYSINFO_CONSTANT_TOP[$-arg-1]);
-		case 7:             return cip.stack.push(cip.id);
-		case 8:             return cip.stack.push(0); // team number
+		static assert (sysInfoConstantTop.length == 7);
+		case 0,1,2,3,4,5,6:
+			computeConstantTop();
+			return cip.stack.push(sysInfoConstantTop[$-arg-1]);
+
+		case 7: return cip.stack.push(cip.id);
+		case 8: return cip.stack.push(0); // team number
 
 		mixin (SimpleVectorCases!("cip.pos",    9));
 		mixin (SimpleVectorCases!("cip.delta",  9 + dim));

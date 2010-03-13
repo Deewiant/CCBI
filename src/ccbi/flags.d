@@ -13,7 +13,8 @@ struct Flags {
 		tracing             = false,
 		warnings            = false,
 		detectInfiniteLoops = false,
-		allFingsDisabled    = false; // Short-cut past enabledFings if true
+		allFingsDisabled    = false, // Short-cut past enabledFings if true
+		sandboxMode         = false;
 
 	BitFields!(ALL_FINGERPRINT_IDS) enabledFings;
 }

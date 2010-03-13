@@ -111,6 +111,17 @@ version (funge98)
 else
 	const char[] FINGERPRINTS_HELP = "";
 
+version (funge98)
+	const char[] SANDBOX_HELP = `
+
+ -S, --sandbox           Sandbox mode: prevent the program from having any
+                         lasting effect on the system. To be precise, disables
+                         the o and = instructions and the following
+                         fingerprints:`
+	~ WordWrapFromTo!(39, 26, Intercalate!(", ", SANDBOXED_FINGERPRINTS) ~ ".");
+else
+	const char[] SANDBOX_HELP = "";
+
 version (detectInfiniteLoops)
 	const char[] INFINITY_NOTE = "";
 else
@@ -145,6 +156,7 @@ ARGS may be one or more of: `
                          stuck in an infinite loop, aborting with an error
                          message when that happens.`
 	~ INFINITY_NOTE
+	~ SANDBOX_HELP
 	~ `
 
  -w, --warnings          Warn when encountering unimplemented instructions.
@@ -414,6 +426,7 @@ int main(char[][] args) {
 	argp("warnings")       .aliased('w').bind({ flags.warnings = true; });
 	argp("script")                      .bind({ flags.script   = true; });
 	argp("detect-infinity").aliased('d').bind({ flags.detectInfiniteLoops = true; });
+	argp("sandbox")        .aliased('S').bind({ flags.sandboxMode = true; });
 
 	version (funge98) {
 		argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {

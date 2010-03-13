@@ -206,6 +206,37 @@ template FindLast(char c, char[] s) {
 		const FindLast = s.length;
 }
 
+// Pos    ("From"): what column the wrapping started from.
+// Column ("To"):   what column to start every new line from.
+//
+// Both are 1-based, not 0-based.
+//
+// s[0..wlen] is always the current word and s[wlen..$] the remainder of the
+// string.
+//
+// Starts with a space, even if s is completely empty.
+//
+// Considers words as separated by one ' ', not any other whitespace or
+// punctuation.
+template WordWrapFromTo(ubyte pos, ubyte column, char[] s, ubyte wlen = 0) {
+	static if (s[wlen .. $] == "") {
+		static if (pos >= 80)
+			const WordWrapFromTo = "\n" ~ Repeat!(" ", column-1) ~ s[0..wlen];
+		else
+			const WordWrapFromTo = " " ~ s[0..wlen];
+
+	} else static if (s[wlen] == ' ') {
+		static if (pos >= 80)
+			const WordWrapFromTo =
+				"\n" ~ Repeat!(" ", column) ~ s[0..wlen]
+				     ~ WordWrapFromTo!(column + wlen + 1, column, s[wlen+1 .. $]);
+		else
+			const WordWrapFromTo =
+				" " ~ s[0..wlen] ~ WordWrapFromTo!(pos+1, column, s[wlen+1 .. $]);
+	} else
+		const WordWrapFromTo = "" ~ WordWrapFromTo!(pos+1, column, s, wlen+1);
+}
+
 // WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2288
 template Switch(Case...) {
 	const Switch = "{" ~ Concat!(Case) ~ "}";
