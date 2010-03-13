@@ -3,7 +3,8 @@
 // Copyright (c) 2006-2008 Matti Niemenmaa
 // See license.txt for copyright details.
 
-// See e.g. http://quadium.net/funge/spec98.html for the Funge-98 specification.
+// See e.g. http://catseye.tc/projects/funge98/doc/funge98.html for the
+// Funge-98 specification.
 
 // File created: 2006-06-06
 
