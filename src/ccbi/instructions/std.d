@@ -117,11 +117,6 @@ import ccbi.space.space;
 
 alias .Coords!(dim) Coords;
 
-// WORKAROUND for D1: in D2, use __traits("compiles") in MakeSingleIns
-// Bit of a hack to get PushNumber!() instructions to compile
-// (Since it results in the otherwise invalid "Std.cip")
-IP cip() { return this.cip; }
-
 // The instructions are ordered according to the order in which they
 // appear within the documentation of the Funge-98 standard.
 // A comment has been added prior to each function so that one can grep

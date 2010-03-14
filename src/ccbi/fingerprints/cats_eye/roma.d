@@ -21,9 +21,3 @@ mixin (Fingerprint!(
 	"D", PushNumber!(500),
 	"M", PushNumber!(1000)
 ));
-
-template ROMA() {
-// WORKAROUND for D1: in D2, use __traits("compiles") in MakeSingleIns
-// Bit of a hack to get PushNumber!() instructions to compile
-IP cip() { return this.cip; }
-}

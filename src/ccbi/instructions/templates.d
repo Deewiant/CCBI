@@ -20,8 +20,15 @@ template InsImports() {
 		"import tango.core.Traits : isCallableType, ReturnTypeOf;";
 }
 
+// MakeSingleIns!(namespace).SingleIns!(i).Ins is a string: the case statement
+// for the instruction i from namespace. namespace is currently either Std or a
+// fingerprint: a template.
+//
 // We special-case "reverse" because otherwise all fingerprint templates would
-// need to add "alias Std.reverse reverse".
+// need to add "alias Std.reverse reverse". (Except for fingerprints which
+// implement all 26 instructions, of course.)
+//
+// We special-case anything starting with "cip.", for the PushNumber template.
 template MakeSingleIns(char[] s) {
 	// WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=1059
 	// Should be using EscapeForChar instead of ugly ?: mess
@@ -30,27 +37,37 @@ template MakeSingleIns(char[] s) {
 
 	// WORKAROUND http://d.puremagic.com/issues/show_bug.cgi?id=2339
 	// Mixins the whole contents of the static ifs instead of just the typeofs
+
+	// ` is here
+	// " is in the definition
+	// \" is at the use site
 	mixin (
 		`template SingleIns(char i) {
 			const C = "'" ~ (i=='\''?r"\'":i=='\\'?r"\\":i=='"'?"\"":""~i) ~ "'";
 
 			const Ins = "
 			case "~C~":
-				static if (`~s~`InsFunc!("~C~") == \"reverse\") {
+				static if (`~s~`InsFunc!("~C~") == \"reverse\")
 					return Std.reverse;
 
-				} else static if (mixin (\"!is(typeof(`~s~`))\"))
+				else static if (mixin (\"!is(typeof(`~s~`))\"))
 					static assert (false,
 						\"SingleIns :: Need template `~s~` for instruction \"~
 						`~s~`InsFunc!("~C~"));
+
+				else static if (
+					`~s~`InsFunc!("~C~").length >= 4 &&
+					`~s~`InsFunc!("~C~")[0..4] == \"cip.\"
+				)
+					mixin (\"this.\" ~ `~s~`InsFunc!("~C~") ~ \"; break;\");
+
 				else static if (mixin(\"
 					!isCallableType!(typeof(`~s~`.\"~`~s~`InsFunc!("~C~")~\")) ||
 					is(       ReturnTypeOf!(`~s~`.\"~`~s~`InsFunc!("~C~")~\") == void)
-				\")) {
+				\"))
 					mixin (\"`~s~`.\" ~ `~s~`InsFunc!("~C~") ~ \"; break;\");
-				} else {
+				else
 					mixin (\"return `~s~`.\" ~ `~s~`InsFunc!("~C~") ~ \";\");
-				}
 			";
 		}`
 	);
