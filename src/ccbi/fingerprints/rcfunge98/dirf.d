@@ -6,10 +6,6 @@ module ccbi.fingerprints.rcfunge98.dirf;
 
 import ccbi.fingerprint;
 
-// Both WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.io.FilePath;
-import tango.sys.Environment;
-
 // 0x44495246: DIRF
 // Directory functions extension
 // -----------------------------

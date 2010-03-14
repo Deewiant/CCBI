@@ -19,37 +19,6 @@ template Code(char[4] s, char[] id = s) {
 		"new typeof(fingerprints[" ~ ToString!(HexCode!(s)) ~ "])('Z'+1);";
 }
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below WrapForCasing
-//
-// "ABC" -> ["'A'","'B'","'C'"]
-private template WrapForCasingHelper(char[] s) {
-	static if (s.length)
-		const char[][] WrapForCasingHelper =
-			// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1640
-			// outer brackets are a Rebuild workaround
-			(["'" ~EscapeForChar!(s[0],1)~ "'"]) ~ WrapForCasingHelper!(s[1..$]);
-	else
-		const char[][] WrapForCasingHelper = [];
-}
-
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below Fingerprint
-//
-// Tuple!("ABC", "blaa") -> Tuple!(["'A'","'B'","'C'"], `"blaa"`)
-private template WrapForCasing(ins...) {
-	static if (ins.length) {
-		static assert (ins.length > 1, "WrapForCasing :: odd list");
-
-		alias Tuple!(
-			WrapForCasingHelper!(ins[0]),
-			Wrap               !(ins[1]),
-			WrapForCasing      !(ins[2..$])
-		) WrapForCasing;
-	} else
-		alias ins WrapForCasing;
-}
-
 // Generates two templates given "fing":
 //
 // template fingInsFunc(cell c) {
@@ -71,6 +40,27 @@ template Fingerprint(char[] name, ins...) {
 			"const "~PrefixName!(name)~"Instructions = "
 				~ ConcatMapTuple!(Wrap, Firsts!(ins)) ~ ";"
 		"}";
+}
+// Tuple!("ABC", "blaa") -> Tuple!(["'A'","'B'","'C'"], `"blaa"`)
+private template WrapForCasing(ins...) {
+	static if (ins.length) {
+		static assert (ins.length > 1, "WrapForCasing :: odd list");
+
+		alias Tuple!(
+			WrapForCasingHelper!(ins[0]),
+			Wrap               !(ins[1]),
+			WrapForCasing      !(ins[2..$])
+		) WrapForCasing;
+	} else
+		alias ins WrapForCasing;
+}
+// "ABC" -> ["'A'","'B'","'C'"]
+private template WrapForCasingHelper(char[] s) {
+	static if (s.length)
+		const char[][] WrapForCasingHelper =
+			"'" ~EscapeForChar!(s[0],1)~ "'" ~ WrapForCasingHelper!(s[1..$]);
+	else
+		const char[][] WrapForCasingHelper = [];
 }
 
 struct Semantics {

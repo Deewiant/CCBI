@@ -6,9 +6,6 @@ module ccbi.fingerprints.rcfunge98.date;
 
 import ccbi.fingerprint;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.time.chrono.Gregorian;
-
 // 0x44415445: DATE
 // Date Functions
 // --------------

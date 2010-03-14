@@ -6,9 +6,6 @@ module ccbi.fingerprints.rcfunge98.time;
 
 import ccbi.fingerprint;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.time.WallClock;
-
 // 0x54494d45: TIME
 // Time and Date functions
 // -----------------------

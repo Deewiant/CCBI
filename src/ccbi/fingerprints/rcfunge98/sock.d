@@ -6,9 +6,6 @@ module ccbi.fingerprints.rcfunge98.sock;
 
 import ccbi.fingerprint;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.net.device.Berkeley;
-
 // 0x534f434b: SOCK
 // tcp/ip [sic] socket extension
 // -----------------------------

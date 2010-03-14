@@ -7,9 +7,6 @@ module ccbi.fingerprints.cats_eye.turt;
 import tango.math.Math : PI, cos, sin, round = rndint;
 import tango.text.convert.Integer : itoa;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.text.xml.DocPrinter;
-
 import ccbi.container : SmallArray;
 import ccbi.fingerprint;
 

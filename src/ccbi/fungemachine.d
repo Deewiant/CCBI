@@ -274,8 +274,8 @@ private:
 	Request executeStandard(cell c) {
 		++stats.stdExecutionCount;
 
-		switch (c) mixin (Switch!(
-			Ins!("Std",
+		switch (c) {
+			mixin (Ins!("Std",
 				befunge93 ? " !\"#$%&*+,-./0123456789:<>?@\\^_`gpv|~" :
 
 				// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1059
@@ -287,10 +287,10 @@ private:
 
 				(dim >= 2 ? "[]^vw|" : "") ~
 				(dim >= 3 ? "hlm"    : "")
-			),
+			));
 
-			"default: unimplemented; break;"
-		));
+			default: unimplemented; break;
+		}
 		return Request.MOVE;
 	}
 
@@ -301,16 +301,16 @@ private:
 		mixin (ConcatMapTuple!(FingerprintCount, fings));
 
 		void loadedFingerprint(cell fingerprint) {
-			switch (fingerprint) mixin (Switch!(
-				FingerprintConstructorCases!(fings),
-				"default: break;"
-			));
+			switch (fingerprint) {
+				mixin (FingerprintConstructorCases!(fings));
+				default: break;
+			}
 		}
 		void unloadedFingerprintIns(cell fingerprint) {
-			switch (fingerprint) mixin (Switch!(
-				FingerprintDestructorCases!(fings),
-				"default: break;"
-			));
+			switch (fingerprint) {
+				mixin (FingerprintDestructorCases!(fings));
+				default: break;
+			}
 		}
 
 		Request executeSemantics(cell c)
@@ -325,20 +325,14 @@ private:
 
 			auto sem = stack.top;
 
-			switch (sem.fingerprint) mixin (Switch!(
-				// foreach fing, generates the following:
-				// case HexCode!(fing):
-				// 	switch (sem.instruction) mixin (Switch!(
-				// 		mixin (Ins!(fing, Range!('A', 'Z'))),
-				// 		"default: assert (false);"
-				// 	));
-
-				FingerprintExecutionCases!(
+			switch (sem.fingerprint) {
+				mixin (FingerprintExecutionCases!(
 					"sem.instruction",
 					"assert (false, `Unknown instruction in semantic`);",
-					fings),
-				"default: unimplemented; break;"
-			));
+					fings));
+
+				default: unimplemented; break;
+			}
 
 			return Request.MOVE;
 		}

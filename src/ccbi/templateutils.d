@@ -137,14 +137,6 @@ template EscapeForChar(char c, uint times = 0) {
 		const EscapeForChar = c;
 }
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below Wrap
-private template WrapHelper(char c) {
-	     static if (c ==  '"') const WrapHelper = `\"`;
-	else static if (c == '\\') const WrapHelper = `\\`;
-	else                       const WrapHelper = c;
-}
-
 // Wrap a string in quotation marks: for instance, foo"bar\baz`qux becomes
 // "foo\"bar\\baz`qux".
 template Wrap(char[] s) {
@@ -155,6 +147,11 @@ template Wrap(char[] s) {
 			const Wrap = "`" ~ s ~ "`";
 	} else
 		const Wrap = `"` ~ s ~ `"`;
+}
+private template WrapHelper(char c) {
+	     static if (c ==  '"') const WrapHelper = `\"`;
+	else static if (c == '\\') const WrapHelper = `\\`;
+	else                       const WrapHelper = c;
 }
 
 template WrapAll(xs...) {
@@ -235,11 +232,6 @@ template WordWrapFromTo(ubyte pos, ubyte column, char[] s, ubyte wlen = 0) {
 				" " ~ s[0..wlen] ~ WordWrapFromTo!(pos+1, column, s[wlen+1 .. $]);
 	} else
 		const WordWrapFromTo = "" ~ WordWrapFromTo!(pos+1, column, s, wlen+1);
-}
-
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=2288
-template Switch(Case...) {
-	const Switch = "{" ~ Concat!(Case) ~ "}";
 }
 
 // Tuple!(a,b,c,d...) -> Tuple!(a,c,...)
@@ -352,27 +344,6 @@ template TemplateLookup(
 		~ `}`;
 }
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below RangedLookup
-private template RangedLookupHelper(
-	char[] tmplName,
-	char[] needle,
-	char[] result,
-	cases...
-) {
-	static assert (cases.length == 1);
-
-	static if (cases[0].length == 0)
-		const RangedLookupHelper = "";
-	else {
-		const RangedLookupHelper =
-			"static if (" ~needle~ " == " ~cases[0][0] ~ ")"
-				"const " ~tmplName~ " = " ~result~ ";"
-			"else " ~
-				RangedLookupHelper!(tmplName, needle, result, cases[0][1..$]);
-	}
-}
-
 // Like Lookup but the first parts of the given pairs should be arrays, and
 // each element in that array matches the second part of the pair.
 //
@@ -398,6 +369,24 @@ template RangedLookup(
 		const RangedLookup =
 			RangedLookupHelper!(tmplName, needle, haystack[1], haystack[0]) ~
 			RangedLookup      !(tmplName, needle, last, haystack[2..$]);
+	}
+}
+private template RangedLookupHelper(
+	char[] tmplName,
+	char[] needle,
+	char[] result,
+	cases...
+) {
+	static assert (cases.length == 1);
+
+	static if (cases[0].length == 0)
+		const RangedLookupHelper = "";
+	else {
+		const RangedLookupHelper =
+			"static if (" ~needle~ " == " ~cases[0][0] ~ ")"
+				"const " ~tmplName~ " = " ~result~ ";"
+			"else " ~
+				RangedLookupHelper!(tmplName, needle, result, cases[0][1..$]);
 	}
 }
 

@@ -4,9 +4,6 @@
 
 module ccbi.fingerprints.cats_eye.perl;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.sys.Process;
-
 import ccbi.fingerprint;
 
 // 0x4d4f4445: PERL

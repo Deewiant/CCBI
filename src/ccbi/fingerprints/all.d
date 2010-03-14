@@ -144,10 +144,10 @@ private template FingerprintInstructionsCases(fing...) {
 // mixin target
 template FingerprintHelpers() {
 	char[] instructionsOf(cell fingerprint) {
-		switch (fingerprint) mixin (Switch!(
-			FingerprintInstructionsCases!(ALL_FINGERPRINTS),
-			"default: return null;"
-		));
+		switch (fingerprint) {
+			mixin (FingerprintInstructionsCases!(ALL_FINGERPRINTS));
+			default: return null;
+		}
 	}
 }
 
@@ -226,20 +226,20 @@ template FingerprintDestructorCases(fing...) {
 
 // foreach fingerprint:
 // 	case HexCode!("<fingerprint>"):
-// 		switch (ins) mixin (Switch!(
-// 			Ins!("<fingerprint>", Range!('A', 'Z')),
-// 			def
-// 		));
+// 		switch (ins) {
+// 			mixin (Ins!("<fingerprint>", Range!('A', 'Z')));
+// 			default: def
+// 		}
 //       break;
 template FingerprintExecutionCases(char[] ins, char[] def, fing...) {
 	static if (fing.length)
 		const FingerprintExecutionCases =
 			`case `~ToString!(HexCode!(fing[0]))~`: `
-				`switch (`~ins~`) mixin (Switch!(`\n\t
-					`Ins!(`~Wrap!(PrefixName!(fing[0]))~`, Range!('A', 'Z')),`\n\t
-					~ Wrap!(`default: `~ def) ~
-				`));`\n
-				`break;`\n
+				`switch (`~ins~`) {`
+				`	mixin (Ins!(`~Wrap!(PrefixName!(fing[0]))~`, Range!('A', 'Z')));`
+					`default: `~ def ~
+				`}`
+				`break;`
 			~ FingerprintExecutionCases!(ins, def, fing[1..$]);
 	else
 		const FingerprintExecutionCases = "";

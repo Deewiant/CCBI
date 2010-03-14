@@ -5,9 +5,6 @@
 // The tracing facilities.
 module ccbi.tracer;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import tango.text.Ascii;
-
 // TODO: put "Tracer ::" prompt in a func of its own
 // so that it can print "Tracer 1 ::" when in MVRS!
 

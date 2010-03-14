@@ -6,8 +6,19 @@ module ccbi.instructions.templates;
 
 import ccbi.templateutils;
 
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below Ins
+template Ins(char[] namespace, char[] i) {
+	const char[] Ins = ConcatMapIns!(MakeSingleIns!(namespace).SingleIns, i);
+}
+
+// MakeSingleIns needs these but since the compiling is elsewhere these also
+// have to be imported there...
+//
+// This is a template and not a constant just so that it doesn't take up space
+// in the executable
+template InsImports() {
+	const InsImports =
+		"import tango.core.Traits : isCallableType, ReturnTypeOf;";
+}
 
 // We special-case "reverse" because otherwise all fingerprint templates would
 // need to add "alias Std.reverse reverse".
@@ -52,18 +63,4 @@ template ConcatMapIns(alias F, char[] xs) {
 		const ConcatMapIns = F!(xs[0]).Ins ~ ConcatMapIns!(F, xs[1..$]);
 	else
 		const ConcatMapIns = "";
-}
-
-// MakeSingleIns needs these but since the compiling is elsewhere these also
-// have to be imported there...
-//
-// This is a template and not a constant just so that it doesn't take up space
-// in the executable
-template InsImports() {
-	const InsImports =
-		"import tango.core.Traits : isCallableType, ReturnTypeOf;";
-}
-
-template Ins(char[] namespace, char[] i) {
-	const char[] Ins = ConcatMapIns!(MakeSingleIns!(namespace).SingleIns, i);
 }

@@ -11,25 +11,6 @@ import ccbi.cell;
 import ccbi.templateutils;
 import ccbi.instructions.utils;
 
-// WORKAROUND: http://www.dsource.org/projects/dsss/ticket/175
-import ccbi.random;
-
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below StdInsFunc
-// Tuple!('x', "blaa") -> Tuple!("'a'", `"blaa"`)
-private template WrapForCasing(ins...) {
-	static if (ins.length) {
-		static assert (ins.length > 1, "WrapForCasing :: odd list");
-
-		alias Tuple!(
-			"'" ~ EscapeForChar!(ins[0]) ~ "'",
-			Wrap               !(ins[1]),
-			WrapForCasing      !(ins[2..$])
-		) WrapForCasing;
-	} else
-		alias ins WrapForCasing;
-}
-
 mixin (TemplateLookup!(
 	"StdInsFunc", "cell", "c",
 	`static assert (false, "No such standard instruction " ~cast(char)c);`,
@@ -104,6 +85,19 @@ mixin (TemplateLookup!(
 		 ')', "unloadSemantics",
 		 't', "splitIP")
 ));
+// Tuple!('x', "blaa") -> Tuple!("'x'", `"blaa"`)
+private template WrapForCasing(ins...) {
+	static if (ins.length) {
+		static assert (ins.length > 1, "WrapForCasing :: odd list");
+
+		alias Tuple!(
+			"'" ~ EscapeForChar!(ins[0]) ~ "'",
+			Wrap               !(ins[1]),
+			WrapForCasing      !(ins[2..$])
+		) WrapForCasing;
+	} else
+		alias ins WrapForCasing;
+}
 
 template StdInstructions() {
 
@@ -127,10 +121,6 @@ alias .Coords!(dim) Coords;
 // Bit of a hack to get PushNumber!() instructions to compile
 // (Since it results in the otherwise invalid "Std.cip")
 IP cip() { return this.cip; }
-
-//import ccbi.mini.funge;
-//import ccbi.mini.instructions : miniUnimplemented;
-//import ccbi.mini.vars         : miniMode, Mini, warnings, inMini;
 
 // The instructions are ordered according to the order in which they
 // appear within the documentation of the Funge-98 standard.

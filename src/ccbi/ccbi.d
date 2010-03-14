@@ -441,22 +441,22 @@ int main(char[][] args) {
 								("' must be prefixed with - or +.").newline;
 						return;
 				}
-				switch (f[1..$]) mixin (Switch!(
-					FingerprintSettingCases!(ALL_FINGERPRINTS),
-					`case "all":
+				switch (f[1..$]) {
+					mixin (FingerprintSettingCases!(ALL_FINGERPRINTS));
+					case "all":
 						if (enable)
 							flags.enabledFings.setAll();
 						else
 							flags.enabledFings.unsetAll();
-						break;`,
-					`default:
+						break;
+					default:
 						if (enable) {
 							failedParse = true;
 							Stderr("CCBI :: cannot enable unknown fingerprint '")
 						      	(f[1..$])("'.").newline;
 						}
-						break;`
-				));
+						break;
+				}
 			}
 		});
 	}
