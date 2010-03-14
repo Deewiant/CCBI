@@ -81,7 +81,18 @@ void ctor() {
 		earlyState.startIdx = cipIdx;
 	}
 }
-void dtor() { usingTRDS = false; }
+void dtor() {
+	// If we still have people arriving or time is stopped, don't disable the
+	// callbacks
+	if (!isNormalTime())
+		return;
+
+	foreach (ip; travellers)
+		if (state.tick < ip.jumpedTo)
+			return;
+
+	usingTRDS = false;
+}
 
 // }}}
 // {{{ FungeMachine callbacks

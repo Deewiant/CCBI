@@ -271,13 +271,6 @@ import tango.time.Clock;
 char[] filename = TURT_FILE_INIT;
 Turtle turt;
 
-void dtor() {
-	foreach (part; turt.pic.parts)
-		if (!part.isDot)
-			part.path.free();
-	turt.pic.parts.length = 0;
-}
-
 // {{{ Helpers
 
 // If we've moved to a location with the pen up, and the pen is now down, it
