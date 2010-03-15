@@ -759,7 +759,7 @@ void reallyInputDecimal() {
 	cunget(c);
 
 	cell n = 0;
-	auto s = new typeof(c)[80];
+	ubyte[ToString!(cell.min).length] s;
 	size_t j;
 
 	reading: for (;;) {
@@ -772,9 +772,6 @@ void reallyInputDecimal() {
 		// overflow: can't read more chars
 		if (n > n.max / 10)
 			break;
-
-		if (j == s.length)
-			s.length = 2 * s.length;
 
 		s[j++] = c;
 

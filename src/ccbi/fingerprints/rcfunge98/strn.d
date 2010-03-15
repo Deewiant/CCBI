@@ -34,6 +34,44 @@ import ascii = tango.text.Ascii;
 import tango.text.Util            : locatePattern;
 import tango.text.convert.Integer : format, parse;
 
+// Reverse the top len cells on the stack
+private void stringToGnirts(size_t len) {
+	if (len < 2)
+		return;
+
+	// 0string -> 0gnirts
+	//
+	// Since we're not guaranteed to get a single contiguous array to reverse
+	// from mapFirstNPushed, we have to instead gather them all up so that we
+	// can reverse them as a whole.
+	SmallArray!(cell[], 8) blocks;
+	cip.stack.mapFirstNPushed(len, (cell[] a) { blocks ~= a; }, null);
+
+	size_t len2 = len / 2;
+
+	size_t begBI = 0, endBI = blocks.size - 1;
+	cell[] begB = blocks[begBI], endB = blocks[endBI];
+	size_t begBeg = 0, endEnd = endB.length - 1;
+
+	for (;;) {
+		auto tmp = begB[begBeg];
+		begB[begBeg] = endB[endEnd];
+		endB[endEnd] = tmp;
+
+		if (!--len2)
+			return;
+
+		if (++begBeg >= begB.length) {
+			begB = blocks[++begBI];
+			begBeg = 0;
+		}
+		if (endEnd-- == 0) {
+			endB = blocks[--endBI];
+			endEnd = endB.length - 1;
+		}
+	}
+}
+
 void append() {
 	auto top = popString().dup,
 	     bot = popString();
@@ -57,11 +95,6 @@ void search() {
 	pushStringz(s[locatePattern(s, popString())..$]);
 }
 
-// buffer for get() and input()
-char[] buf;
-void ctor() { buf = new char[80]; }
-void dtor() { delete buf; }
-
 void get() {
 	Coords c = popOffsetVector();
 
@@ -70,17 +103,18 @@ void get() {
 
 	auto start = c;
 
-	size_t i = 0;
+	cip.stack.push(0);
+
+	size_t len = 0;
 	for (;;) {
 		auto ch = cast(char)state.space[c];
 
 		if (ch == 0)
 			break;
 
-		if (i == buf.length)
-			buf.length = buf.length * 2;
+		cip.stack.push(ch);
+		++len;
 
-		buf[i++] = ch;
 		++c.x;
 
 		version (detectInfiniteLoops) if (c.x > end.x) {
@@ -100,11 +134,7 @@ void get() {
 				size_t neededLen = toEnd + fromBeg;
 
 				// Wishful thinking...
-				if (buf.length < i + neededLen)
-					buf.length = buf.length + neededLen;
-
-				buf[i .. i+neededLen] = ' ';
-				i += neededLen;
+				cip.stack.reserve(neededLen)[0..neededLen] = ' ';
 				c.x = beg.x;
 			} else
 				throw new SpaceInfiniteLoopException(
@@ -112,32 +142,37 @@ void get() {
 					"String starting at " ~start.toString()~ " never terminates.");
 		}
 	}
-	pushStringz(buf[0..i]);
+	stringToGnirts(len);
 }
 
 void input() {
+	cip.stack.push(0);
+
 	static if (GOT_TRDS)
 		if (state.tick < ioAfter)
-			return cip.stack.push(0);
+			return;
 
 	Sout.flush;
 
-	size_t i = 0;
+	size_t len = 0;
 	try {
 		do {
-			if (i == buf.length)
-				buf.length = buf.length * 2;
-
-			buf[i] = cget();
-		} while (buf[i++] != '\n');
+			++len;
+			cip.stack.push(cget());
+		} while (cip.stack.top != '\n');
 	} catch {
+		cip.stack.popPushed(len);
 		return reverse();
 	}
 
 	// lose the \r?\n
-	if (buf[i-2] == '\r')
-		--i;
-	pushStringz(buf[0..i-1]);
+	cip.stack.popPushed(1);
+	--len;
+	if (cip.stack.topPushed == '\r') {
+		cip.stack.popPushed(1);
+		--len;
+	}
+	stringToGnirts(len);
 }
 
 void left() {

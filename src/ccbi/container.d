@@ -172,6 +172,14 @@ struct CellContainer {
 	// the bottom.
 	mixin (F!("cell", "at", "size_t i"));
 
+	// *Pushed() forms take invertmode into account, applying from the correct
+	// direction so as to work on cells that have just been pushed. They don't
+	// update statistics and assume a nonempty stack.
+	mixin (F!("void", "popPushed", "size_t n"));
+	mixin (F!("cell", "topPushed"));
+	mixin (F!("void", "mapFirstNPushed",
+		"size_t n", "void delegate(cell[]) f", "void delegate(size_t) g"));
+
 	byte mode() { return isDeque ? deque.mode : 0; }
 }
 
@@ -251,6 +259,10 @@ struct Stack(T) {
 		} else
 			head -= i;
 	}
+	void popPushed(size_t n) {
+		stats.pops -= n;
+		pop(n);
+	}
 
 	void clear() {
 		++stats.clears;
@@ -270,6 +282,10 @@ struct Stack(T) {
 				assert (false, "Attempted to peek empty non-cell stack.");
 		}
 
+		return array[head-1];
+	}
+	T topPushed() {
+		assert (!empty);
 		return array[head-1];
 	}
 
@@ -327,6 +343,12 @@ struct Stack(T) {
 	{
 		return mapFirstN(n, f, g);
 	}
+	void mapFirstNPushed(
+		size_t n, void delegate(T[]) f, void delegate(size_t) g)
+	{
+		return mapFirstN(n, f, g);
+	}
+
 
 
 	int opApply(int delegate(inout T t) dg) {
@@ -513,26 +535,41 @@ struct Deque {
 	void pop(size_t i)  {
 		stats.pops += i;
 
-		if (mode & QUEUE_MODE) for (;;) {
-			if (i < tail.size) {
-				tail.tail += i;
-				return;
-			}
-			i -= tail.size;
-			if (!dropTailChunk())
-				break;
-
-		} else for (;;) {
+		if (mode & QUEUE_MODE)
+			i = popTail(i);
+		else
+			i = popHead(i);
+		stats.popUnderflows += i;
+	}
+	void popPushed(size_t n) {
+		if (mode & INVERT_MODE)
+			popTail(n);
+		else
+			popHead(n);
+	}
+	private size_t popHead(size_t i) {
+		for (;;) {
 			if (i <= head.size) {
 				head.head -= i;
-				return;
+				return 0;
 			}
 			i -= head.size;
 			if (!dropHeadChunk())
-				break;
+				return i;
 		}
-		stats.popUnderflows += i;
 	}
+	private size_t popTail(size_t i) {
+		for (;;) {
+			if (i < tail.size) {
+				tail.tail += i;
+				return 0;
+			}
+			i -= tail.size;
+			if (!dropTailChunk())
+				return i;
+		}
+	}
+
 	private cell popHead() {
 		auto c = head.array[--head.head];
 
@@ -590,6 +627,14 @@ struct Deque {
 		}
 
 		if (mode & QUEUE_MODE)
+			return tail.array[tail.tail];
+		else
+			return head.array[head.head-1];
+	}
+	cell topPushed() {
+		assert (!empty);
+
+		if (mode & INVERT_MODE)
 			return tail.array[tail.tail];
 		else
 			return head.array[head.head-1];
@@ -818,6 +863,14 @@ struct Deque {
 
 	void mapFirstN(size_t n, void delegate(cell[]) f, void delegate(size_t) g) {
 		if (mode & QUEUE_MODE)
+			return mapFirstNTail(n, f, g);
+		else
+			return mapFirstNHead(n, f, g);
+	}
+	void mapFirstNPushed(
+		size_t n, void delegate(cell[]) f, void delegate(size_t) g)
+	{
+		if (mode & INVERT_MODE)
 			return mapFirstNTail(n, f, g);
 		else
 			return mapFirstNHead(n, f, g);
