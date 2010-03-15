@@ -40,3 +40,8 @@ version (Win32)
 	const cell PATH_SEPARATOR = '\\';
 else
 	const cell PATH_SEPARATOR = '/';
+
+version (TURT) {
+	const TURT_FILE_INIT = "CCBI_TURT.svg";
+	char[] turtFile = TURT_FILE_INIT;
+}

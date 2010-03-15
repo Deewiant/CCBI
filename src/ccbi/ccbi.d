@@ -27,6 +27,9 @@ import ccbi.fungemachine;
 import ccbi.templateutils;
 import ccbi.utils;
 
+version (TURT)
+	import ccbi.globals : turtFile, TURT_FILE_INIT;
+
 // Yay version combinations and --help strings
 version (unefunge98)   version = funge98;
 version ( befunge98) { version = funge98; version = notOnlyUne; }
@@ -111,6 +114,14 @@ version (funge98)
 else
 	const char[] FINGERPRINTS_HELP = "";
 
+version (detectInfiniteLoops)
+	const char[] INFINITY_NOTE = "";
+else
+	const char[] INFINITY_NOTE = `
+
+                         Note: not all infinite loop checks are enabled in this
+                         build of CCBI.`;
+
 version (funge98)
 	const char[] SANDBOX_HELP = `
 
@@ -122,13 +133,14 @@ version (funge98)
 else
 	const char[] SANDBOX_HELP = "";
 
-version (detectInfiniteLoops)
-	const char[] INFINITY_NOTE = "";
-else
-	const char[] INFINITY_NOTE = `
+version (TURT)
+	const char[] TURT_HELP = `
 
-                         Note: not all infinite loop checks are enabled in this
-                         build of CCBI.`;
+    --turt-file=PATH     Use PATH as the file written to by the I instruction
+                         in the TURT fingerprint. The default is `
+                         ~TURT_FILE_INIT~ `.`;
+else
+	const char[] TURT_HELP = "";
 
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
@@ -157,6 +169,7 @@ ARGS may be one or more of: `
                          message when that happens.`
 	~ INFINITY_NOTE
 	~ SANDBOX_HELP
+	~ TURT_HELP
 	~ `
 
  -w, --warnings          Warn when encountering unimplemented instructions.
@@ -427,6 +440,9 @@ int main(char[][] args) {
 	argp("script")                      .bind({ flags.script   = true; });
 	argp("detect-infinity").aliased('d').bind({ flags.detectInfiniteLoops = true; });
 	argp("sandbox")        .aliased('S').bind({ flags.sandboxMode = true; });
+
+	version (TURT)
+		argp("turt-file").params(1).bind((char[] s) { turtFile = s; });
 
 	version (funge98) {
 		argp("fingerprints").aliased('f').params(1).smush.bind((char[] fs) {

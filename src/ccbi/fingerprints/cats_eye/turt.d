@@ -34,8 +34,6 @@ mixin (Fingerprint!(
 	"U", "queryBounds"
 ));
 
-const TURT_FILE_INIT = "CCBI_TURT.svg";
-
 // {{{ Turtle coordinates
 
 // fixed point with 5 decimals
@@ -268,7 +266,6 @@ import tango.text.xml.Document;
 import tango.text.xml.DocPrinter;
 import tango.time.Clock;
 
-char[] filename = TURT_FILE_INIT;
 Turtle turt;
 
 // {{{ Helpers
@@ -396,7 +393,7 @@ void printDrawing() {
 			return;
 
 	File file;
-	try file = new typeof(file)(filename, file.WriteCreate);
+	try file = new typeof(file)(turtFile, file.WriteCreate);
 	catch {
 		return reverse();
 	}
