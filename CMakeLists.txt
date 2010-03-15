@@ -115,6 +115,15 @@ if(FINGERPRINT_REXP)
 	# CMake doesn't provide a FindRegex or equivalent... just hope it works
 	list(APPEND C_SOURCES "${CCBI_SOURCE_DIR}/src/wraprexp.c")
 endif()
+if(FINGERPRINT_TERM AND (NOT WIN32 OR CYGWIN)) # Presumably version=Posix in Cygwin
+	if(CURSES_FOUND)
+		foreach(lib ${CURSES_LIBRARIES})
+			list(APPEND D_LINK_FLAGS -L${lib})
+		endforeach()
+	else()
+		message(SEND_ERROR "Need CURSES_FOUND to build TERM on non-Windows system!")
+	endif()
+endif()
 
 ########
 # Advanced options
