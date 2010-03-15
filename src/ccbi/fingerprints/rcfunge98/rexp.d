@@ -39,6 +39,7 @@ extern (C) {
 	ccbi_regmatch_t* ccbi_execute(char*, ubyte);
 	void             ccbi_free();
 }
+pragma(msg, "REXP :: remember to link with a POSIX-compatible regex library if necessary.");
 
 struct ccbi_regmatch_t { ptrdiff_t rm_so, rm_eo; }
 
@@ -54,8 +55,6 @@ mixin (Fingerprint!(
 ));
 
 template REXP() {
-
-pragma(msg, "REXP :: remember to link with a POSIX-compatible regex library if necessary.");
 
 bool compiled = false, hadNoSub = false;
 

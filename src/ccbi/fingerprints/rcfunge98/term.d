@@ -135,7 +135,7 @@ template TERM() {
 } else version (Posix) {
 
 extern (C) {
-	alias int c_int; // Valid for all D-supported platforms?
+	alias int c_int; // Should be valid for all D-supported platforms
 
 	char* tigetstr        (char*);
 	c_int tputs           (char*, c_int, c_int function(c_int));
@@ -144,14 +144,13 @@ extern (C) {
 	c_int def_shell_mode  ();
 	c_int setupterm       (char*, c_int, c_int*);
 }
+pragma (msg, "TERM :: assuming we have a terminfo database...");
 
 template TERM() {
 	import tango.core.Exception : IOException;
 	import tango.stdc.stdio  : fileno, stdout;
 	import tango.stdc.stringz;
 	import tango.text.convert.Integer : toString;
-
-	pragma (msg, "TERM :: assuming we have a terminfo database...");
 
 	extern (C) static int my_putchar(int x) {
 		Sout(cast(char)x);

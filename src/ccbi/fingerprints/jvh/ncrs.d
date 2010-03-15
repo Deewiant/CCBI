@@ -6,7 +6,7 @@ module ccbi.fingerprints.jvh.ncrs;
 
 import ccbi.fingerprint;
 
-template ChtypeMsg() { const ChtypeMsg = "NCRS :: assuming 32-bit chtype..."; }
+pragma (msg, "NCRS :: assuming 32-bit chtype...");
 alias uint chtype;
 
 alias int c_int;
@@ -34,6 +34,12 @@ extern (C) {
 	ubyte ccbi_addch (chtype);
 	ubyte ccbi_addstr(/+const+/ char*);
 }
+version (Windows) {
+	pragma (msg,
+		"NCRS :: remember to link with a curses library, such as PDCurses.");
+} else
+	pragma (msg,
+		"NCRS :: remember to link with a curses library, such as ncurses.");
 
 // 0x4e435253: NCRS
 // Ncurses [sic] extension
@@ -57,16 +63,6 @@ mixin (Fingerprint!(
 ));
 
 template NCRS() {
-
-pragma (msg, ChtypeMsg!());
-
-version (Windows) {
-	pragma (msg,
-		"NCRS :: remember to link with a curses library, such as PDCurses.");
-} else {
-	pragma (msg,
-		"NCRS :: remember to link with a curses library, such as ncurses.");
-}
 
 void beep   () { if (!ccbi_beep())    reverse; }
 void refresh() { if (!ccbi_refresh()) reverse; }
