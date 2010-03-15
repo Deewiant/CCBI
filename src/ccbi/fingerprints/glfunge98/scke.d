@@ -9,6 +9,9 @@ import ccbi.fingerprint;
 // 0x53434b45: SCKE
 // ----------------
 
+version (SOCK) {} else
+	static assert (false, "SCKE requires SOCK!");
+
 mixin (Fingerprint!(
 	"SCKE",
 
