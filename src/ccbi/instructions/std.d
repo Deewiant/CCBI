@@ -319,22 +319,30 @@ Request iterate() {
 			return executeStandard(i);
 
 		case '[':
-			switch (n % 4) {
-				case 0: break;
-				case 1: turnLeft;  break;
-				case 2: reverse;   break;
-				case 3: turnRight; break;
+			static if (dim < 2)
+				goto case 'r';
+			else {
+				switch (n % 4) {
+					case 0: break;
+					case 1: turnLeft;  break;
+					case 2: reverse;   break;
+					case 3: turnRight; break;
+				}
+				return r;
 			}
-			return r;
 
 		case ']':
-			switch (n % 4) {
-				case 0: break;
-				case 1: turnRight; break;
-				case 2: reverse;   break;
-				case 3: turnLeft;  break;
+			static if (dim < 2)
+				goto case 'r';
+			else {
+				switch (n % 4) {
+					case 0: break;
+					case 1: turnRight; break;
+					case 2: reverse;   break;
+					case 3: turnLeft;  break;
+				}
+				return r;
 			}
-			return r;
 
 		case '"':
 			if (n & 1)
