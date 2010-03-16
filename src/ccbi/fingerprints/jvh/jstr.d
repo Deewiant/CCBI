@@ -6,11 +6,9 @@ module ccbi.fingerprints.jvh.jstr;
 
 import ccbi.fingerprint;
 
-// 0x4a535452: JSTR
-// ----------------
-
 mixin (Fingerprint!(
 	"JSTR",
+	"",
 
 	"P", "popN",
 	"G", "pushN"

@@ -41,12 +41,9 @@ version (Windows) {
 	pragma (msg,
 		"NCRS :: remember to link with a curses library, such as ncurses.");
 
-// 0x4e435253: NCRS
-// Ncurses [sic] extension
-// -----------------------
-
 mixin (Fingerprint!(
 	"NCRS",
+	"Ncurses [sic] extension",
 
 	"B", "beep",
 	"C", "clear",

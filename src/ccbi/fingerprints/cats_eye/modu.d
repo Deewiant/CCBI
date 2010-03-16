@@ -12,6 +12,10 @@ import ccbi.fingerprint;
 
 mixin (Fingerprint!(
 	"MODU",
+	"Modulo Arithmetic Extension
+
+      All instructions push a zero when division by zero would occur, matching
+      the behaviour of the '%' instruction.\n",
 
 	"M",   "signedResultModulo",
 	"U", "unsignedResultModulo",

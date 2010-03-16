@@ -6,12 +6,12 @@ module ccbi.fingerprints.cats_eye.refc;
 
 import ccbi.fingerprint;
 
-// 0x52454643: REFC
-// Referenced Cells Extension
-// --------------------------
-
 mixin (Fingerprint!(
 	"REFC",
+	"Referenced Cells Extension
+
+      Since there is no way of forgetting about a referenced vector, prolific
+      use of the 'R' instruction can and will lead to a shortage of memory.\n",
 
 	"D", "dereference",
 	"R",   "reference"

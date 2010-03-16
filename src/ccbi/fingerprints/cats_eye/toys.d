@@ -6,12 +6,18 @@ module ccbi.fingerprints.cats_eye.toys;
 
 import ccbi.fingerprint;
 
-// 0x544f5953: TOYS
-// Funge-98 Standard Toys
-// ----------------------
-
 mixin (Fingerprint!(
 	"TOYS",
+	`Funge-98 Standard Toys
+
+      'B' pops y, then x, and pushes x+y, then x-y. This may or may not be the
+          the "butterfly bit operation" requested.
+
+      'H' performs a signed right shift.
+
+      'T' reverses if the dimension number is too big or small.
+
+      'Z' reverses outside Trefunge.`\n,
 
 	"A", "gable",
 	"B", "pairOfShoes",

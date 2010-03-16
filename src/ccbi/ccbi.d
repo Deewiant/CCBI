@@ -264,144 +264,27 @@ Other notes:
  Wherever the Concurrent Funge-98 spec mentions the stack, it has been taken as
  referring to the stack stack.`,
 
-	FINGERPRINT_INFO = `The following fingerprints are implemented:
+	FINGERPRINT_INFO =
+		// After a long description we get two line breaks, but also before a new
+		// header: we can't know from here whether the last fingerprint before a
+		// new header has a long description, so just fix it up.
+		Replace("\n\n\n", "\n\n",
 
-  Official Cat's Eye Technologies fingerprints:
-
-    "HRTI"  0x48525449  High-Resolution Timer Interface
-    "MODE"  0x4d4f4445  Funge-98 Standard Modes
-
-      The stack stack is unaffected by both invertmode and queuemode.
-
-    "MODU"  0x4d4f4455  Modulo Arithmetic Extension
-
-      All instructions ('M', 'U', 'R') push a zero when division by zero would
-      occur, to match the behaviour of '%'.
-
-    "NULL"  0x4e554c4c  Funge-98 Null Fingerprint
-    "ORTH"  0x4f525448  Orthogonal Easement Library
-
-      'G' and 'P' do not apply the storage offset.
-
-    "PERL"  0x5045524c  Generic Interface to the Perl Language
-
-      The result of 'E' and 'I' which is pushed is what eval() returned.
-
-      Anything that the Perl program writes to stdout or stderr is passed on to
-      CCBI's stdout. Trying to forcibly write to stderr from within the Perl
-      (through tricks such as 'open($my_stderr, ">&2")') is deemed undefined
-      behaviour and you do so at your own risk.
-
-    "REFC"  0x52454643  Referenced Cells Extension
-
-      Since there is no way of removing a vector from the list, prolific use of
-      'R' can and will lead to a shortage of memory.
-
-    "ROMA"  0x524f4d41  Funge-98 Roman Numerals
-    "TOYS"  0x544f5953  Funge-98 Standard Toys
-
-      'B' pops y, then x, and pushes x+y, then x-y. This may or may not be the
-          the "butterfly bit operation" requested.
-
-      'H' performs a signed right shift.
-
-      'T' reverses if the dimension number is too big or small (not 0 or 1).
-
-      'Z' reverses since this isn't Trefunge.
-
-    "TURT"  0x54555254  Simple Turtle Graphics Library
-
-      'I' creates an SVG 1.1 file.
-
-  RC/Funge-98 fingerprints:
-
-    "BASE"  0x42415345  I/O for numbers in other bases
-
-      'N' and 'I' reverse unless 0 < base < 36.
-
-    "CPLI"  0x43504c49  Complex Integer extension
-    "DATE"  0x44415445  Date Functions
-    "DIRF"  0x44495246  Directory functions extension
-    "EVAR"  0x45564152  Environment variables extension
-
-      'P' reverses if the string it pops is not of the form name=value.
-
-    "FILE"  0x46494c45  File I/O functions
-    "FIXP"  0x46495850  Some useful math functions
-
-      'B', 'C', 'I', 'J', 'P', 'Q', 'T', and 'U' round the number using the
-                                                 current rounding mode.
-
-    "FPDP"  0x46504450  Double precision floating point
-    "FPSP"  0x46505350  Single precision floating point
-
-      The following notes apply to both of the above:
-
-      'F' rounds the number using the current rounding mode.
-
-      'P' prints like the standard '.', with a space after the number.
-
-      'R' reverses if the string doesn't represent a floating point number.
-
-    "FRTH"  0x46525448  Some common forth [sic] commands
-
-      'D' will push a negative number if the stack size is greater than or
-          equal to 2^31 - 1, the maximum size of a 32-bit Funge-Space cell.
-
-      'L' and 'P' both push a zero if the argument they pop is greater than or
-                  equal to the size of the stack after the pop.
-
-    "IIPC"  0x49495043  Inter IP [sic] communicaiton [sic] extension
-
-      'A' reverses if the IP is the initial IP and thus has no ancestor.
-
-    "IMAP"  0x494d4150  Instruction remap extension
-    "INDV"  0x494e4456  Pointer functions
-    "SOCK"  0x534f434b  tcp/ip [sic] socket extension
-
-      'A' will push zeroes for both the port and address if the address is not
-          IPv4 (AF_INET/PF_INET).
-
-    "STRN"  0x5354524e  String functions
-
-      'G' will reverse if it detects it is in an infinite loop, looking for a
-          terminating zero outside the Funge-Space boundaries.
-
-    "SUBR"  0x53554252  Subroutine extension
-    "TERM"  0x5445524d  Terminal control functions
-
-      Each instruction reverses on error under Windows.
-
-      TERM isn't implemented on Posix, unfortunately. If you think you can
-      help with that, please do.
-
-    "TIME"  0x54494d45  Time and Date functions
-    "TRDS"  0x54524453  IP travel in time and space
-
-      Time travel to the past is implemented as rerunning from tick 0. Output
-      (console/file) during rerunning is not performed. Console input results
-      in constant values, which probably won't be the same as those that were
-      originally input. The 'i' instruction is ignorant of TRDS, as are these
-      fingerprints: DIRF, FILE, SOCK, SCKE.
-
-    Intentionally unsupported fingerprints:
-      Because they are not portable:
-         "MSGQ"  0x4d534751
-         "SGNL"  0x53474e4c
-         "SMEM"  0x534d454d
-         "SMPH"  0x534d5048
-
-      "WIND" because I think the console is enough for anyone, especially
-      anyone programming in Befunge.
-
-  Jesse van Herk's extensions to RC/Funge-98:
-
-    "JSTR"  0x4a535452
-    "NCRS"  0x4e435253  Ncurses [sic] extension
-
-  GLFunge98 fingerprints:
-
-    "SCKE"  0x53434b45`;
+		PrefixNonNull!("The following fingerprints are implemented:",
+		Concat!(
+			PrefixNonNull!(
+				"\n\n Official Cat's Eye Technologies fingerprints:\n\n",
+				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_CATSEYE))[0..$-1],
+			PrefixNonNull!(
+				"\n\n RC/Funge-98 fingerprints:\n\n",
+				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_RCFUNGE98))[0..$-1],
+			PrefixNonNull!(
+				"\n\n Jesse van Herk's extensions to RC/Funge-98:\n\n",
+				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_JVH))[0..$-1],
+			PrefixNonNull!(
+				"\n\n GLFunge98 fingerprints:\n\n",
+				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_GLFUNGE98))[0..$-1]
+		)));
 
 int main(char[][] args) {
 	Flags flags;

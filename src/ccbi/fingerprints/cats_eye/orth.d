@@ -6,12 +6,11 @@ module ccbi.fingerprints.cats_eye.orth;
 
 import ccbi.fingerprint;
 
-// 0x4f525448: ORTH
-// Orthogonal Easement Library
-// ---------------------------
-
 mixin (Fingerprint!(
 	"ORTH",
+	"Orthogonal Easement Library
+
+      'G' and 'P' do not apply the storage offset.\n",
 
 	"A", "bitAnd",
 	"E", "bitXor",

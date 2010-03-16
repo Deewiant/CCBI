@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.indv;
 
 import ccbi.fingerprint;
 
-// 0x494e4456: INDV
-// Pointer functions
-// -----------------
-
 mixin (Fingerprint!(
 	"INDV",
+	"Pointer functions",
 
 	"G", "getNum",
 	"P", "putNum",

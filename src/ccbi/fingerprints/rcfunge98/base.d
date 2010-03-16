@@ -8,12 +8,11 @@ import tango.core.BitManip : bsr;
 
 import ccbi.fingerprint;
 
-// 0x42415345: BASE
-// I/O for numbers in other bases
-// ------------------------------
-
 mixin (Fingerprint!(
 	"BASE",
+	"I/O for numbers in other bases
+
+      'N' and 'I' reverse unless 0 < base < 36.\n",
 
 	"B", "output!(`b`)",
 	"H", "output!(`x`)",

@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.time;
 
 import ccbi.fingerprint;
 
-// 0x54494d45: TIME
-// Time and Date functions
-// -----------------------
-
 mixin (Fingerprint!(
 	"TIME",
+	"Time and Date functions",
 
 	"D", "day",
 	"F", "dayOfYear",

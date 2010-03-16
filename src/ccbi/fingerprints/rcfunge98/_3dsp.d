@@ -6,11 +6,9 @@ module ccbi.fingerprints.rcfunge98._3dsp;
 
 import ccbi.fingerprint;
 
-// 0x33445350: 3DSP
-// 3D space manipulation extension
-// -------------------------------
 mixin (Fingerprint!(
 	"3DSP",
+	"3D space manipulation extension",
 
 	"A", "add",
 	"B", "subtract",

@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.imap;
 
 import ccbi.fingerprint;
 
-// 0x494d4150: IMAP
-// Instruction remap extension
-// ---------------------------
-
 mixin (Fingerprint!(
 	"IMAP",
+	"Instruction remap extension",
 
 	"C", "unmapAll",
 	"M", "remap",

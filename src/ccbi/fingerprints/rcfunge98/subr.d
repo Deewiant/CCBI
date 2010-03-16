@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.subr;
 
 import ccbi.fingerprint;
 
-// 0x53554252: SUBR
-// Subroutine extension
-// --------------------
-
 mixin (Fingerprint!(
 	"SUBR",
+	"Subroutine extension",
 
 	"A", "absolute",
 	"C", "call",

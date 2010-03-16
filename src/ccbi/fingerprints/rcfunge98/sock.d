@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.sock;
 
 import ccbi.fingerprint;
 
-// 0x534f434b: SOCK
-// tcp/ip [sic] socket extension
-// -----------------------------
-
 mixin (Fingerprint!(
 	"SOCK",
+	"tcp/ip [sic] socket extension",
 
 	"A", "accept",
 	"B", "bind",

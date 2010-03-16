@@ -6,12 +6,13 @@ module ccbi.fingerprints.rcfunge98.term;
 
 import ccbi.fingerprint;
 
-// 0x5445524d: TERM
-// Terminal control functions
-// --------------------------
-
 mixin (Fingerprint!(
 	"TERM",
+	"Terminal control functions
+
+      On Windows systems, each instruction will reverse on error. On POSIX
+      systems, complete error detection is not available: instructions may
+      appear to succeed even though they didn't.\n",
 
 	"C", "clearScreen",
 	"D", "goDown",

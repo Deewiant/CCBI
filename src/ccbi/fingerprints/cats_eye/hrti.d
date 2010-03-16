@@ -6,12 +6,9 @@ module ccbi.fingerprints.cats_eye.hrti;
 
 import ccbi.fingerprint;
 
-// 0x48525449: HRTI
-// High-Resolution Timer Interface
-// -------------------------------
-
 mixin (Fingerprint!(
 	"HRTI",
+	"High-Resolution Timer Interface",
 
 	"G", "granularity",
 	"M", "mark",

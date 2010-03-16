@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.frth;
 
 import ccbi.fingerprint;
 
-// 0x46525448: FRTH
-// Some common forth commands
-// --------------------------
-
 mixin (Fingerprint!(
 	"FRTH",
+	"Some common forth [sic] commands",
 
 	"D", "stackSize",
 	"L", "forthRoll",

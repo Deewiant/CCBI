@@ -6,12 +6,17 @@ module ccbi.fingerprints.cats_eye.perl;
 
 import ccbi.fingerprint;
 
-// 0x4d4f4445: PERL
-// Generic Interface to the Perl Language
-// --------------------------------------
-
 mixin (Fingerprint!(
 	"PERL",
+	`Generic Interface to the Perl Language
+
+      E and I push what eval() returned.
+
+      Anything that the Perl program writes to stdout or stderr is captured and
+      redirected to the Funge program's stdout. Trying to forcibly write to
+      stderr from within the Perl (through tricks such as 'open($my_stderr,
+      ">&2")') is deemed undefined behaviour and you do so at your own risk.`
+      "\n",
 
 	"E", "eval!(false)",
 	"I", "eval!(true)",

@@ -6,12 +6,11 @@ module ccbi.fingerprints.cats_eye.mode;
 
 import ccbi.fingerprint;
 
-// 0x4d4f4445: MODE
-// Funge-98 Standard Modes
-// -----------------------
-
 mixin (Fingerprint!(
 	"MODE",
+	"Funge-98 Standard Modes
+
+      The stack stack is unaffected by both invertmode and queuemode.\n",
 
 	"H", "toggleHovermode",
 	"I", "toggleInvertmode",

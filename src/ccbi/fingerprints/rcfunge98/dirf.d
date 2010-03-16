@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.dirf;
 
 import ccbi.fingerprint;
 
-// 0x44495246: DIRF
-// Directory functions extension
-// -----------------------------
-
 mixin (Fingerprint!(
 	"DIRF",
+	"Directory functions extension",
 
 	"C", "changeDir",
 	"M", "makeDir",

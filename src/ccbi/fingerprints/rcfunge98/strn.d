@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.strn;
 
 import ccbi.fingerprint;
 
-// 0x5354524e: STRN
-// String functions
-// ----------------
-
 mixin (Fingerprint!(
 	"STRN",
+	"String functions",
 
 	"A", "append",
 	"C", "compare",

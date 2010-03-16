@@ -2,8 +2,7 @@
 
 // File created: 2007-01-20 20:13:49
 
-// Stuff related to fingerprints, and some Mini-Funge variables which have to
-// be defined outside ccbi.minifunge to avoid circular dependencies.
+// Stuff related to fingerprints.
 module ccbi.fingerprint;
 
 import tango.core.Tuple;
@@ -11,15 +10,9 @@ import tango.core.Tuple;
 public import ccbi.cell;
        import ccbi.templateutils;
 
-template Code(char[4] s, char[] id = s) {
-	const Code =
-		"const cell " ~ id ~ " = " ~ ToString!(HexCode!(s)) ~ ";" ~
-		// this really shouldn't be here, but oh well
-		"fingerprints[" ~ ToString!(HexCode!(s)) ~ "] = " ~
-		"new typeof(fingerprints[" ~ ToString!(HexCode!(s)) ~ "])('Z'+1);";
-}
-
-// Generates two templates given "fing":
+// Generates three templates given "fing":
+//
+// template fingDesc() { const fingDesc = desc; }
 //
 // template fingInsFunc(cell c) {
 // 	static if (c == ...) const fingInsFunc = ...;
@@ -28,8 +21,11 @@ template Code(char[4] s, char[] id = s) {
 // }
 //
 // template fingInstructions() { const fingInstructions = "ABC..."; }
-template Fingerprint(char[] name, ins...) {
+template Fingerprint(char[] name, char[] desc, ins...) {
 	const Fingerprint =
+		"template "~PrefixName!(name)~"Desc() {"
+			"const "~PrefixName!(name)~"Desc = " ~Wrap!(desc)~ ";"
+		"}" ~
 		TemplateRangedLookup!(
 			PrefixName!(name) ~ "InsFunc",
 			"cell", "c",
@@ -65,7 +61,7 @@ private template WrapForCasingHelper(char[] s) {
 
 struct Semantics {
 	cell fingerprint;
-	
+
 	// Needed for FING/FNGR, since you can't just tell from the instruction
 	// being executed: 'A' in QWFP might be mapped to 'B' in ARST
 	char instruction;

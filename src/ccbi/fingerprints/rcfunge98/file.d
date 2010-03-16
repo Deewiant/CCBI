@@ -6,11 +6,9 @@ module ccbi.fingerprints.rcfunge98.file;
 
 import ccbi.fingerprint;
 
-// 0x46494c45: FILE
-// File I/O functions
-// ------------------
 mixin (Fingerprint!(
 	"FILE",
+	"File I/O functions",
 
 	"C", "fclose",
 	"D", "unlink",

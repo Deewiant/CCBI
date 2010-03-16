@@ -6,11 +6,9 @@ module ccbi.fingerprints.rcfunge98.fing;
 
 import ccbi.fingerprint;
 
-// 0x46494e47: FING
-// Operate on single fingerprint semantics
-// ---------------------------------------
 mixin (Fingerprint!(
 	"FING",
+	"Operate on single fingerprint semantics",
 
 	"X", "swap",
 	"Y", "pop",

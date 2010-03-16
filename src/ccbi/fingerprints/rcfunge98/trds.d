@@ -12,6 +12,13 @@ import ccbi.fingerprint;
 
 mixin (Fingerprint!(
 	"TRDS",
+	"IP travel in time and space
+
+      Time travel to the past is implemented as rerunning from tick 0. Output
+      (console/file) during rerunning is not performed. Console input results
+      in constant values, which probably won't be the same as those that were
+      originally input. The 'i' instruction is ignorant of TRDS, as are these
+      fingerprints: DIRF, FILE, SOCK, SCKE.\n",
 
 	"C", "resume",
 	"D", "absSpace",

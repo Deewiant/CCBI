@@ -9,7 +9,8 @@ import tango.core.Tuple;
 /////////////////////////////////
 // Hex code for finger/handprints
 
-template HexCode(char[4] s) {
+template HexCode(char[] s) {
+	static assert (s.length == 4);
 	const HexCode = s[3] | (s[2] << 8) | (s[1] << 16) | (s[0] << 24);
 }
 static assert (HexCode!("ASDF") == 0x_41_53_44_46);
@@ -119,6 +120,13 @@ private template TupleHas(xs...) {
 	}
 }
 
+template PrefixNonNull(char[] pre, char[] s) {
+	static if (s)
+		const PrefixNonNull = pre ~ s;
+	else
+		const PrefixNonNull = s;
+}
+
 // Escape a character for placing within a character literal nested in strings
 // nested to the given depth.
 //
@@ -154,6 +162,16 @@ private template WrapHelper(char c) {
 	else                       const WrapHelper = c;
 }
 
+// Hits template recursion limits unless CTFE
+char[] Replace(char[] was, char[] mit, char[] s) {
+	if (s.length < was.length)
+		return s;
+	else if (s[0 .. was.length] == was)
+		return mit ~ Replace(was, mit, s[was.length .. $]);
+	else
+		return s[0] ~ Replace(was, mit, s[1..$]);
+}
+
 template WrapAll(xs...) {
 	static if (xs.length == 0)
 		alias xs WrapAll;
@@ -166,6 +184,15 @@ template ToString(ulong n, char[] suffix = n > uint.max ? "UL" : "U") {
 		const ToString = cast(char)(n + '0') ~ suffix;
    else
 		const ToString = ToString!(n/10, "") ~ ToString!(n%10, suffix);
+}
+// Doesn't add a 0x prefix or anything.
+template ToHexString(ulong n) {
+   static if (n < 10)
+		const ToHexString = ""~ cast(char)(n + '0');
+   else static if (n < 16)
+		const ToHexString = ""~ cast(char)(n + 'a' - 10);
+   else
+		const ToHexString = ToHexString!(n/16) ~ ToHexString!(n%16);
 }
 
 template Concat(x...) {

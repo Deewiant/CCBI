@@ -54,10 +54,8 @@ alias Tuple!(
 	"SCKE"
 ) SANDBOXED_FINGERPRINTS;
 
-private char[] ActiveFingerprints() {
+private char[] CatsEyeFingerprints() {
 	char[] s = "alias Tuple!(";
-
-	// Cat's Eye
 	version  (HRTI) s ~= `"HRTI",`;
 	version  (MODE) s ~= `"MODE",`;
 	version  (MODU) s ~= `"MODU",`;
@@ -68,12 +66,22 @@ private char[] ActiveFingerprints() {
 	version  (ROMA) s ~= `"ROMA",`;
 	version  (TOYS) s ~= `"TOYS",`;
 	version  (TURT) s ~= `"TURT",`;
-
-	// Jesse van Herk
+	if (s[$-1] == ',')
+		s = s[0..$-1];
+	return s ~ ") FINGERPRINTS_CATSEYE;";
+}
+mixin (CatsEyeFingerprints());
+private char[] JesseVanHerkFingerprints() {
+	char[] s = "alias Tuple!(";
 	version  (JSTR) s ~= `"JSTR",`;
 	version  (NCRS) s ~= `"NCRS",`;
-
-	// RC/Funge-98
+	if (s[$-1] == ',')
+		s = s[0..$-1];
+	return s ~ ") FINGERPRINTS_JVH;";
+}
+mixin (JesseVanHerkFingerprints());
+private char[] RCFunge98Fingerprints() {
+	char[] s = "alias Tuple!(";
 	version (_3DSP) s ~= `"3DSP",`;
 	version  (BASE) s ~= `"BASE",`;
 	version  (CPLI) s ~= `"CPLI",`;
@@ -96,19 +104,35 @@ private char[] ActiveFingerprints() {
 	version  (TERM) s ~= `"TERM",`;
 	version  (TIME) s ~= `"TIME",`;
 	version  (TRDS) s ~= `"TRDS",`;
-
-	// GLfunge98
-	// Uses stuff from SOCK: must be after it in this list!
-	version (SCKE) s ~= `"SCKE",`;
-
 	if (s[$-1] == ',')
 		s = s[0..$-1];
-
-	return s ~ ") ALL_FINGERPRINTS;";
+	return s ~ ") FINGERPRINTS_RCFUNGE98;";
 }
-mixin (ActiveFingerprints());
+mixin (RCFunge98Fingerprints());
+private char[] GLFunge98Fingerprints() {
+	char[] s = "alias Tuple!(";
+	version (SCKE) s ~= `"SCKE",`;
+	if (s[$-1] == ',')
+		s = s[0..$-1];
+	return s ~ ") FINGERPRINTS_GLFUNGE98;";
+}
+mixin (GLFunge98Fingerprints());
+
+alias Tuple!(
+	FINGERPRINTS_CATSEYE,
+	FINGERPRINTS_JVH,
+	FINGERPRINTS_RCFUNGE98,
+	// SCKE (GLFunge98) uses stuff from SOCK (RCFunge98): must be after it here
+	FINGERPRINTS_GLFUNGE98) ALL_FINGERPRINTS;
 
 alias MapTuple!(PrefixName, ALL_FINGERPRINTS) ALL_FINGERPRINT_IDS;
+
+template FingerprintDescription(char[] fing) {
+	const FingerprintDescription =
+		"   " ~ fing ~ "  0x" ~ ToHexString!(HexCode!(fing))
+		             ~ "  " ~ mixin (PrefixName!(fing) ~ "Desc!()")
+		             ~ \n;
+}
 
 // TODO: can't these be made to use ConcatMap? Either here or at the caller
 

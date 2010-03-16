@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.date;
 
 import ccbi.fingerprint;
 
-// 0x44415445: DATE
-// Date Functions
-// --------------
-
 mixin (Fingerprint!(
 	"DATE",
+	"Date Functions",
 
 	"A", "addDays",
 	"C", "jdnToYmd",

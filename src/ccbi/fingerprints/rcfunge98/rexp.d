@@ -43,11 +43,9 @@ pragma(msg, "REXP :: remember to link with a POSIX-compatible regex library if n
 
 struct ccbi_regmatch_t { ptrdiff_t rm_so, rm_eo; }
 
-// 0x52455850: REXP
-// Regular Expression Matching
-// ---------------------------
 mixin (Fingerprint!(
 	"REXP",
+	"Regular Expression Matching",
 
 	"C", "compile",
 	"E", "execute",

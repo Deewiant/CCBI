@@ -6,12 +6,9 @@ module ccbi.fingerprints.rcfunge98.cpli;
 
 import ccbi.fingerprint;
 
-// 0x43504c49: CPLI
-// Complex Integer extension
-// -------------------------
-
 mixin (Fingerprint!(
 	"CPLI",
+	"Complex Integer extension",
 
 	"A", "cplxAdd",
 	"D", "cplxDiv",

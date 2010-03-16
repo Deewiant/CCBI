@@ -10,12 +10,11 @@ import tango.text.convert.Integer : itoa;
 import ccbi.container : SmallArray;
 import ccbi.fingerprint;
 
-// 0x54555254: TURT
-// Simple Turtle Graphics Library
-// ------------------------------
-
 mixin (Fingerprint!(
 	"TURT",
+	"Simple Turtle Graphics Library
+
+      'I' creates an SVG 1.1 file.\n",
 
 	"A", "queryHeading",
 	"B", "back",

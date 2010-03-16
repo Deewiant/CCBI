@@ -6,12 +6,11 @@ module ccbi.fingerprints.rcfunge98.evar;
 
 import ccbi.fingerprint;
 
-// 0x45564152: EVAR
-// Environment variables extension
-// -------------------------------
-
 mixin (Fingerprint!(
 	"EVAR",
+	"Environment variables extension
+
+      'P' reverses if the string it pops is not of the form name=value.\n",
 
 	"G", "getEnv",
 	"N", "getEnvCount",

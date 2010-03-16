@@ -6,12 +6,11 @@ module ccbi.fingerprints.rcfunge98.iipc;
 
 import ccbi.fingerprint;
 
-// 0x49495043: IIPC
-// Inter IP [sic] communicaiton [sic] extension
-// --------------------------------------------
-
 mixin (Fingerprint!(
 	"IIPC",
+	"Inter IP [sic] communicaiton [sic] extension
+
+      'A' reverses if the IP is the initial IP and thus has no ancestor.\n",
 
 	"A", "ancestorID",
 	"D", "goDormant",

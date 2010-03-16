@@ -6,12 +6,12 @@ module ccbi.fingerprints.rcfunge98.fixp;
 
 import ccbi.fingerprint;
 
-// 0x46495850: FIXP
-// Some useful math functions
-// --------------------------
-
 mixin (Fingerprint!(
 	"FIXP",
+	"Some useful math functions
+
+      'B', 'C', 'I', 'J', 'P', 'Q', 'T', and 'U' round the number using the
+                                                 current rounding mode.\n",
 
 	"A", "and",
 	"B", "acos",

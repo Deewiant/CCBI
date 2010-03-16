@@ -6,12 +6,13 @@ module ccbi.fingerprints.rcfunge98.fpsp;
 
 import ccbi.fingerprint;
 
-// 0x46505350: FPSP
-// Single precision floating point
-// -------------------------------
-
 mixin (Fingerprint!(
 	"FPSP",
+	"Single precision floating point
+
+      'F' rounds the number using the current rounding mode.
+      'P' prints like the standard '.', with a space after the number.
+      'R' reverses if the string doesn't represent a floating point number.\n",
 
 	"A", "add",
 	"B", "sin",

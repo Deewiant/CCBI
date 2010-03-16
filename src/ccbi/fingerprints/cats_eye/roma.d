@@ -7,12 +7,9 @@ module ccbi.fingerprints.cats_eye.roma;
 import ccbi.fingerprint;
 import ccbi.instructions.utils;
 
-// 0x524f4d41: ROMA
-// Funge-98 Roman Numerals
-// -----------------------
-
 mixin (Fingerprint!(
 	"ROMA",
+	"Funge-98 Roman Numerals",
 	"I", PushNumber!(1),
 	"V", PushNumber!(5),
 	"X", PushNumber!(10),
