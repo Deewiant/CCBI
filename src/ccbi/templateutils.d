@@ -15,35 +15,6 @@ template HexCode(char[] s) {
 }
 static assert (HexCode!("ASDF") == 0x_41_53_44_46);
 
-////////////////
-// Parse version
-
-private template StripNonVersion(char[] s, char[] v) {
-	static if (s.length == 0)
-		const StripNonVersion = v;
-	else static if (s[0] == '.')
-		const StripNonVersion = StripNonVersion!(s[1..$], v);
-	else static if (s[0] >= '0' && s[0] <= '9')
-		const StripNonVersion = StripNonVersion!(s[1..$], v ~ s[0]);
-	else
-		const StripNonVersion = StripNonVersion!(s[1..$], "");
-}
-
-private template ActualParseVersion(char[] s) {
-	static if (s.length == 0)
-		const ActualParseVersion = 0;
-	else {
-		static assert (s[0] >= '0' && s[0] <= '9');
-		const ActualParseVersion =
-			Power!(int, 10, s.length-1)*(s[0] - '0')
-			+ ActualParseVersion!(s[1..$]);
-	}
-}
-
-template ParseVersion(char[] s) {
-	const ParseVersion = ActualParseVersion!(StripNonVersion!(s, ""));
-}
-
 ////////////////////////////////////////////
 // Emit a boolean GOT_x if xs[0] in xs[1..$]
 
@@ -242,23 +213,31 @@ template FindLast(char c, char[] s) {
 //
 // Considers words as separated by one ' ', not any other whitespace or
 // punctuation.
-template WordWrapFromTo(ubyte pos, ubyte column, char[] s, ubyte wlen = 0) {
-	static if (s[wlen .. $] == "") {
-		static if (pos >= 80)
-			const WordWrapFromTo = "\n" ~ Repeat!(" ", column-1) ~ s[0..wlen];
-		else
-			const WordWrapFromTo = " " ~ s[0..wlen];
+//
+// CTFE because it's used in the necessarily-CTFE FEATURES in globals.
+char[] WordWrapFromTo(ubyte pos, ubyte column, char[] s, ubyte wlen = 0) {
+	if (s[wlen .. $] == "") {
+		if (pos >= 80) {
+			char[] indent;
+			while (--column)
+				indent ~= ' ';
+			return "\n" ~ indent ~ s[0..wlen];
+		} else
+			return " " ~ s[0..wlen];
 
-	} else static if (s[wlen] == ' ') {
-		static if (pos >= 80)
-			const WordWrapFromTo =
-				"\n" ~ Repeat!(" ", column) ~ s[0..wlen]
-				     ~ WordWrapFromTo!(column + wlen + 1, column, s[wlen+1 .. $]);
-		else
-			const WordWrapFromTo =
-				" " ~ s[0..wlen] ~ WordWrapFromTo!(pos+1, column, s[wlen+1 .. $]);
+	} else if (s[wlen] == ' ') {
+		if (pos >= 80) {
+			char[] indent;
+			for (auto i = column; i--;)
+				indent ~= ' ';
+			return
+				"\n" ~ indent ~ s[0..wlen]
+				     ~ WordWrapFromTo(column + wlen + 1, column, s[wlen+1 .. $]);
+		} else
+			return
+				" " ~ s[0..wlen] ~ WordWrapFromTo(pos+1, column, s[wlen+1 .. $]);
 	} else
-		const WordWrapFromTo = "" ~ WordWrapFromTo!(pos+1, column, s, wlen+1);
+		return WordWrapFromTo(pos+1, column, s, wlen+1);
 }
 
 // Tuple!(a,b,c,d...) -> Tuple!(a,c,...)

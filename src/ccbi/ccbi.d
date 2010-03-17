@@ -124,7 +124,7 @@ version (funge98)
                          lasting effect on the system. To be precise, disables
                          the o and = instructions and the following
                          fingerprints:`
-	~ WordWrapFromTo!(39, 26, Intercalate!(", ", SANDBOXED_FINGERPRINTS) ~ ".");
+	~ WordWrapFromTo(39, 26, Intercalate!(", ", SANDBOXED_FINGERPRINTS) ~ ".");
 else
 	const char[] SANDBOX_HELP = "";
 
