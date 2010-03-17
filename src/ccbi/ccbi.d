@@ -76,11 +76,6 @@ version (funge93_and_98)
 
      --befunge93         Adhere to the Befunge-93 documentation instead of the
                          Funge-98 specification.`;
-else version (befunge93)
-	const char[] BEFUNGE93_HELP = `
-
-     --befunge93         Adhere to the Befunge-93 documentation instead of the
-                         Funge-98 specification. This is the default.`;
 else
 	const char[] BEFUNGE93_HELP = "";
 
@@ -296,11 +291,8 @@ int main(char[][] args) {
 	else version (unefunge98)
 		byte dim = 1;
 
-	version (befunge93) {
-		version (funge98)
-			bool befunge93Mode = false;
-		else
-			bool befunge93Mode = true;
+	version (funge93_and_98) {
+		bool befunge93Mode = false;
 	}
 
 	// {{{ parse arguments
@@ -312,7 +304,7 @@ int main(char[][] args) {
 	version ( befunge98) argp( "befunge").aliased('2').bind({ dim = 2; });
 	version (trefunge98) argp("trefunge").aliased('3').bind({ dim = 3; });
 
-	version (befunge93)
+	version (funge93_and_98)
 		argp("befunge93").bind({ befunge93Mode = true; });
 
 	version (statistics)
@@ -433,8 +425,10 @@ int main(char[][] args) {
 		}
 	}
 
-	version (befunge93)
+	version (funge93_and_98) {
 		if (befunge93Mode)
+			return         (new FungeMachine!(2,  true)(file, fungeArgs, flags)).run;
+	} else version (befunge93)
 			return         (new FungeMachine!(2,  true)(file, fungeArgs, flags)).run;
 
 	version (funge98) switch (dim) {
