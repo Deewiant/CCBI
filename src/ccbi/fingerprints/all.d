@@ -125,7 +125,7 @@ alias Tuple!(
 	// SCKE (GLFunge98) uses stuff from SOCK (RCFunge98): must be after it here
 	FINGERPRINTS_GLFUNGE98) ALL_FINGERPRINTS;
 
-alias MapTuple!(PrefixName, ALL_FINGERPRINTS) ALL_FINGERPRINT_IDS;
+alias Map!(PrefixName, ALL_FINGERPRINTS) ALL_FINGERPRINT_IDS;
 
 template FingerprintDescription(char[] fing) {
 	const FingerprintDescription =

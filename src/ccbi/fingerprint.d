@@ -34,7 +34,7 @@ template Fingerprint(char[] name, char[] desc, ins...) {
 		) ~
 		"template "~PrefixName!(name)~"Instructions() {"
 			"const "~PrefixName!(name)~"Instructions = "
-				~ ConcatMapTuple!(Wrap, Firsts!(ins)) ~ ";"
+				~ ConcatMap!(Wrap, Firsts!(ins)) ~ ";"
 		"}";
 }
 // Tuple!("ABC", "blaa") -> Tuple!(["'A'","'B'","'C'"], `"blaa"`)

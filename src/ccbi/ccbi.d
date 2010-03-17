@@ -269,16 +269,16 @@ Other notes:
 		Concat!(
 			PrefixNonNull!(
 				"\n\n Official Cat's Eye Technologies fingerprints:\n\n",
-				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_CATSEYE))[0..$-1],
+				ConcatMap!(FingerprintDescription, FINGERPRINTS_CATSEYE))[0..$-1],
 			PrefixNonNull!(
 				"\n\n RC/Funge-98 fingerprints:\n\n",
-				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_RCFUNGE98))[0..$-1],
+				ConcatMap!(FingerprintDescription, FINGERPRINTS_RCFUNGE98))[0..$-1],
 			PrefixNonNull!(
 				"\n\n Jesse van Herk's extensions to RC/Funge-98:\n\n",
-				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_JVH))[0..$-1],
+				ConcatMap!(FingerprintDescription, FINGERPRINTS_JVH))[0..$-1],
 			PrefixNonNull!(
 				"\n\n GLFunge98 fingerprints:\n\n",
-				ConcatMapTuple!(FingerprintDescription, FINGERPRINTS_GLFUNGE98))[0..$-1]
+				ConcatMap!(FingerprintDescription, FINGERPRINTS_GLFUNGE98))[0..$-1]
 		)));
 
 int main(char[][] args) {

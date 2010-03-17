@@ -121,7 +121,7 @@ template EscapeForChar(char c, uint times = 0) {
 template Wrap(char[] s) {
 	static if (Contains!(s, '"')) {
 		static if (Contains!(s, '`'))
-			const Wrap = `"` ~ ConcatMap!(WrapHelper, s) ~ `"`;
+			const Wrap = `"` ~ ConcatMapString!(WrapHelper, s) ~ `"`;
 		else
 			const Wrap = "`" ~ s ~ "`";
 	} else
@@ -275,7 +275,7 @@ template Range(char a, char b) { const Range = Range!(char, a, b); }
 /////////////////////
 // Higher-level stuff
 
-// mixin .s!() s: not useful in itself but handy with ConcatMap, for instance.
+// mixin .s!() s: not useful in itself but handy with ConcatMapString, for instance.
 // Checks whether the template exists and doesn't mix it in if not.
 template TemplateMixin(char[] s) {
 	const TemplateMixin =
@@ -283,24 +283,24 @@ template TemplateMixin(char[] s) {
 		`else template `~s~`() {}`;
 }
 
-template ConcatMap(alias F, char[] xs) {
+template ConcatMapString(alias F, char[] xs) {
+	static if (xs.length == 0)
+		const ConcatMapString = "";
+	else
+		const ConcatMapString = F!(xs[0]) ~ ConcatMapString!(F, xs[1..$]);
+}
+template ConcatMap(alias F, xs...) {
 	static if (xs.length == 0)
 		const ConcatMap = "";
 	else
 		const ConcatMap = F!(xs[0]) ~ ConcatMap!(F, xs[1..$]);
 }
-template ConcatMapTuple(alias F, xs...) {
-	static if (xs.length == 0)
-		const ConcatMapTuple = "";
-	else
-		const ConcatMapTuple = F!(xs[0]) ~ ConcatMapTuple!(F, xs[1..$]);
-}
 
-template MapTuple(alias F, xs...) {
+template Map(alias F, xs...) {
 	static if (xs.length == 0)
-		alias Tuple!() MapTuple;
+		alias Tuple!() Map;
 	else
-		alias Tuple!(F!(xs[0]), MapTuple!(F, xs[1..$])) MapTuple;
+		alias Tuple!(F!(xs[0]), Map!(F, xs[1..$])) Map;
 }
 
 // Generate a compile-time lookup table.

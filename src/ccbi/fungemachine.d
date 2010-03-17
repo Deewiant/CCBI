@@ -297,8 +297,8 @@ private:
 	static if (!befunge93) {
 		mixin FingerprintHelpers!();
 
-		mixin (ConcatMapTuple!(TemplateMixin, ALL_FINGERPRINT_IDS));
-		mixin (ConcatMapTuple!(FingerprintCount, fings));
+		mixin (ConcatMap!(TemplateMixin, ALL_FINGERPRINT_IDS));
+		mixin (ConcatMap!(FingerprintCount, fings));
 
 		void loadedFingerprint(cell fingerprint) {
 			switch (fingerprint) {
