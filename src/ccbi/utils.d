@@ -77,13 +77,6 @@ char[] unwords(char[][] s) { return s.join   (" "); }
 
 bool isSemantics(cell i) { return i <= 'Z' && i >= 'A'; }
 
-size_t findIndex(T)(T[] a, T v) {
-	foreach (i, t; a)
-		if (t is v)
-			return i;
-	return a.length;
-}
-
 template Utils() {
 
 import tango.stdc.string : strlen;

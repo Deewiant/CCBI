@@ -10,6 +10,7 @@ module ccbi.tracer;
 
 template Tracer() {
 
+import tango.core.Array           : find;
 import tango.core.Traits          : isSignedIntegerType, isUnsignedIntegerType;
 import tango.io.Console           : Cin;
 import tango.math.Math            : min;
@@ -369,7 +370,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						if (i is null)
 							Serr("(all)");
 						else static if (!befunge93)
-							Serr(ips.findIndex(i));
+							Serr(ips.find(i));
 					}
 					Serr.newline;
 				}
@@ -382,7 +383,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						if (i is null)
 							Serr("(all)");
 						else static if (!befunge93)
-							Serr(ips.findIndex(i));
+							Serr(ips.find(i));
 						Serr(stringsAlso ? ",1" : ",0");
 					}
 					Serr.newline;
