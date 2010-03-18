@@ -1,3 +1,8 @@
+// This file is part of CCBI - Conforming Concurrent Befunge-98 Interpreter
+// Copyright (c) 2006-2010 Matti Niemenmaa
+// See license.txt, which you should have received together with this file, for
+// licensing information.
+
 // File created: 2009-05-13 19:37:44
 
 module ccbi.fungestate;

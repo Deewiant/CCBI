@@ -1,7 +1,8 @@
 // CCBI - Conforming Concurrent Befunge-98 Interpreter
 // A Concurrent Befunge-98 interpreter.
-// Copyright (c) 2006-2008 Matti Niemenmaa
-// See license.txt for copyright details.
+// Copyright (c) 2006-2010 Matti Niemenmaa
+// See license.txt, which you should have received together with this file, for
+// licensing information.
 
 // See e.g. http://catseye.tc/projects/funge98/doc/funge98.html for the
 // Funge-98 specification.
@@ -153,7 +154,7 @@ const char[]
 	HELP = VERSION_STRING ~ `
 
  Copyright (c) 2006-2010 Matti Niemenmaa, http://www.iki.fi/matti.niemenmaa/
- See the file license.txt for copyright details.
+ See the file license.txt for licensing information.
 
 ` ~ USAGE ~ `
 

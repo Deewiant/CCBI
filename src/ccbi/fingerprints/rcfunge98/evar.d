@@ -1,4 +1,7 @@
 // This file is part of CCBI - Conforming Concurrent Befunge-98 Interpreter
+// Copyright (c) 2006-2010 Matti Niemenmaa
+// See license.txt, which you should have received together with this file, for
+// licensing information.
 
 // File created: 2007-01-20 21:13:48
 
