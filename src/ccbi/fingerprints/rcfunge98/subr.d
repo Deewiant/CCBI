@@ -20,7 +20,6 @@ mixin (Fingerprint!(
 	"R", "ret"
 ));
 
-// TODO switch to a Stack, needs stats
 template SUBR() {
 
 void ctor() {
