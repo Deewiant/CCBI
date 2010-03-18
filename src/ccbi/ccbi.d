@@ -137,6 +137,17 @@ version (TURT)
 else
 	const char[] TURT_HELP = "";
 
+version (funge98)
+	const char[] IMPLEMENTATION_HELP = `
+
+ -i, --implementation    Show some implementation details regarding the
+                         Funge-98 specification and exit.
+
+ -p, --print-fprints     List all supported fingerprints and their
+                         implementation notes, and exit.`;
+else
+	const char[] IMPLEMENTATION_HELP = "";
+
 const char[]
 	USAGE = `Usage: {} ARGS SOURCE_FILE [FUNGE_ARGS...]`,
 	HELP = VERSION_STRING ~ `
@@ -173,12 +184,9 @@ ARGS may be one or more of: `
                          begins with a shebang ("#!").
 
                          An infinite loop will occur if no second line exists,
-                         or it is empty.
-
- -i, --implementation    Show some implementation details and exit.
-
- -p, --print-fprints     List all supported (and intentionally unsupported)
-                         fingerprints and their implementation notes, and exit.
+                         or it is empty.`
+	~ IMPLEMENTATION_HELP
+	~ `
 
  -h, --help              Show this help text and exit.
  -v, --version           Show the version string and exit.
@@ -336,11 +344,11 @@ int main(char[][] args) {
 		});
 	}
 
-	// TODO: minifunge, TURT file
-
-	argp("implementation").aliased('i').halt.bind({ Stderr(  IMPLEMENTATION).newline; });
-	argp("print-fprints") .aliased('p').halt.bind({ Stderr(FINGERPRINT_INFO).newline; });
-	argp("version")       .aliased('v').halt.bind({ Stderr(  VERSION_STRING).newline; });
+	version (funge98) {
+		argp("implementation").aliased('i').halt.bind({ Stderr(  IMPLEMENTATION).newline; });
+		argp("print-fprints") .aliased('p').halt.bind({ Stderr(FINGERPRINT_INFO).newline; });
+	}
+	argp("version")          .aliased('v').halt.bind({ Stderr(  VERSION_STRING).newline; });
 
 	argp("help").aliased('?').aliased('h').aliased('H')
 		.halt.bind({ Stderr.formatln(HELP, args[0]); });
