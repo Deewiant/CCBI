@@ -159,7 +159,7 @@ void reallyGoLow  () { cip.delta = InitCoords!(0,0,-1); }
 
 // Go Away
 void goAway() {
-	switch (rand_up_to!(2*dim)()) {
+	switch (randomUpTo!(2*dim)()) {
 		case 0: reallyGoEast (); break;
 		case 1: reallyGoWest (); break;
 	static if (dim >= 2) {

@@ -420,7 +420,7 @@ void barstool() {
 }
 
 void tumbler() {
-	switch (rand_up_to!(2*dim)()) {
+	switch (randomUpTo!(2*dim)()) {
 		case 0: cip.unsafeCell = '<'; goWest (); break;
 		case 1: cip.unsafeCell = '>'; goEast (); break;
 	static if (dim >= 2) {
