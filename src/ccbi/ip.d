@@ -229,6 +229,20 @@ struct IP(cell dim, bool befunge93) {
 
 	ushort mode = 0;
 
+	static if (!befunge93) {
+		// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3509
+		// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3510
+		//
+		// If we check fing!().ipCtor here, it'll result in errors because the
+		// contents of fing!() are only valid in FungeMachine.
+		//
+		// If we check fing!().ipCtor in FungeMachine and try to pass it here, we
+		// run into the above two bugs.
+		//
+		// So screw automation.
+		uint _MODE_count = 0, _IMAP_count = 0;
+	}
+
 	static if (GOT_HRTI) {
 		StopWatch timer;
 		bool timerMarked = false;

@@ -23,7 +23,7 @@ mixin (Fingerprint!(
 
 template MODE() {
 
-void ctor() {
+void ipCtor() {
 	auto deque = cip.stack.isDeque;
 
 	if (cip.stackStack) {
@@ -40,7 +40,7 @@ void ctor() {
 	}
 }
 
-void dtor() {
+void ipDtor() {
 	// Leaving modes on after unloading is bad practice IMHO, but it could
 	// happen...
 	if (cip.stack.deque.mode & (INVERT_MODE | QUEUE_MODE))

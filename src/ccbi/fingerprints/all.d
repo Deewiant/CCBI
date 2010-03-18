@@ -195,27 +195,56 @@ template FingerprintHelpers() {
 template FingerprintCount(char[] fing) {
 	const FingerprintCount =
 		"static if (is(typeof(" ~PrefixName!(fing)~ ".ctor))) {
-			uint _" ~fing~ "_count;
+			uint _" ~fing~ "_count = 0;
 		}";
 }
 
 // foreach fingerprint:
-// 	static if (is(typeof(<fingerprint>.ctor))) {
+// 	static if (is(typeof(<fingerprint>.ctor)) ||
+// 	           is(typeof(<fingerprint>.ipCtor)))
+// 	{
 // 		case HexCode!("<fingerprint>"):
+// 	}
+// 	static if (is(typeof(<fingerprint>.ctor))) {
 // 			if (_<fingerprint>_count == 0)
 // 				<fingerprint>.ctor;
 // 			_<fingerprint>_count += <fingerprint>Instructions!().length;
+// 	}
+// 	static if (is(typeof(<fingerprint>.ipCtor))) {
+// 			if (cip._<fingerprint>_count == 0)
+// 				<fingerprint>.ipCtor;
+// 			cip._<fingerprint>_count += <fingerprint>Instructions!().length;
+// 	}
+// 	static if (is(typeof(<fingerprint>.ctor)) ||
+// 	           is(typeof(<fingerprint>.ipCtor)))
+// 	{
+// 			break;
 // 	}
 template FingerprintConstructorCases(fing...) {
 	static if (fing.length == 0)
 		const FingerprintConstructorCases = "";
 	else {
 		const FingerprintConstructorCases =
-			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
+			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
+			            is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
 				case " ~ToString!(HexCode!(fing[0])) ~":
+			}
+			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
 					if (_" ~fing[0]~"_count == 0)
 						" ~PrefixName!(fing[0])~ ".ctor;
-					_" ~fing[0]~"_count += "~PrefixName!(fing[0])~"Instructions!().length;
+
+					_" ~fing[0]~"_count += "~
+						PrefixName!(fing[0])~"Instructions!().length;
+			}
+			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
+					if (cip._" ~fing[0]~"_count == 0)
+						" ~PrefixName!(fing[0])~ ".ipCtor;
+
+					cip._" ~fing[0]~"_count += "~
+						PrefixName!(fing[0])~"Instructions!().length;
+			}
+			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
+			           is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
 					break;
 			}"
 			~ FingerprintConstructorCases!(fing[1..$]);
@@ -223,30 +252,61 @@ template FingerprintConstructorCases(fing...) {
 }
 
 // foreach fingerprint:
-// 	static if (is(typeof(<fingerprint>.ctor))) {
+// 	static if (is(typeof(<fingerprint>.ctor)) ||
+// 	           is(typeof(<fingerprint>.ipCtor)))
+// 	{
 // 		case HexCode!("<fingerprint>"):
+// 	}
+// 	static if (is(typeof(<fingerprint>.ctor))) {
 // 			--_<fingerprint>_count;
 // 			assert (_<fingerprint>_count >= 0);
 //
-// 			static if (is(typeof(<fingerprint>.dtor))) {
+// 			static if (is(typeof(<fingerprint>.dtor)))
 // 				if (_<fingerprint>_count == 0)
 // 					<fingerprint>.dtor;
-// 			}
+// 	}
+// 	static if (is(typeof(<fingerprint>.ipCtor))) {
+// 			--cip._<fingerprint>_count;
+// 			assert (cip._<fingerprint>_count >= 0);
+//
+// 			static if (is(typeof(<fingerprint>.ipDtor)))
+// 				if (cip._<fingerprint>_count == 0)
+// 					<fingerprint>.ipDtor;
+// 	}
+// 	static if (is(typeof(<fingerprint>.ctor)) ||
+// 	           is(typeof(<fingerprint>.ipCtor)))
+// 	{
+// 			break;
 // 	}
 template FingerprintDestructorCases(fing...) {
 	static if (fing.length == 0)
 		const FingerprintDestructorCases = "";
 	else {
 		const FingerprintDestructorCases =
-			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
+			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
+			            is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor)))
+			{
 				case " ~ToString!(HexCode!(fing[0])) ~":
+			}
+			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
 					--_" ~fing[0]~"_count;
 					assert (_" ~fing[0]~"_count >= 0);
 
-					static if (is(typeof(" ~PrefixName!(fing[0])~ ".dtor))) {
+					static if (is(typeof(" ~PrefixName!(fing[0])~ ".dtor)))
 						if (_" ~fing[0]~"_count == 0)
 							" ~PrefixName!(fing[0])~ ".dtor;
-					}
+			}
+			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
+					--cip._" ~fing[0]~"_count;
+					assert (cip._" ~fing[0]~"_count >= 0);
+
+					static if (is(typeof(" ~PrefixName!(fing[0])~ ".ipDtor)))
+						if (cip._" ~fing[0]~"_count == 0)
+							" ~PrefixName!(fing[0])~ ".ipDtor;
+			}
+			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
+			           is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor)))
+			{
 					break;
 			}"
 			~ FingerprintDestructorCases!(fing[1..$]);

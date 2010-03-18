@@ -20,13 +20,13 @@ mixin (Fingerprint!(
 
 template IMAP() {
 
-void ctor() {
+void ipCtor() {
 	// Support mapping 0 through 255
 	cip.mapping = new typeof(cip.mapping)(256);
 	foreach (j, inout i; cip.mapping)
 		i = cast(cell)j;
 }
-void dtor() {
+void ipDtor() {
 	foreach (j, i; cip.mapping)
 		if (i != j)
 			return;
