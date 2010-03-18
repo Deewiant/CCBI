@@ -139,35 +139,24 @@ template FingerprintDescription(char[] fing) {
 		             ~ \n;
 }
 
-// TODO: can't these be made to use ConcatMap? Either here or at the caller
-
-// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=810
-// should be below instructionsOf
-//
-// foreach fingerprint:
-// 	case HexCode!("<fingerprint>"):
-// 		static if (TupleHas!("<fingerprint>", SANDBOXED_FINGERPRINTS))
-// 			if (flags.sandboxMode)
-// 				return null;
-// 		if (!flags.enabledFings.<fingerprint>)
+// case HexCode!("<fingerprint>"):
+// 	static if (TupleHas!("<fingerprint>", SANDBOXED_FINGERPRINTS))
+// 		if (flags.sandboxMode)
 // 			return null;
-// 		return <fingerprint>Instructions!();
-private template FingerprintInstructionsCases(fing...) {
-	static if (fing.length)
-		const FingerprintInstructionsCases =
-			`case `~ToString!(HexCode!(fing[0]))~`:`
+// 	if (!flags.enabledFings.<fingerprint>)
+// 		return null;
+// 	return <fingerprint>Instructions!();
+template FingerprintInstructionsCase(char[] fing) {
+	const FingerprintInstructionsCase =
+		`case `~ToString!(HexCode!(fing))~`:`
 
-				~ (TupleHas!(fing[0], SANDBOXED_FINGERPRINTS)
-				   ? "if (flags.sandboxMode) return null;"
-				   : "") ~
+			~ (TupleHas!(fing, SANDBOXED_FINGERPRINTS)
+				? "if (flags.sandboxMode) return null;"
+				: "") ~
 
-				`if (!flags.enabledFings.`~PrefixName!(fing[0])~`)`
-					`return null;`
-				`return `~PrefixName!(fing[0])~`Instructions!();`
-
-			~ FingerprintInstructionsCases!(fing[1..$]);
-	else
-		const FingerprintInstructionsCases = "";
+			`if (!flags.enabledFings.`~PrefixName!(fing)~`)`
+				`return null;`
+			`return `~PrefixName!(fing)~`Instructions!();`;
 }
 
 // Each fingerprint may have a constructor and a destructor. We keep track of
@@ -189,118 +178,101 @@ template FingerprintCount(char[] fing) {
 		}";
 }
 
-// foreach fingerprint:
-// 	static if (is(typeof(<fingerprint>.ctor)) ||
-// 	           is(typeof(<fingerprint>.ipCtor)))
-// 	{
-// 		case HexCode!("<fingerprint>"):
-// 	}
-// 	static if (is(typeof(<fingerprint>.ctor))) {
-// 			if (_<fingerprint>_count == 0)
-// 				<fingerprint>.ctor;
-// 			_<fingerprint>_count += <fingerprint>Instructions!().length;
-// 	}
-// 	static if (is(typeof(<fingerprint>.ipCtor))) {
-// 			if (cip._<fingerprint>_count == 0)
-// 				<fingerprint>.ipCtor;
-// 			cip._<fingerprint>_count += <fingerprint>Instructions!().length;
-// 	}
-// 	static if (is(typeof(<fingerprint>.ctor)) ||
-// 	           is(typeof(<fingerprint>.ipCtor)))
-// 	{
-// 			break;
-// 	}
-template FingerprintConstructorCases(fing...) {
-	static if (fing.length == 0)
-		const FingerprintConstructorCases = "";
-	else {
-		const FingerprintConstructorCases =
-			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
-			            is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
-				case " ~ToString!(HexCode!(fing[0])) ~":
-			}
-			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
-					if (_" ~fing[0]~"_count == 0)
-						" ~PrefixName!(fing[0])~ ".ctor;
+// static if (is(typeof(<fingerprint>.ctor)) ||
+//            is(typeof(<fingerprint>.ipCtor)))
+// {
+// 	case HexCode!("<fingerprint>"):
+// }
+// static if (is(typeof(<fingerprint>.ctor))) {
+// 		if (_<fingerprint>_count == 0)
+// 			<fingerprint>.ctor;
+// 		_<fingerprint>_count += <fingerprint>Instructions!().length;
+// }
+// static if (is(typeof(<fingerprint>.ipCtor))) {
+// 		if (cip._<fingerprint>_count == 0)
+// 			<fingerprint>.ipCtor;
+// 		cip._<fingerprint>_count += <fingerprint>Instructions!().length;
+// }
+// static if (is(typeof(<fingerprint>.ctor)) ||
+//            is(typeof(<fingerprint>.ipCtor)))
+// {
+// 		break;
+// }
+template FingerprintConstructorCase(char[] fing) {
+	const FingerprintConstructorCase =
+		"static if (is(typeof(" ~PrefixName!(fing)~ ".ctor)) ||
+			         is(typeof(" ~PrefixName!(fing)~ ".ipCtor))) {
+			case " ~ToString!(HexCode!(fing)) ~":
+		}
+		static if (is(typeof(" ~PrefixName!(fing)~ ".ctor))) {
+				if (_" ~fing~"_count == 0)
+					" ~PrefixName!(fing)~ ".ctor;
 
-					_" ~fing[0]~"_count += "~
-						PrefixName!(fing[0])~"Instructions!().length;
-			}
-			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
-					if (cip._" ~fing[0]~"_count == 0)
-						" ~PrefixName!(fing[0])~ ".ipCtor;
+				_" ~fing~"_count += " ~PrefixName!(fing)~ "Instructions!().length;
+		}
+		static if (is(typeof(" ~PrefixName!(fing)~ ".ipCtor))) {
+				if (cip._" ~fing~"_count == 0)
+					" ~PrefixName!(fing)~ ".ipCtor;
 
-					cip._" ~fing[0]~"_count += "~
-						PrefixName!(fing[0])~"Instructions!().length;
-			}
-			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
-			           is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
-					break;
-			}"
-			~ FingerprintConstructorCases!(fing[1..$]);
-	}
+				cip._" ~fing~"_count += "~
+					PrefixName!(fing)~"Instructions!().length;
+		}
+		static if (is(typeof(" ~PrefixName!(fing)~ ".ctor)) ||
+			        is(typeof(" ~PrefixName!(fing)~ ".ipCtor))) {
+				break;
+		}";
 }
 
-// foreach fingerprint:
-// 	static if (is(typeof(<fingerprint>.ctor)) ||
-// 	           is(typeof(<fingerprint>.ipCtor)))
-// 	{
-// 		case HexCode!("<fingerprint>"):
-// 	}
-// 	static if (is(typeof(<fingerprint>.ctor))) {
-// 			--_<fingerprint>_count;
-// 			assert (_<fingerprint>_count >= 0);
+// static if (is(typeof(<fingerprint>.ctor)) ||
+//            is(typeof(<fingerprint>.ipCtor)))
+// {
+// 	case HexCode!("<fingerprint>"):
+// }
+// static if (is(typeof(<fingerprint>.ctor))) {
+// 		--_<fingerprint>_count;
 //
-// 			static if (is(typeof(<fingerprint>.dtor)))
-// 				if (_<fingerprint>_count == 0)
-// 					<fingerprint>.dtor;
-// 	}
-// 	static if (is(typeof(<fingerprint>.ipCtor))) {
-// 			--cip._<fingerprint>_count;
-// 			assert (cip._<fingerprint>_count >= 0);
+// 		static if (is(typeof(<fingerprint>.dtor)))
+// 			if (_<fingerprint>_count == 0)
+// 				<fingerprint>.dtor;
+// }
+// static if (is(typeof(<fingerprint>.ipCtor))) {
+// 		--cip._<fingerprint>_count;
 //
-// 			static if (is(typeof(<fingerprint>.ipDtor)))
-// 				if (cip._<fingerprint>_count == 0)
-// 					<fingerprint>.ipDtor;
-// 	}
-// 	static if (is(typeof(<fingerprint>.ctor)) ||
-// 	           is(typeof(<fingerprint>.ipCtor)))
-// 	{
-// 			break;
-// 	}
-template FingerprintDestructorCases(fing...) {
-	static if (fing.length == 0)
-		const FingerprintDestructorCases = "";
-	else {
-		const FingerprintDestructorCases =
-			"static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
-			            is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor)))
-			{
-				case " ~ToString!(HexCode!(fing[0])) ~":
-			}
-			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor))) {
-					--_" ~fing[0]~"_count;
-					assert (_" ~fing[0]~"_count >= 0);
+// 		static if (is(typeof(<fingerprint>.ipDtor)))
+// 			if (cip._<fingerprint>_count == 0)
+// 				<fingerprint>.ipDtor;
+// }
+// static if (is(typeof(<fingerprint>.ctor)) ||
+//            is(typeof(<fingerprint>.ipCtor)))
+// {
+// 		break;
+// }
+template FingerprintDestructorCase(char[] fing) {
+	const FingerprintDestructorCase =
+		"static if (is(typeof(" ~PrefixName!(fing)~ ".ctor)) ||
+			         is(typeof(" ~PrefixName!(fing)~ ".ipCtor)))
+		{
+			case " ~ToString!(HexCode!(fing)) ~":
+		}
+		static if (is(typeof(" ~PrefixName!(fing)~ ".ctor))) {
+				--_" ~fing~"_count;
 
-					static if (is(typeof(" ~PrefixName!(fing[0])~ ".dtor)))
-						if (_" ~fing[0]~"_count == 0)
-							" ~PrefixName!(fing[0])~ ".dtor;
-			}
-			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor))) {
-					--cip._" ~fing[0]~"_count;
-					assert (cip._" ~fing[0]~"_count >= 0);
+				static if (is(typeof(" ~PrefixName!(fing)~ ".dtor)))
+					if (_" ~fing~"_count == 0)
+						" ~PrefixName!(fing)~ ".dtor;
+		}
+		static if (is(typeof(" ~PrefixName!(fing)~ ".ipCtor))) {
+				--cip._" ~fing~"_count;
 
-					static if (is(typeof(" ~PrefixName!(fing[0])~ ".ipDtor)))
-						if (cip._" ~fing[0]~"_count == 0)
-							" ~PrefixName!(fing[0])~ ".ipDtor;
-			}
-			static if (is(typeof(" ~PrefixName!(fing[0])~ ".ctor)) ||
-			           is(typeof(" ~PrefixName!(fing[0])~ ".ipCtor)))
-			{
-					break;
-			}"
-			~ FingerprintDestructorCases!(fing[1..$]);
-	}
+				static if (is(typeof(" ~PrefixName!(fing)~ ".ipDtor)))
+					if (cip._" ~fing~"_count == 0)
+						" ~PrefixName!(fing)~ ".ipDtor;
+		}
+		static if (is(typeof(" ~PrefixName!(fing)~ ".ctor)) ||
+			        is(typeof(" ~PrefixName!(fing)~ ".ipCtor)))
+		{
+				break;
+		}";
 }
 
 // foreach fingerprint:
@@ -315,7 +287,7 @@ template FingerprintExecutionCases(char[] ins, char[] def, fing...) {
 		const FingerprintExecutionCases =
 			`case `~ToString!(HexCode!(fing[0]))~`: `
 				`switch (`~ins~`) {`
-				`	mixin (Ins!(`~Wrap!(PrefixName!(fing[0]))~`, Range!('A', 'Z')));`
+				`	mixin (Ins!(`~Wrap!(PrefixName!(fing[0]))~`, Range!('A','Z')));`
 					`default: `~ def ~
 				`}`
 				`break;`

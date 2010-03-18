@@ -296,20 +296,20 @@ private:
 
 		char[] instructionsOf(cell fingerprint) {
 			switch (fingerprint) {
-				mixin (FingerprintInstructionsCases!(fings));
+				mixin (ConcatMap!(FingerprintInstructionsCase, fings));
 				default: return null;
 			}
 		}
 
 		void loadedFingerprint(cell fingerprint) {
 			switch (fingerprint) {
-				mixin (FingerprintConstructorCases!(fings));
+				mixin (ConcatMap!(FingerprintConstructorCase, fings));
 				default: break;
 			}
 		}
 		void unloadedFingerprintIns(cell fingerprint) {
 			switch (fingerprint) {
-				mixin (FingerprintDestructorCases!(fings));
+				mixin (ConcatMap!(FingerprintDestructorCase, fings));
 				default: break;
 			}
 		}
