@@ -162,6 +162,36 @@ T[] stripr(T)(T[] s) {
 	return s[0..i];
 }
 
+struct LineSplitter {
+	private char[] src;
+
+	int opApply(int delegate(ref char[]) f) {
+
+		size_t prev = 0;
+		for (size_t i = 0; i < src.length; ++i) {
+
+			auto sepStart = i;
+
+			if (src[i] == '\r') {
+				if (i+1 < src.length && src[i+1] == '\n')
+					++i;
+			} else if (src[i] != '\n')
+				continue;
+
+			auto line = src[prev .. sepStart];
+			if (auto ret = f(line))
+				return ret;
+
+			prev = i + 1;
+		}
+		if (prev <= src.length) {
+			auto line = src[prev..$];
+			return f(line);
+		} else
+			return 0;
+	}
+}
+
 // a capturing filter on Stdout and Stderr to disable Unicode translation on
 // console output
 //

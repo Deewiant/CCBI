@@ -107,7 +107,7 @@ template StdInstructions() {
 import tango.io.device.File     : File;
 import tango.io.device.FileMap  : FileMap;
 import tango.io.stream.Buffered : BufferedOutput;
-import tango.text.Util          : join, splitLines;
+import tango.text.Util          : join;
 import tango.time.Clock;
 
 import tango.stdc.stdlib : system;
@@ -899,7 +899,7 @@ void outputFile() {
 		f.flush.close;
 	}
 
-	auto max = va + vb;
+	auto maxPt = va + vb;
 
 	if (textFile) {
 		// treat as linear text file, meaning...
@@ -909,12 +909,12 @@ void outputFile() {
 		static if (dim == 1) auto toBeWritten = new char[]    (            vb.x);
 
 		const char[] X =
-			"for (c.x = va.x; c.x < max.x; ++c.x) {"
+			"for (c.x = va.x; c.x < maxPt.x; ++c.x) {"
 			"	static if (dim == 1) auto row = toBeWritten;"
 			"	row[c.x - va.x] = cast(char)state.space[c];"
 			"}";
 		const char[] Y =
-			"for (c.y = va.y; c.y < max.y; ++c.y) {"
+			"for (c.y = va.y; c.y < maxPt.y; ++c.y) {"
 			"	static if (dim <= 2) auto rect = toBeWritten;"
 			"	auto row = rect[c.y - va.y];"
 			"	" ~ X ~
@@ -923,7 +923,7 @@ void outputFile() {
 		Coords c = void;
 
 		static if (dim == 3) {
-			for (c.z = va.z; c.z < max.z; ++c.z) {
+			for (c.z = va.z; c.z < maxPt.z; ++c.z) {
 				auto rect = toBeWritten[c.z - va.z];
 
 				mixin (Y);
@@ -934,6 +934,11 @@ void outputFile() {
 			mixin (X);
 
 		static if (dim == 3) {
+
+			char[][] lines;
+			if (toBeWritten.length)
+				lines = new typeof(lines)(
+					2 * max(toBeWritten[0].length, toBeWritten[$-1].length));
 
 			bool atEOF = true;
 			auto l = toBeWritten.length;
@@ -974,6 +979,8 @@ void outputFile() {
 
 		} else static if (dim == 2) {
 
+			auto lines = new char[][](2 * toBeWritten.length);
+
 			bool atEOF = true;
 			auto l = toBeWritten.length;
 
@@ -992,10 +999,7 @@ void outputFile() {
 			// since this may be a 1000x1-type "row" with many line breaks
 			// within, we have to treat each "sub-row" as well
 
-			// TODO: don't use splitLines here, may split on UTF-8 line breaks
-			// in a future Tango version, which we don't want, only \n \r \r\n
-			auto lines = splitLines(toBeWritten);
-			try foreach (line; lines)
+			try foreach (line; LineSplitter(toBeWritten))
 				file.append(stripr(line)).append(NewlineString);
 			catch {
 				reverse;
@@ -1004,7 +1008,7 @@ void outputFile() {
 	} else try {
 		// no flag: write everything in a block of size vb, including spaces
 		// put form feeds and line breaks only between rects/lines
-		state.space.binaryPut(file, va, max);
+		state.space.binaryPut(file, va, maxPt);
 	} catch {
 		reverse;
 	}
@@ -1018,13 +1022,13 @@ private template OutputLinearRect(char[] len, char[] rect, char[] atEOR) {
 			// since this may be a 1000x1-type "row" with many line breaks
 			// within, we have to treat each "sub-row" as well
 
-			// TODO: don't use splitLines here, may split on UTF-8 line breaks
-			// in a future Tango version, which we don't want, only \n \r \r\n
-		"	auto lines = splitLines(row);"
-		"	foreach (inout line; lines)"
-		"		line = stripr(line);"
-
-		"	row = join(lines, NewlineString);"
+		"	size_t i = 0;"
+		"	foreach (line; LineSplitter(row)) {"
+		"		if (i == lines.length)"
+		"			lines.length = 2 * lines.length;"
+		"		lines[i++] = stripr(line);"
+		"	}"
+		"	row = join(lines[0..i], NewlineString);"
 
 			// ...and EOL before EOR...
 		"	if (" ~atEOR~ ") {"
