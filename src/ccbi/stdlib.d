@@ -10,7 +10,6 @@ module ccbi.stdlib;
 
 import tango.core.Exception    : IOException, PlatformException;
 import tango.core.Traits       : isUnsignedIntegerType;
-import tango.io.Stdout         : Stdout, Stderr;
 import tango.io.device.Conduit : OutputFilter;
 import tango.io.model.IFile    : FileConst;
 import tango.io.stream.Typed   : TypedInput;
@@ -203,20 +202,13 @@ class RawCoutFilter(bool stderr) : OutputFilter {
 private:
 	void error() {throw new IOException("RawCoutFilter :: "~ SysError.lastMsg);}
 
-	typeof(Stdout.stream()) superArgs() {
-		return stderr
-			? Stderr.stream
-			: Stdout.stream;
-	}
-
 	version (Win32) {
 		HANDLE handle;
 		bool redirected;
 
 		public this() {
+			super(null);
 			reopen();
-
-			super(superArgs());
 		}
 
 		void reopen() {
@@ -269,9 +261,7 @@ private:
 		// stdout is 1, stderr is 2
 		const int handle = cast(int)stderr + 1;
 
-		public this() {
-			super(superArgs());
-		}
+		public this() { super(null); }
 
 		public override size_t write(void[] src) {
 			ptrdiff_t written = posix.write(handle, src.ptr, src.length);
@@ -279,6 +269,11 @@ private:
 				error();
 			return written;
 		}
+	}
+
+	public override {
+		typeof(this) flush() { return null; }
+		void close() {}
 	}
 }
 
