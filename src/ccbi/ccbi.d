@@ -188,17 +188,13 @@ ARGS may be one or more of: `
                          Useful if you have a file named "--help", for
                          instance.`,
 	IMPLEMENTATION =
-`The Mini-Funge library format accepted is that used by RC/Funge-98 version
-1.16.
-
-Ambiguities or lack of information in the Funge-98 specification (henceforth
+`Ambiguities or lack of information in the Funge-98 specification (henceforth
 "spec") have been dealt with as follows.
 
 Regarding instructions:
- 'k' with a negative argument does nothing.
+ 'k' treats a negative argument as equivalent to a zero argument.
 
- '(' and ')' with a negative cell count to pop treat it as a zero, thus
-             reversing since there is no fingerprint equal to zero.
+ '(' and ')' reflect given a negative cell count to pop.
 
  ',' flushes stdout when '\n' (ASCII 10) is passed to it. No other output
      instructions flush stdout.
@@ -212,35 +208,23 @@ Regarding instructions:
       garbage after the number: for instance, if receiving only "foo10", the
       input buffer will be empty.
 
- '~'  converts '\r' and '\r\n' to '\n'.
+ '~'  converts '\r' and '\r\n' to '\n'. After '\r', another byte will thus be
+      read to see if it is '\n'.
 
- '#', when moving out of bounds, skips over the edgemost cell in the file.
-
-      However, since space is treated as a rectangle, if the line (to simplify,
-      consider only this case where the delta is (1,0) or (-1,0)) on which the
-      # occurs is not the longest line in the file, the IP will find a cell
-      containing a space and jump over that, thus hitting the edgemost
-      instruction placed on the line. For instance:
-
-      >]#
-      #]
-
-      The jump on the first line will skip over the '>' and hit the ']', but
-      the jump on the second line will skip over a space, not the ']'.
-
-      I have seen at least three different ways of handling this in existing
-      interpreters, and since the specification isn't clear on this, I have no
-      intention of correcting this behaviour to be more consistent, as this is
-      the easiest way of programming it and results in the fastest code. If a
-      standard, even a de facto standard, is established, I'll gladly conform
-      to it, but such a thing doesn't exist (yet).
+ '#', when moving out of bounds, skips over one of the large number of spaces
+      which exist between the right edge of the code and the right edge of the
+      address space. (Or, similarly, between the left edge of the space and the
+      left edge of the code.) Thus, unless the # is at the very edge of space
+      and the cell at the opposite edge is a nonspace, # over the edge is
+      practically a no-op.
 
  'o', when treating the output as a linear text file, removes spaces before
       each EOL in the string to be output: that is, not only those found in the
-      end of each row in the specified rectangle within Funge-space.
+      end of each row in the specified rectangle within Funge-Space. And
+      similarly for EOLs before form feeds, in Trefunge.
 
-      Also, '\n' and '\r' characters (ASCII 10 and 13) are converted to the
-      line separator used by the host system.
+      Also, line terminators ('\r', '\n', '\r\n') are converted to the line
+      terminator used by the host system.
 
  't' not only reflects the resulting IP but also moves it once prior to its
      first execution, to prevent every 't' instruction from being a forkbomb.
