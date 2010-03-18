@@ -175,6 +175,10 @@ struct CellContainer {
 	// the bottom.
 	mixin (F!("cell", "at", "size_t i"));
 
+	// setAt(x,c) is the writing form of at(x): an optimization on top of both
+	// "pop" and "push".
+	mixin (F!("cell", "setAt", "size_t i", "cell c"));
+
 	// *Pushed() forms take invertmode into account, applying from the correct
 	// direction so as to work on cells that have just been pushed. They don't
 	// update statistics and assume a nonempty stack.
@@ -332,7 +336,8 @@ struct Stack(T) {
 		return ptr;
 	}
 
-	T at(size_t i) { return array[i]; }
+	T    at(size_t i)      { return array[i]; }
+	T setAt(size_t i, T t) { return array[i] = t; }
 
 	void mapFirstN(size_t n, void delegate(T[]) f, void delegate(size_t) g) {
 		if (n <= head)
@@ -708,14 +713,13 @@ struct Deque {
 
 
 	cell* reserve(size_t n) {
-		stats.pushes += n;
-
 		if (mode & INVERT_MODE)
 			return reserveTail(n);
 		else
 			return reserveHead(n);
 	}
-	private cell* reserveHead(size_t n) {
+	cell* reserveHead(size_t n) {
+		stats.pushes += n;
 
 		auto newHead = head.head + n;
 		if (head.capacity < newHead) {
@@ -729,7 +733,8 @@ struct Deque {
 		head.head = newHead;
 		return ptr;
 	}
-	private cell* reserveTail(size_t n) {
+	cell* reserveTail(size_t n) {
+		stats.pushes += n;
 
 		// Tricky.
 
@@ -859,6 +864,17 @@ struct Deque {
 		for (auto c = tail;; c = c.next) {
 			if (i < c.size)
 				return c.array[c.tail + i];
+			else
+				i -= c.size;
+		}
+	}
+	cell setAt(size_t i, cell x) {
+		if (mode & QUEUE_MODE)
+			i = size-1 - i;
+
+		for (auto c = tail;; c = c.next) {
+			if (i < c.size)
+				return c.array[c.tail + i] = x;
 			else
 				i -= c.size;
 		}
