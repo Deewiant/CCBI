@@ -22,6 +22,7 @@ mixin (Fingerprint!(
 
 template HRTI() {
 
+import tango.time.Clock;
 import tango.time.StopWatch;
 
 void ctor()
