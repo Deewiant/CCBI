@@ -140,7 +140,6 @@ void pushOffsetVector(Coords c) {
 
 static if (!befunge93) {
 
-// TODO: this is not thread safe
 static char[] popStringBuf;
 static this() { popStringBuf = new char[80]; }
 

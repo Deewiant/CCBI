@@ -41,11 +41,6 @@ import ccbi.space.space;
 
 mixin (InsImports!());
 
-// Essentially the only difference in Mini-Funge is the loading, since one has
-// to deal with the =FOO commands
-//
-// Other than that, have an executeMiniFunge to handle the differences
-
 private FormatOutput!(char)  Sout, Serr;
 static this() {
 	Sout = new typeof(Sout)(
@@ -272,8 +267,6 @@ private:
 	mixin StdInstructions!() Std;
 	mixin Utils!();
 
-// TODO: move dim information to instructions themselves, since fingerprints
-// need it as well
 	Request executeStandard(cell c) {
 		++stats.stdExecutionCount;
 
@@ -346,17 +339,12 @@ private:
 
 		if (flags.warnings) {
 			Sout.flush;
-			// XXX: this looks like a hack
-//			if (inMini)
-//				miniUnimplemented();
-/+			else +/ {
-				auto i = cip.unsafeCell;
-				warn(
-					"Unimplemented instruction '{}' ({1:d}) (0x{1:x})"
-					" encountered at {}.",
-					cast(char)i, i, cip.pos.toString
-				);
-			}
+			auto i = cip.unsafeCell;
+			warn(
+				"Unimplemented instruction '{}' ({1:d}) (0x{1:x})"
+				" encountered at {}.",
+				cast(char)i, i, cip.pos.toString
+			);
 		}
 		reverse;
 		return Request.MOVE;

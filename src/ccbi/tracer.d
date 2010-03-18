@@ -8,9 +8,6 @@
 // The tracing facilities.
 module ccbi.tracer;
 
-// TODO: put "Tracer ::" prompt in a func of its own
-// so that it can print "Tracer 1 ::" when in MVRS!
-
 template Tracer() {
 
 import tango.core.Traits          : isSignedIntegerType, isUnsignedIntegerType;

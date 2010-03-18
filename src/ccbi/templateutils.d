@@ -28,28 +28,6 @@ template EmitGot(xs...) {
 		const EmitGot = "enum { GOT_" ~ xs[0] ~ " = false }";
 }
 
-/////////////////////////////////////////
-// Generate setters/getters to a BitArray
-
-// XXX: currently unused, will we need these?
-private template BooleansX(char[] name, uint i, B...) {
-	static if (B.length == 0)
-		const BooleansX =
-			"BitArray "~name~";"
-			"void initBools() { "~name~".length = " ~ToString!(i)~ "; }";
-	else {
-		const BooleansX =
-			"bool " ~B[0]~ "()       { return "~name~"[" ~ToString!(i)~ "];     }"
-			"void " ~B[0]~ "(bool x) {        "~name~"[" ~ToString!(i)~ "] = x; }"
-			~ BooleansX!(name, i+1, B[1..$]);
-	}
-}
-
-template Booleans(char[] name, B...) {
-	static assert (B.length > 0);
-	const Booleans = BooleansX!(name, 0, B);
-}
-
 //////////
 // General
 
