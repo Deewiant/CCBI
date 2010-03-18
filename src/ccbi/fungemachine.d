@@ -291,10 +291,15 @@ private:
 	}
 
 	static if (!befunge93) {
-		mixin FingerprintHelpers!();
-
 		mixin (ConcatMap!(TemplateMixin, ALL_FINGERPRINT_IDS));
 		mixin (ConcatMap!(FingerprintCount, fings));
+
+		char[] instructionsOf(cell fingerprint) {
+			switch (fingerprint) {
+				mixin (FingerprintInstructionsCases!(fings));
+				default: return null;
+			}
+		}
 
 		void loadedFingerprint(cell fingerprint) {
 			switch (fingerprint) {

@@ -170,16 +170,6 @@ private template FingerprintInstructionsCases(fing...) {
 		const FingerprintInstructionsCases = "";
 }
 
-// mixin target
-template FingerprintHelpers() {
-	char[] instructionsOf(cell fingerprint) {
-		switch (fingerprint) {
-			mixin (FingerprintInstructionsCases!(ALL_FINGERPRINTS));
-			default: return null;
-		}
-	}
-}
-
 // Each fingerprint may have a constructor and a destructor. We keep track of
 // how many instructions of that fingerprint are loaded. If the count is at
 // zero when the fingerprint is loaded, we call the constructor. Likewise, if
