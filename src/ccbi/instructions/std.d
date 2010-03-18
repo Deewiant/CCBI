@@ -740,7 +740,6 @@ void outputCharacter() {
 
 	cput(c);
 
-	// TODO: maybe make this optional?
 	if (c == '\n') {
 		try Sout.flush;
 		catch { reverse; }

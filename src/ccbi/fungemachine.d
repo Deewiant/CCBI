@@ -41,7 +41,7 @@ import ccbi.space.space;
 
 mixin (InsImports!());
 
-private FormatOutput!(char)  Sout, Serr;
+private FormatOutput!(char) Sout, Serr;
 static this() {
 	Sout = new typeof(Sout)(
 		Stdout.layout, new BufferedOutput(new RawCoutFilter!(false), 32*1024));
