@@ -58,6 +58,13 @@ void outputBase() {
 		if (state.tick < ioAfter)
 			return;
 
+	bool rev = false;
+
+	if (val < 0) {
+		val = -val;
+		rev = !cputDirect('-');
+	}
+
 	const DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 	static char[] result;
@@ -75,7 +82,6 @@ void outputBase() {
 			result[i++] = DIGITS[val % base];
 	}
 
-	bool rev = false;
 	foreach_reverse (c; result[0..i])
 		if (!cputDirect(c))
 			rev = true;
