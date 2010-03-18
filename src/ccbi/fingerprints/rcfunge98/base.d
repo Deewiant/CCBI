@@ -24,13 +24,6 @@ mixin (Fingerprint!(
 	"O", "output!(`o`)"
 ));
 
-bool contains(char[] a, char b) {
-	foreach (c; a)
-		if (c == b)
-			return true;
-	return false;
-}
-
 uint floorLog(uint base, uint val) {
 	// bsr is just an integer log2
 	return bsr(val) / bsr(base);
@@ -38,6 +31,7 @@ uint floorLog(uint base, uint val) {
 
 template BASE() {
 
+import tango.core.Array           : bsearch;
 import tango.text.convert.Integer : intToString = toString;
 import tango.text.Util            : repeat;
 
@@ -91,7 +85,6 @@ void outputBase() {
 		reverse;
 }
 
-// TODO: unify this with std.inputDecimal()
 void inputBase() {
 	auto base = cip.stack.pop;
 
@@ -116,7 +109,7 @@ void inputBase() {
 
 	try {
 		do c = cget();
-		while (!digits.contains(c));
+		while (!digits.bsearch(c));
 	} catch {
 		return reverse();
 	}
@@ -127,11 +120,15 @@ void inputBase() {
 	auto s = new char[80];
 	size_t j;
 
-	for (;;) {
+	reading: for (;;) {
 		try c = toLower(cget());
 		catch { return cip.stack.push(n); }
 
-		if (!digits.contains(c))
+		if (!digits.bsearch(c))
+			break;
+
+		// Overflow: can't read another char
+		if (n > n.max / base)
 			break;
 
 		if (j == s.length)
@@ -140,15 +137,15 @@ void inputBase() {
 		s[j++] = c;
 
 		cell tmp = 0;
+		foreach_reverse (i, ch; s[0..j]) {
+			auto add = ipow(base, j-i-1) * (ch < 'a' ? ch - '0' : ch - 'a' + 10);
 
-		// value of characters read so far, in base
-		foreach_reverse (i, ch; s[0..j])
-			tmp += ipow(base, j-i-1) * (ch < 'a' ? ch - '0' : ch - 'a' + 10);
+			// Overflow caused by char
+			if (tmp > tmp.max - add)
+				break reading;
 
-		// oops, overflow, stop here
-		if (tmp < 0)
-			break;
-
+			tmp += add;
+		}
 		n = tmp;
 	}
 	cunget(c);

@@ -779,7 +779,7 @@ void reallyInputDecimal() {
 		if (c < '0' || c > '9')
 			break;
 
-		// overflow: can't read more chars
+		// Overflow: can't read more chars
 		if (n > n.max / 10)
 			break;
 
@@ -789,7 +789,7 @@ void reallyInputDecimal() {
 		foreach (i, ch; s[0..j]) {
 			auto add = ipow(10, j-i-1) * (ch - '0');
 
-			// overflow: can't add add
+			// Overflow: can't add add
 			if (tmp > tmp.max - add)
 				break reading;
 
