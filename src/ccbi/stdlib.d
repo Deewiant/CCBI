@@ -34,7 +34,8 @@ A ipow(A, B)(A x, B exp) {
 }
 
 private alias char[][] environment_t;
-private size_t envSize = 0x20;
+private size_t envCount = 0x20;
+private size_t envSize = void;
 
 private environment_t env;
 bool envChanged = true;
@@ -51,8 +52,11 @@ version (Win32) {
 
 	// Sums the lengths into the given pointer too
 	environment_t environment(size_t* size = null) {
-		if (!envChanged)
+		if (!envChanged) {
+			if (size)
+				*size = envSize;
 			return .env;
+		}
 
 		auto env = cast(char**)GetEnvironmentStringsA();
 
@@ -64,7 +68,8 @@ version (Win32) {
 				throw new PlatformException("Couldn't free environment");
 		}
 
-		auto arr = new environment_t(envSize);
+		auto arr = new environment_t(envCount);
+		envSize = 0;
 
 		size_t i = 0;
 		for (auto str = cast(char*)env; *str; ++str) {
@@ -80,8 +85,7 @@ version (Win32) {
 			}
 			val.length = j;
 
-			if (size)
-				*size += j;
+			envSize += j;
 
 			if (j > maxSize)
 				maxSize = j;
@@ -90,7 +94,7 @@ version (Win32) {
 				arr.length = 2 * arr.length;
 			arr[i++] = val;
 		}
-		arr.length = envSize = i;
+		arr.length = envCount = i;
 		envChanged = false;
 		arr.sort;
 		return (.env = arr);
@@ -101,23 +105,28 @@ version (Win32) {
 	extern (C) extern char** environ;
 
 	environment_t environment(size_t* size = null) {
-		if (!envChanged)
+		if (!envChanged) {
+			if (size)
+				*size = envSize;
 			return .env;
+		}
 
-		auto arr = new environment_t(envSize);
+		auto arr = new environment_t(envCount);
+		envSize = 0;
 
 		size_t i = 0;
 		for (auto p = environ; *p; ++p) {
 			auto j = strlen(*p);
 
-			if (size)
-				*size += j;
+			envSize += j;
 
 			if (i == arr.length)
 				arr.length = 2 * arr.length;
 			arr[i++] = (*p)[0..j];
 		}
-		arr.length = envSize = i;
+		if (size)
+			*size = envSize;
+		arr.length = envCount = i;
 		envChanged = false;
 		arr.sort;
 		return (.env = arr);

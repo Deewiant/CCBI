@@ -47,11 +47,9 @@ void getEnv() {
 		version (Win32) {
 			if (icompare(v[0..i], s) == 0)
 				return pushStringz(v[i+1..$]);
-
-		} else {
+		} else
 			if (v[0..i] == s)
 				return pushStringz(v[i+1..$]);
-		}
 	}
 	reverse();
 }
@@ -71,10 +69,9 @@ void putEnv() {
 		version (Win32) {
 			if (!SetEnvironmentVariableA(toStringz(s[0..idx]), s[idx+1..$].ptr))
 				return reverse();
-		} else {
+		} else
 			if (setenv(toStringz(s[0..idx]), s[idx+1..$].ptr, 1) == -1)
 				return reverse();
-		}
 	}
 
 	envChanged = true;
