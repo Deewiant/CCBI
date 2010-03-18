@@ -309,9 +309,8 @@ Request timeJump(IP ip) {
 
 		ip.mode &= ~IP.FROM_FUTURE;
 
-		// TODO: move this to Tracer
-		if (ip is tip)
-			tip = null;
+		version (tracer)
+			Tracer.ipJumpedToFuture(ip);
 
 		return Request.NONE;
 	}
@@ -361,8 +360,8 @@ Request timeJump(IP ip) {
 	state.free();
 	state = earlyState.deepCopy(true);
 
-	// TODO: move to Tracer
-	tip = null;
+	version (tracer)
+		Tracer.jumpedToPast();
 
 	return Request.RETICK;
 }

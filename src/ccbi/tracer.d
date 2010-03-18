@@ -50,6 +50,14 @@ void ipStopped(IP ip) {
 	}
 }
 
+version (TRDS) {
+	void ipJumpedToFuture(IP ip) {
+		if (ip is tip)
+			tip = null;
+	}
+	void jumpedToPast() { tip = null; }
+}
+
 bool doTrace() {
 	const DEBUGHELP =
 "A parameter enclosed in () is necessary, [] denotes optionality.
