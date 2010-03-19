@@ -29,7 +29,7 @@ private {
 		if (!p)
 			onOutOfMemoryError();
 
-		static if (is(T == class) || is(T == interface) || is(T : T*))
+		static if (is(T == class) || is(T == interface) || is(T : void*))
 			GC.addRange(p, n * T.sizeof);
 
 		return p;
@@ -39,7 +39,7 @@ private {
 		if (!p)
 			onOutOfMemoryError();
 
-		static if (is(T == class) || is(T == interface) || is(T : T*)) {
+		static if (is(T == class) || is(T == interface) || is(T : void*)) {
 			if (p != p0) {
 				GC.removeRange(p0);
 				GC.addRange(p, n * T.sizeof);
@@ -50,7 +50,7 @@ private {
 	}
 	void free(T)(T* p) {
 		c.free(p);
-		static if (is(T == class) || is(T == interface))
+		static if (is(T == class) || is(T == interface) || is(T : void*))
 			GC.removeRange(p);
 	}
 }
