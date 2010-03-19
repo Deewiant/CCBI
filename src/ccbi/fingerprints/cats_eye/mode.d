@@ -24,19 +24,23 @@ mixin (Fingerprint!(
 template MODE() {
 
 void ipCtor() {
-	auto deque = cip.stack.isDeque;
+	auto isDeque = cip.stack.isDeque;
 
 	if (cip.stackStack) {
 		foreach (inout s; *cip.stackStack) {
-			assert (deque == s.isDeque);
-			if (!deque) {
+			assert (isDeque == s.isDeque);
+			if (!isDeque) {
 				s.isDeque = true;
-				s.deque = Deque(&dequeStats, s.stack);
+				auto deque = Deque(&dequeStats, s.stack);
+				s.stack.free();
+				s.deque = deque;
 			}
 		}
-	} else if (!deque) {
+	} else if (!isDeque) {
 		cip.stack.isDeque = true;
-		cip.stack.deque = Deque(&dequeStats, cip.stack.stack);
+		auto deque = Deque(&dequeStats, cip.stack.stack);
+		cip.stack.stack.free();
+		cip.stack.deque = deque;
 	}
 }
 
@@ -50,12 +54,16 @@ void ipDtor() {
 		foreach (inout s; *cip.stackStack) {
 			assert (s.isDeque);
 			s.isDeque = false;
-			s.stack = Stack!(cell)(&stackStats, s.deque);
+			auto stack = Stack!(cell)(&stackStats, s.deque);
+			s.deque.free();
+			s.stack = stack;
 		}
 	} else {
 		assert (cip.stack.isDeque);
 		cip.stack.isDeque = false;
-		cip.stack.stack = Stack!(cell)(&stackStats, cip.stack.deque);
+		auto stack = Stack!(cell)(&stackStats, cip.stack.deque);
+		cip.stack.deque.free();
+		cip.stack.stack = stack;
 	}
 }
 

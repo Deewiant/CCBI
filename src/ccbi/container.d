@@ -522,7 +522,8 @@ struct Deque {
 				.free(c);
 				break;
 			}
-		}
+		} else
+			.free(tail);
 		head = tail = null;
 	}
 
