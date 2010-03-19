@@ -16,7 +16,6 @@ import tango.io.Console           : Cin;
 import tango.math.Math            : min;
 import tango.text.convert.Integer : parse, convert;
 import tango.text.Ascii           : icompare, toLower;
-import tango.text.Util            : split;
 
 import ccbi.container;
 import ccbi.stdlib;

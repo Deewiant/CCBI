@@ -72,8 +72,15 @@ in {
   }
 }
 
-char[][] words(char[]   s) { return s.delimit(" "); }
-char[] unwords(char[][] s) { return s.join   (" "); }
+char[] unwords(char[][] s) { return s.join(" "); }
+char[][] words(char[]   s) {
+	auto ws = s.delimit(" ");
+	size_t n = 0;
+	foreach (w; ws)
+		if (w.length)
+			ws[n++] = w;
+	return ws[0..n];
+}
 
 bool isSemantics(cell i) { return i <= 'Z' && i >= 'A'; }
 
