@@ -8,12 +8,12 @@
 // Stuff that could/should be in the standard library.
 module ccbi.stdlib;
 
-import tango.core.Exception    : IOException, PlatformException;
-import tango.core.Traits       : isUnsignedIntegerType;
-import tango.io.device.Conduit : OutputFilter;
-import tango.io.model.IFile    : FileConst;
-import tango.io.stream.Typed   : TypedInput;
-import tango.math.Math         : min;
+import tango.core.Exception   : IOException, PlatformException;
+import tango.core.Traits      : isUnsignedIntegerType;
+import tango.io.device.Device : Device;
+import tango.io.model.IFile   : FileConst;
+import tango.io.stream.Typed  : TypedInput;
+import tango.math.Math        : min;
 import tango.sys.Common;
 
 import ccbi.templateutils : ToString;
@@ -191,32 +191,25 @@ struct LineSplitter {
 	}
 }
 
-// a capturing filter on Stdout and Stderr to disable Unicode translation on
-// console output
+// A conduit for console output without Unicode translation
 //
 // Win32 code ripped off of Tango's (0.98 RC2) Console.Conduit, changed to use
 // WriteConsoleA
 //
 // Posix code from DeviceConduit
-class RawCoutFilter(bool stderr) : OutputFilter {
+class RawCoutDevice(bool stderr) : Device {
 private:
-	void error() {throw new IOException("RawCoutFilter :: "~ SysError.lastMsg);}
+	void error() {throw new IOException("RawCoutDevice :: "~ SysError.lastMsg);}
 
 	version (Win32) {
-		HANDLE handle;
 		bool redirected;
 
 		public this() {
-			super(null);
-			reopen();
-		}
-
-		void reopen() {
 			// stderr is -12, stdout is -11
-			handle = GetStdHandle(-cast(DWORD)stderr - 11);
+			super.io.handle = GetStdHandle(-cast(DWORD)stderr - 11);
 
-			if (handle is null) {
-				handle = CreateFileA(
+			if (io.handle is null) {
+				io.handle = CreateFileA(
 					"CONOUT$",
 					GENERIC_READ | GENERIC_WRITE,
 					FILE_SHARE_READ | FILE_SHARE_WRITE,
@@ -226,19 +219,19 @@ private:
 					cast(HANDLE)0
 				);
 
-				if (handle is null)
+				if (io.handle is null)
 					error();
 			}
 
 			DWORD dummy;
-			redirected = !GetConsoleMode(handle, &dummy);
+			redirected = !GetConsoleMode(io.handle, &dummy);
 		}
 
 		public override size_t write(void[] src) {
 			if (redirected) {
 				DWORD written;
 
-				if (!WriteFile(handle, src.ptr, src.length, &written, null))
+				if (!WriteFile(io.handle, src.ptr, src.length, &written, null))
 					error();
 
 				return written;
@@ -250,7 +243,7 @@ private:
 
 				for (auto p = src.ptr, end = src.ptr + i; p < end; p += i)
 					// avoid console buffer size limitations, write in chunks
-					if (!WriteConsoleA(handle, p, min(end - p, 32*1024), &i, null))
+					if (!WriteConsoleA(io.handle, p, min(end - p, 32*1024), &i, null))
 						error();
 
 				return src.length;
@@ -259,22 +252,17 @@ private:
 	} else { // Posix
 
 		// stdout is 1, stderr is 2
-		const int handle = cast(int)stderr + 1;
-
-		public this() { super(null); }
+		public this() { super.handle = cast(int)stderr + 1; }
 
 		public override size_t write(void[] src) {
 			ptrdiff_t written = posix.write(handle, src.ptr, src.length);
-			if (written < 0)
+			if (written == -1)
 				error();
 			return written;
 		}
 	}
 
-	public override {
-		typeof(this) flush() { return null; }
-		void close() {}
-	}
+	public override size_t read(void[]) { return Eof; }
 }
 
 // Solves for x in the equation ax = 1 (mod 2^(U.sizeof * 8)), given a.

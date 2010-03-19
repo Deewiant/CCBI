@@ -44,9 +44,9 @@ mixin (InsImports!());
 private FormatOutput!(char) Sout, Serr;
 static this() {
 	Sout = new typeof(Sout)(
-		Stdout.layout, new BufferedOutput(new RawCoutFilter!(false), 32*1024));
+		Stdout.layout, new BufferedOutput(new RawCoutDevice!(false)));
 	Serr = new typeof(Serr)(
-		Stderr.layout, new BufferedOutput(new RawCoutFilter!(true ), 32*1024));
+		Stderr.layout, new BufferedOutput(new RawCoutDevice!(true )));
 
 	Sin = new typeof(Sin)(Cin.stream);
 }
