@@ -285,7 +285,9 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 		static char[] last;
 
 		char[] input;
-		Cin.readln(input);
+		if (!Cin.readln(input))
+			return false;
+
 		if (input.length)
 			last = input.dup;
 		else
