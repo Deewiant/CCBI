@@ -306,7 +306,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		set(LTO -std-link-opts ${INTERNALIZE_OPT})
 	endif()
 
-	set(CCBI_BC_OPT "${CCBI_BC}.opt")
+	set(CCBI_BC_OPT "${OBJDIR}/ccbi-opt.bc")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC_OPT}"
 		DEPENDS "${CCBI_BC}" ${C_OBJS}
@@ -315,13 +315,28 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		        | opt -std-compile-opts -unroll-allow-partial ${LTO}
 		        > "${CCBI_BC_OPT}")
 
-	# Assemble, make .o, link
+	# Assemble
+	set(CCBI_S "${OBJDIR}/ccbi-opt.s")
+	add_custom_command(VERBATIM
+		OUTPUT "${CCBI_S}"
+		DEPENDS "${CCBI_BC_OPT}"
+		COMMAND llc -O3 -regalloc=pbqp -post-RA-scheduler < "${CCBI_BC_OPT}" > "${CCBI_S}")
+
+	# Make .o
+	#
+	# D_LINK_FLAGS is not in a format that clang would like so we can't use it
+	# to link.
+	set(CCBI_O "${OBJDIR}/ccbi-opt.o")
+	add_custom_command(VERBATIM
+		OUTPUT "${CCBI_O}"
+		DEPENDS "${CCBI_S}"
+		COMMAND clang -c "${CCBI_S}" -o "${CCBI_O}")
+
+	# Link
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BIN}"
-		DEPENDS "${CCBI_BC_OPT}"
-		COMMAND llc -O3 -regalloc=pbqp -post-RA-scheduler < "${CCBI_BC_OPT}" > "${CCBI_BC_OPT}.s"
-		COMMAND clang -c "${CCBI_BC_OPT}.s" -o "${CCBI_BC_OPT}.o"
-		COMMAND ${DC} ${D_LINK_FLAGS} "-of${CCBI_BIN}" "${CCBI_BC_OPT}.o")
+		DEPENDS "${CCBI_O}"
+		COMMAND ${DC} ${D_LINK_FLAGS} "-of${CCBI_BIN}" "${CCBI_O}")
 else()
 	if(CCBI_BUILD_TYPE STREQUAL "Release")
 		set(EXTRA_ARGS -O -inline -release)
