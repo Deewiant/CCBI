@@ -295,8 +295,12 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 		switch (args[0]) {
 			case "h", "hlp", "?", "help": Serr(DEBUGHELP ).newline; break;
 			case "x", "explain":          Serr(MODESTRING).newline; break;
-			case "s", "step":                   return true;
-			case "r", "run" : stopNext = false; return true;
+			case "r", "run":
+				stopNext = false;
+				if (!bps.length && !cbps.length && !tbps.length)
+					flags.tracing = false;
+			case "s", "step":
+				return true;
 
 		static if (!befunge93) {
 			// k [ip]
