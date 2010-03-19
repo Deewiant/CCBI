@@ -307,7 +307,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BIN}"
 		DEPENDS "${CCBI_BC_OPT}"
-		COMMAND llc -O3 -regalloc=pbqp < "${CCBI_BC_OPT}" > "${CCBI_BC_OPT}.s"
+		COMMAND llc -O3 -regalloc=pbqp -post-RA-scheduler < "${CCBI_BC_OPT}" > "${CCBI_BC_OPT}.s"
 		COMMAND clang -c "${CCBI_BC_OPT}.s" -o "${CCBI_BC_OPT}.o"
 		COMMAND ${DC} ${D_LINK_FLAGS} "-of${CCBI_BIN}" "${CCBI_BC_OPT}.o")
 else()
