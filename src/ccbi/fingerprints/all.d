@@ -125,8 +125,8 @@ mixin (GLFunge98Fingerprints());
 
 alias Tuple!(
 	FINGERPRINTS_CATSEYE,
-	FINGERPRINTS_JVH,
 	FINGERPRINTS_RCFUNGE98,
+	FINGERPRINTS_JVH,
 	// SCKE (GLFunge98) uses stuff from SOCK (RCFunge98): must be after it here
 	FINGERPRINTS_GLFUNGE98) ALL_FINGERPRINTS;
 
