@@ -108,7 +108,10 @@ s(t)ack" ~(befunge93?"":" [ip]")~ "
 (v)iew (pos)
    Show the value of a cell in Funge-Space
 (e)dit (pos) (val)
-   Set  the value of a cell in Funge-Space
+   Set  the value of a cell in Funge-Space"
+~(befunge93?"":"
+bo(u)nds
+   DIsplay the tight Funge-Space bounds, as would be pushed by the y command")~ "
 
 (p)osition (pos)" ~(befunge93?"":" [ip]")~ "
    Set the position of the " ~(befunge93?"":"current ")~ "IP
@@ -122,8 +125,7 @@ s(t)ack" ~(befunge93?"":" [ip]")~ "
 (k)ill [ip]
    Kill an IP")~"
 (q)uit
-   Quit the program"
-	;
+   Quit the program";
 
 	const MODESTRING =
 befunge93 ?
@@ -667,6 +669,18 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			}
 
 		static if (!befunge93) {
+			// u
+			case "u", "bounds": {
+				Coords beg, end;
+				state.space.getTightBounds(beg, end);
+
+				Serr("Nonempty Funge-Space:").newline;
+				Serr("   Beginning: ")(beg).newline;
+				Serr("   End:       ")(end).newline;
+				Serr("   Size:      ")(end - beg + 1).newline;
+				break;
+			}
+
 			// w (ip)
 			case "w", "switch": {
 				if (args.length-1 < 1) {
