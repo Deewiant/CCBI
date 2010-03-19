@@ -257,7 +257,19 @@ if(VENDOR STREQUAL "ldc")
 	list(APPEND D_FLAGS -linkonce-templates)
 endif()
 
+if(EXISTS "${OBJDIR}" AND NOT IS_DIRECTORY "${OBJDIR}")
+	message(FATAL_ERROR "${OBJDIR} is a temporary directory we want to use, please get rid of it!")
+endif()
+
 if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
+
+	# Ensure OBJDIR exists
+	# TODO test on Win32
+	if(WIN32 AND NOT CYGWIN)
+		add_custom_command(VERBATIM OUTPUT "${OBJDIR}" COMMAND mkdir "${OBJDIR}" >NUL 2>NUL)
+	else()
+		add_custom_command(VERBATIM OUTPUT "${OBJDIR}" COMMAND mkdir -p "${OBJDIR}")
+	endif()
 
 	# Build the .bc
 	set(CCBI_BC "${OBJDIR}/ccbi.ccbi.bc")
@@ -274,7 +286,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		list(APPEND C_OBJS "${C_OBJ}")
 		add_custom_command(VERBATIM
 			OUTPUT "${C_OBJ}"
-			DEPENDS "${C_SRC}"
+			DEPENDS "${C_SRC}" "${OBJDIR}"
 			COMMAND clang -w "${C_SRC}" -c -emit-llvm "-o${C_OBJ}")
 	endforeach()
 
