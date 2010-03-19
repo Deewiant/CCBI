@@ -600,8 +600,8 @@ void endBlock() {
 	if (cip.stackCount == 1)
 		return reverse();
 
-	auto oldStack  = cip.stackStack.pop;
-	cip.stack      = cip.stackStack.top;
+	auto oldStack = cip.stackStack.pop;
+	cip.stack     = cip.stackStack.top;
 
 	if (cip.stack.isDeque)
 		cip.stack.deque.mode = oldStack.deque.mode;
