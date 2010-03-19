@@ -57,7 +57,7 @@ foreach(arg ${DC_ARGS})
 endforeach()
 
 set(CCBI_BUILD_TYPE "Release" CACHE STRING
-    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, and (for C wrappers) clang; highly recommended); Release-LLVM-Safer (less LTO, less buggy).")
+    "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, grep, and clang; highly recommended); Release-LLVM-Safer (less LTO, less buggy).")
 
 option(ENABLE_BEFUNGE93  "Build support for Befunge-93." ON)
 option(ENABLE_FUNGE98_1 "Build support for Unefunge-98 (one-dimensional Funge-98)." OFF)
@@ -299,6 +299,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		OUTPUT "${CCBI_BC_OPT}"
 		DEPENDS "${CCBI_BC}" ${C_OBJS}
 		COMMAND llvm-link "${CCBI_BC}" ${C_OBJS}
+		        | llvm-dis | grep -Fv "call void @_d_assert\(" | llvm-as
 		        | opt -std-compile-opts -unroll-allow-partial ${LTO}
 		        > "${CCBI_BC_OPT}")
 
