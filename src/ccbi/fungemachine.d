@@ -343,7 +343,6 @@ private:
 		++stats.unimplementedCount;
 
 		if (flags.warnings) {
-			Sout.flush;
 			auto i = cip.unsafeCell;
 			warn(
 				"Unimplemented instruction '{}' ({1:d}) (0x{1:x})"
@@ -416,10 +415,12 @@ private:
 	}
 
 	void warn(char[] fmt, ...) {
+		Sout.flush;
 		Serr("CCBI :: ");
 		Serr.layout.convert(
 			delegate uint(char[] s){ return Serr.write(s); },
 			_arguments, _argptr, fmt);
+		Serr.newline.flush;
 	}
 
 	version (statistics) void printStats(FormatOutput!(char) put) {
