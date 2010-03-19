@@ -275,7 +275,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		add_custom_command(VERBATIM
 			OUTPUT "${C_OBJ}"
 			DEPENDS "${C_SRC}"
-			COMMAND clang "${C_SRC}" -c -emit-llvm "-o${C_OBJ}")
+			COMMAND clang -w "${C_SRC}" -c -emit-llvm "-o${C_OBJ}")
 	endforeach()
 
 	# Link .bc's, optimize
