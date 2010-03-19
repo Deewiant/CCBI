@@ -272,12 +272,12 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	endif()
 
 	# Build the .bc
-	set(CCBI_BC "${OBJDIR}/ccbi.ccbi.bc")
+	set(CCBI_BC "${OBJDIR}/ccbi.bc")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC}"
 		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
-		DEPENDS ${D_SOURCES}
-		COMMAND ldmd ${D_FLAGS} -c -output-bc -singleobj -od${OBJDIR} -release ${D_SOURCES})
+		DEPENDS ${D_SOURCES} "${OBJDIR}"
+		COMMAND ldmd ${D_FLAGS} -c -output-bc -singleobj -of${CCBI_BC} -release ${D_SOURCES})
 
 	# Build .bc's out of the C wrappers
 	foreach(C_SRC ${C_SOURCES})
