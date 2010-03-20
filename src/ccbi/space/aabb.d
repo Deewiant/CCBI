@@ -468,7 +468,7 @@ struct AABB(cell dim) {
 	//
 	// In the above, if we advanced by area.width instead of owner.width we'd be
 	// screwed.
-	void subsumeArea(AABB owner, AABB area, cell[] data)
+	private void subsumeArea(AABB owner, AABB area, cell[] data)
 	in {
 		assert ( this.contains(area));
 		assert (owner.contains(area));

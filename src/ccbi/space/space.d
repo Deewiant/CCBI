@@ -61,6 +61,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 			AABB box, finalBox;
 			Coords c;
 		}
+		// If we allocate this many boxes in a line, we'll allocate a big box.
 		AnamnesicRing!(Memory, 3) recentBuf;
 		bool justPlacedBig = void;
 		Coords bigSequenceStart = void, firstPlacedBig = void;
@@ -229,7 +230,6 @@ struct FungeSpace(cell dim, bool befunge93) {
 					if (box.getNoOffset(c) != ' ') {
 
 						beg.minWith(c + box.beg);
-
 						if (beg.v[axis] <= box.beg.v[axis])
 							continue nextBox;
 
@@ -298,7 +298,6 @@ struct FungeSpace(cell dim, bool befunge93) {
 					if (box.getNoOffset(c) != ' ') {
 
 						end.maxWith(c + box.beg);
-
 						if (end.v[axis] >= box.end.v[axis])
 							continue nextBox;
 
@@ -911,9 +910,9 @@ private:
 	// not; but in any case, if not, the relevant overlapping boxes would be
 	// those which would end up above the final box.
 	void irrelevizeSubsumptionOrder(size_t[] subsumes) {
+		AABB overlap = void;
 		foreach (i; subsumes) {
 			// Check boxes below boxen[i]
-			AABB overlap = void;
 			for (auto j = i+1; j < boxen.length; ++j) {
 
 				if (boxen[i].contains(boxen[j]) || boxen[j].contains(boxen[i]))
