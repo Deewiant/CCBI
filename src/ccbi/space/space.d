@@ -200,109 +200,110 @@ struct FungeSpace(cell dim, bool befunge93) {
 			lastEnd = end;
 		}
 		void findBeg(ubyte axis)(ref Coords beg) {
-			nextBox: foreach (box; boxen) {
+			nextBox: foreach (box; boxen) if (box.beg.anyLess(beg)) {
+
+				// Common case
 				++stats.space.lookups;
-
-				if (box.getNoOffset(InitCoords!(0)) != ' ')
+				if (box.getNoOffset(InitCoords!(0)) != ' ') {
 					beg.minWith(box.beg);
-
-				else if (box.beg.anyLess(beg)) {
-
-					auto last = box.end;
-					last.v[axis] = min(last.v[axis], beg.v[axis]);
-
-					last -= box.beg;
-
-					Coords c = void;
-
-					bool check() {
-						++stats.space.lookups;
-						if (box.getNoOffset(c) != ' ') {
-							beg.minWith(c + box.beg);
-							if (beg.v[axis] <= box.beg.v[axis])
-								return true;
-							last.v[axis] = min(last.v[axis], c.v[axis]);
-						}
-						return false;
-					}
-
-					const start = InitCoords!(0);
-
-					static if (axis == 0) {
-						mixin (CoordsLoop!(
-							dim, "c", "start", "last", "<=", "+= 1",
-							"if (check) continue nextBox;"));
-
-					} else static if (axis == 1) {
-						mixin (
-							(dim==3 ? OneCoordsLoop!(
-								         3, "c", "start", "last", "<=", "+= 1","")
-								     : "") ~ `
-							for (c.x = 0; c.x <= last.x; ++c.x)
-							for (c.y = 0; c.y <= last.y; ++c.y)
-								if (check)
-									continue nextBox;`);
-
-					} else static if (axis == 2) {
-						for (c.y = 0; c.y <= last.y; ++c.y)
-						for (c.x = 0; c.x <= last.x; ++c.x)
-						for (c.z = 0; c.z <= last.z; ++c.z)
-							if (check)
-								continue nextBox;
-					} else
-						static assert (false);
+					continue;
 				}
+
+				auto last = box.end;
+				last.v[axis] = min(last.v[axis], beg.v[axis]);
+
+				last -= box.beg;
+
+				Coords c = void;
+
+				bool check() {
+					++stats.space.lookups;
+					if (box.getNoOffset(c) != ' ') {
+						beg.minWith(c + box.beg);
+						if (beg.v[axis] <= box.beg.v[axis])
+							return true;
+						last.v[axis] = min(last.v[axis], c.v[axis]);
+					}
+					return false;
+				}
+
+				const start = InitCoords!(0);
+
+				static if (axis == 0) {
+					mixin (CoordsLoop!(
+						dim, "c", "start", "last", "<=", "+= 1",
+						"if (check) continue nextBox;"));
+
+				} else static if (axis == 1) {
+					mixin (
+						(dim==3 ? OneCoordsLoop!(
+								      3, "c", "start", "last", "<=", "+= 1","")
+								  : "") ~ `
+						for (c.x = 0; c.x <= last.x; ++c.x)
+						for (c.y = 0; c.y <= last.y; ++c.y)
+							if (check)
+								continue nextBox;`);
+
+				} else static if (axis == 2) {
+					for (c.y = 0; c.y <= last.y; ++c.y)
+					for (c.x = 0; c.x <= last.x; ++c.x)
+					for (c.z = 0; c.z <= last.z; ++c.z)
+						if (check)
+							continue nextBox;
+				} else
+					static assert (false);
 			}
 		}
 		void findEnd(ubyte axis)(ref Coords end) {
-			nextBox: foreach (box; boxen) {
+			nextBox: foreach (box; boxen) if (box.end.anyGreater(end)) {
+
 				++stats.space.lookups;
-				if (box[box.end] != ' ')
+				if (box[box.end] != ' ') {
 					end.maxWith(box.end);
-
-				else if (box.end.anyGreater(end)) {
-					auto last = InitCoords!(0);
-					last.v[axis] = max(last.v[axis], end.v[axis] - box.beg.v[axis]);
-
-					Coords c = void;
-
-					bool check() {
-						++stats.space.lookups;
-						if (box.getNoOffset(c) != ' ') {
-							end.maxWith(c + box.beg);
-							if (end.v[axis] >= box.end.v[axis])
-								return true;
-							last.v[axis] = max(last.v[axis], c.v[axis]);
-						}
-						return false;
-					}
-
-					auto start = box.end - box.beg;
-
-					static if (axis == 0)
-						mixin (CoordsLoop!(
-							dim, "c", "start", "last", ">=", "-= 1",
-							"if (check) continue nextBox;"));
-
-					else static if (axis == 1) {
-						mixin (
-							(dim==3 ? OneCoordsLoop!(
-								         3, "c", "start", "last", ">=", "-= 1","")
-								     : "") ~ `
-							for (c.x = start.x; c.x >= last.x; --c.x)
-							for (c.y = start.y; c.y >= last.y; --c.y)
-								if (check)
-									continue nextBox;`);
-
-					} else static if (axis == 2) {
-						for (c.y = start.y; c.y >= last.y; --c.y)
-						for (c.x = start.x; c.x >= last.x; --c.x)
-						for (c.z = start.z; c.z >= last.z; --c.z)
-							if (check)
-								continue nextBox;
-					} else
-						static assert (false);
+					continue;
 				}
+
+				auto last = InitCoords!(0);
+				last.v[axis] = max(last.v[axis], end.v[axis] - box.beg.v[axis]);
+
+				Coords c = void;
+
+				bool check() {
+					++stats.space.lookups;
+					if (box.getNoOffset(c) != ' ') {
+						end.maxWith(c + box.beg);
+						if (end.v[axis] >= box.end.v[axis])
+							return true;
+						last.v[axis] = max(last.v[axis], c.v[axis]);
+					}
+					return false;
+				}
+
+				auto start = box.end - box.beg;
+
+				static if (axis == 0)
+					mixin (CoordsLoop!(
+						dim, "c", "start", "last", ">=", "-= 1",
+						"if (check) continue nextBox;"));
+
+				else static if (axis == 1) {
+					mixin (
+						(dim==3 ? OneCoordsLoop!(
+								      3, "c", "start", "last", ">=", "-= 1","")
+								  : "") ~ `
+						for (c.x = start.x; c.x >= last.x; --c.x)
+						for (c.y = start.y; c.y >= last.y; --c.y)
+							if (check)
+								continue nextBox;`);
+
+				} else static if (axis == 2) {
+					for (c.y = start.y; c.y >= last.y; --c.y)
+					for (c.x = start.x; c.x >= last.x; --c.x)
+					for (c.z = start.z; c.z >= last.z; --c.z)
+						if (check)
+							continue nextBox;
+				} else
+					static assert (false);
 			}
 		}
 	}
