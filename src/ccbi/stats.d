@@ -36,6 +36,7 @@ struct Stats {
 			"assignments",
 			"boxesIncorporated",
 			"boxesPlaced",
+			"emptyBoxesDropped",
 			"maxBoxesLive",
 			"subsumedContains",
 			"subsumedDisjoint",

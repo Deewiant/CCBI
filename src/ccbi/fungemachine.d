@@ -456,6 +456,7 @@ private:
 		ss ~= Stat("Subsumed",                      stats.space.subsumedDisjoint,  "disjoint AABB");
 		ss ~= Stat("Subsumed",                      stats.space.subsumedFusables,  "fusable AABB");
 		ss ~= Stat("Subsumed",                      stats.space.subsumedOverlaps,  "overlapping AABB");
+		ss ~= Stat("Dropped",                       stats.space.emptyBoxesDropped, "empty AABB");
 		ss ~= Stat(null);
 		ss ~= Stat("Pushed onto stack",             stackStats.pushes,             "cell");
 		ss ~= Stat("Popped from stack",             stackStats.pops,               "cell");

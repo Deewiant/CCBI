@@ -200,7 +200,11 @@ struct FungeSpace(cell dim, bool befunge93) {
 			lastEnd = end;
 		}
 		void findBeg(ubyte axis)(ref Coords beg) {
-			nextBox: foreach (box; boxen) if (box.beg.anyLess(beg)) {
+			bool removed = false;
+
+			nextBox: for (size_t i = 0; i < boxen.length; ++i)
+			if (boxen[i].beg.anyLess(beg)) {
+				auto box = boxen[i];
 
 				// Common case
 				++stats.space.lookups;
@@ -216,6 +220,10 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 				Coords c = void;
 
+				// Allow us to think the box is empty iff we're going to traverse
+				// it completely
+				bool emptyBox = box.end.v[axis] <= beg.v[axis];
+
 				bool check() {
 					++stats.space.lookups;
 					if (box.getNoOffset(c) != ' ') {
@@ -223,6 +231,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 						if (beg.v[axis] <= box.beg.v[axis])
 							return true;
 						last.v[axis] = min(last.v[axis], c.v[axis]);
+						emptyBox = false;
 					}
 					return false;
 				}
@@ -252,10 +261,24 @@ struct FungeSpace(cell dim, bool befunge93) {
 							continue nextBox;
 				} else
 					static assert (false);
+
+				if (emptyBox) {
+					.free(box.data);
+					boxen.removeAt(i--);
+					removed = true;
+					++stats.space.emptyBoxesDropped;
+				}
 			}
+			if (removed)
+				foreach (i; invalidatees)
+					i();
 		}
 		void findEnd(ubyte axis)(ref Coords end) {
-			nextBox: foreach (box; boxen) if (box.end.anyGreater(end)) {
+			bool removed = false;
+
+			nextBox: for (size_t i = 0; i < boxen.length; ++i)
+			if (boxen[i].end.anyGreater(end)) {
+				auto box = boxen[i];
 
 				++stats.space.lookups;
 				if (box[box.end] != ' ') {
@@ -268,6 +291,8 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 				Coords c = void;
 
+				bool emptyBox = box.beg.v[axis] >= end.v[axis];
+
 				bool check() {
 					++stats.space.lookups;
 					if (box.getNoOffset(c) != ' ') {
@@ -275,6 +300,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 						if (end.v[axis] >= box.end.v[axis])
 							return true;
 						last.v[axis] = max(last.v[axis], c.v[axis]);
+						emptyBox = false;
 					}
 					return false;
 				}
@@ -304,7 +330,17 @@ struct FungeSpace(cell dim, bool befunge93) {
 							continue nextBox;
 				} else
 					static assert (false);
+
+				if (emptyBox) {
+					.free(box.data);
+					boxen.removeAt(i--);
+					removed = true;
+					++stats.space.emptyBoxesDropped;
+				}
 			}
+			if (removed)
+				foreach (i; invalidatees)
+					i();
 		}
 	}
 
