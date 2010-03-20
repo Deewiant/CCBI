@@ -266,9 +266,9 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	# Ensure OBJDIR exists
 	# TODO test on Win32
 	if(WIN32 AND NOT CYGWIN)
-		add_custom_command(VERBATIM OUTPUT "${OBJDIR}" COMMAND mkdir "${OBJDIR}" >NUL 2>NUL)
+		set(MKDIR_OBJDIR mkdir "${OBJDIR}" >NUL 2>NUL)
 	else()
-		add_custom_command(VERBATIM OUTPUT "${OBJDIR}" COMMAND mkdir -p "${OBJDIR}")
+		set(MKDIR_OBJDIR mkdir -p "${OBJDIR}")
 	endif()
 
 	# Build the .bc
@@ -276,7 +276,8 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC}"
 		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
-		DEPENDS ${D_SOURCES} "${OBJDIR}"
+		DEPENDS ${D_SOURCES}
+		COMMAND ${MKDIR_OBJDIR}
 		COMMAND ldmd ${D_FLAGS} -c -output-bc -singleobj -of${CCBI_BC} -release ${D_SOURCES})
 
 	# Build .bc's out of the C wrappers
@@ -286,7 +287,8 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		list(APPEND C_OBJS "${C_OBJ}")
 		add_custom_command(VERBATIM
 			OUTPUT "${C_OBJ}"
-			DEPENDS "${C_SRC}" "${OBJDIR}"
+			DEPENDS "${C_SRC}"
+			COMMAND ${MKDIR_OBJDIR}
 			COMMAND clang -w "${C_SRC}" -c -emit-llvm "-o${C_OBJ}")
 	endforeach()
 
