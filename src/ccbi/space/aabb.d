@@ -505,6 +505,38 @@ struct AABB(cell dim) {
 		}
 	}
 
+	void blankArea(AABB area)
+	in {
+		assert (this.contains(area));
+	} out {
+		assert ((*this)[area.beg] == ' ');
+		assert ((*this)[area.end] == ' ');
+	} body {
+		auto begIdx = getIdx(area.beg);
+
+		if (canDirectCopy(area, area.size))
+			this.data[begIdx .. begIdx + area.size] = ' ';
+
+		else static if (dim == 2) {
+
+			auto areaHeight = area.size / area.width;
+			auto iEnd       = begIdx + areaHeight * this.width;
+			for (size_t i = begIdx; i < iEnd; i += this.width)
+				this.data[i .. i + area.width] = ' ';
+
+		} else static if (dim == 3) {
+
+			auto areaDepth  = area.size / area.area;
+			auto areaHeight = area.area / area.width;
+			auto iEnd       = begIdx + areaDepth * this.area;
+			auto jEndAdd    = areaHeight * this.width;
+
+			for (size_t i = begIdx; i < iEnd; i += this.area)
+				for (size_t j = i; j < i + jEndAdd; j += this.width)
+					this.data[j .. j + area.width] = ' ';
+		}
+	}
+
 	cell[] getContiguousRange(
 		ref Coords from, Coords to, Coords origBeg, ref bool reachedTo)
 	in {

@@ -902,16 +902,14 @@ private:
 	// So, we do the following, which in the above case would copy the data
 	// from C to B.
 	//
-	// Caveats:
-	//   1. This assumes that the final box will always be placed
-	//      bottom-most. This does not really matter, it's just extra work if
-	//      it's not; but in any case, if not, the relevant overlapping boxes
-	//      would be those which would end up above the final box.
+	// Since findBeg and findEnd check all boxes without considering
+	// overlappingness, we also space the overlapped area in C to prevent
+	// mishaps there.
 	//
-	//   2. This leaves some non-space data in an unaccessible area of a
-	//      below-box. If something ends up assuming that such areas are all
-	//      spaces (at the time of writing, nothing does), this should be
-	//      amended to write spaces onto the below-box.
+	// Caveat: this assumes that the final box will always be placed
+	// bottom-most. This does not really matter, it's just extra work if it's
+	// not; but in any case, if not, the relevant overlapping boxes would be
+	// those which would end up above the final box.
 	void irrelevizeSubsumptionOrder(size_t[] subsumes) {
 		foreach (i; subsumes) {
 			// Check boxes below boxen[i]
@@ -921,9 +919,12 @@ private:
 				if (boxen[i].contains(boxen[j]) || boxen[j].contains(boxen[i]))
 					continue;
 
-				// If they overlap, copy the overlap area to the lower box
-				if (boxen[i].getOverlapWith(boxen[j], overlap))
+				// If they overlap, copy the overlap area to the lower box and
+				// space that area in the higher one.
+				if (boxen[i].getOverlapWith(boxen[j], overlap)) {
 					boxen[j].subsumeArea(boxen[i], overlap);
+					boxen[i].blankArea(overlap);
+				}
 			}
 		}
 	}
