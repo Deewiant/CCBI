@@ -29,7 +29,7 @@ if(CURSES_EXTRA_LIBRARY)
 	mark_as_advanced(CLEAR CURSES_EXTRA_LIBRARY)
 endif()
 
-set(D_FLAGS -Isrc)
+set(D_FLAGS -I${CCBI_SOURCE_DIR}/src)
 
 if(WIN32)
 	list(APPEND D_FLAGS -version=Win32SansUnicode)
@@ -205,8 +205,7 @@ if(GOT_FUNGE)
 	message(STATUS "Gathering D sources with ${DC}...")
 
 	execute_process(
-		COMMAND ${DC} ${D_FLAGS} -v -o- src/ccbi/ccbi.d
-		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
+		COMMAND ${DC} ${D_FLAGS} -v -o- ${CCBI_SOURCE_DIR}/src/ccbi/ccbi.d
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		OUTPUT_VARIABLE GATHERED_D_SOURCES
 		ERROR_VARIABLE D_COMPILE_ERRORS)
@@ -243,7 +242,7 @@ if(GOT_FUNGE)
 			endif()
 		endif()
 	endforeach()
-	list(INSERT D_SOURCES 0 src/ccbi/ccbi.d)
+	list(INSERT D_SOURCES 0 ${CCBI_SOURCE_DIR}/src/ccbi/ccbi.d)
 	list(REMOVE_DUPLICATES D_SOURCES)
 endif()
 
@@ -275,7 +274,6 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	set(CCBI_BC "${OBJDIR}/ccbi.bc")
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BC}"
-		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
 		DEPENDS ${D_SOURCES}
 		COMMAND ${MKDIR_OBJDIR}
 		COMMAND ldmd ${D_FLAGS} -c -output-bc -singleobj -of${CCBI_BC} -release ${D_SOURCES})
@@ -361,7 +359,6 @@ else()
 
 	add_custom_command(VERBATIM
 		OUTPUT "${CCBI_BIN}"
-		WORKING_DIRECTORY "${CCBI_SOURCE_DIR}"
 		DEPENDS ${WRAPPERS} ${D_SOURCES}
 		COMMAND ${DC} ${D_FLAGS} ${D_LINK_FLAGS} ${EXTRA_ARGS} "-of${CCBI_BIN}" "-od${OBJDIR}"
 		        "-L-L${OBJDIR}" ${LWRAPPERS} ${D_SOURCES})
