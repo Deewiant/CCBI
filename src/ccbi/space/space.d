@@ -224,41 +224,41 @@ struct FungeSpace(cell dim, bool befunge93) {
 				// it completely
 				bool emptyBox = box.end.v[axis] <= beg.v[axis];
 
-				bool check() {
+				const CHECK = "{
 					++stats.space.lookups;
 					if (box.getNoOffset(c) != ' ') {
+
 						beg.minWith(c + box.beg);
+
 						if (beg.v[axis] <= box.beg.v[axis])
-							return true;
+							continue nextBox;
+
 						last.v[axis] = min(last.v[axis], c.v[axis]);
 						emptyBox = false;
 					}
-					return false;
-				}
+				}";
 
 				const start = InitCoords!(0);
 
 				static if (axis == 0) {
 					mixin (CoordsLoop!(
 						dim, "c", "start", "last", "<=", "+= 1",
-						"if (check) continue nextBox;"));
+						CHECK));
 
 				} else static if (axis == 1) {
 					mixin (
 						(dim==3 ? OneCoordsLoop!(
 								      3, "c", "start", "last", "<=", "+= 1","")
-								  : "") ~ `
+								  : "") ~ "
 						for (c.x = 0; c.x <= last.x; ++c.x)
-						for (c.y = 0; c.y <= last.y; ++c.y)
-							if (check)
-								continue nextBox;`);
+						for (c.y = 0; c.y <= last.y; ++c.y)"
+							~ CHECK);
 
 				} else static if (axis == 2) {
 					for (c.y = 0; c.y <= last.y; ++c.y)
 					for (c.x = 0; c.x <= last.x; ++c.x)
 					for (c.z = 0; c.z <= last.z; ++c.z)
-						if (check)
-							continue nextBox;
+						mixin (CHECK);
 				} else
 					static assert (false);
 
@@ -293,41 +293,41 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 				bool emptyBox = box.beg.v[axis] >= end.v[axis];
 
-				bool check() {
+				const CHECK = "{
 					++stats.space.lookups;
 					if (box.getNoOffset(c) != ' ') {
+
 						end.maxWith(c + box.beg);
+
 						if (end.v[axis] >= box.end.v[axis])
-							return true;
+							continue nextBox;
+
 						last.v[axis] = max(last.v[axis], c.v[axis]);
 						emptyBox = false;
 					}
-					return false;
-				}
+				}";
 
 				auto start = box.end - box.beg;
 
 				static if (axis == 0)
 					mixin (CoordsLoop!(
 						dim, "c", "start", "last", ">=", "-= 1",
-						"if (check) continue nextBox;"));
+						CHECK));
 
 				else static if (axis == 1) {
 					mixin (
 						(dim==3 ? OneCoordsLoop!(
 								      3, "c", "start", "last", ">=", "-= 1","")
-								  : "") ~ `
+								  : "") ~ "
 						for (c.x = start.x; c.x >= last.x; --c.x)
-						for (c.y = start.y; c.y >= last.y; --c.y)
-							if (check)
-								continue nextBox;`);
+						for (c.y = start.y; c.y >= last.y; --c.y)"
+							~ CHECK);
 
 				} else static if (axis == 2) {
 					for (c.y = start.y; c.y >= last.y; --c.y)
 					for (c.x = start.x; c.x >= last.x; --c.x)
 					for (c.z = start.z; c.z >= last.z; --c.z)
-						if (check)
-							continue nextBox;
+						mixin (CHECK);
 				} else
 					static assert (false);
 
