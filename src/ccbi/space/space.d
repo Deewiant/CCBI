@@ -204,7 +204,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 			bool removed = false;
 
 			nextBox: for (size_t i = 0; i < boxen.length; ++i)
-			if (boxen[i].beg.anyLess(beg)) {
+			if (boxen[i].beg.v[axis] < beg.v[axis]) {
 				auto box = boxen[i];
 
 				// Common case
@@ -277,7 +277,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 			bool removed = false;
 
 			nextBox: for (size_t i = 0; i < boxen.length; ++i)
-			if (boxen[i].end.anyGreater(end)) {
+			if (boxen[i].end.v[axis] > end.v[axis]) {
 				auto box = boxen[i];
 
 				++stats.space.lookups;

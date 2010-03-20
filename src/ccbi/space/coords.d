@@ -76,16 +76,4 @@ struct Coords(cell dim) {
 		"Add", "+",
 		"Sub", "-"
 	));
-
-	template Any(char[] s, char[] op) {
-		const Any =
-			`bool any` ~s~ `(Coords o) {
-				foreach (i, c; v)
-					if (c ` ~op~ ` o.v[i])
-						return true;
-				return false;
-			}`;
-	}
-	mixin (Any!("Less",    "<"));
-	mixin (Any!("Greater", ">"));
 }
