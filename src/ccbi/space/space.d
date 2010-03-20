@@ -209,8 +209,10 @@ struct FungeSpace(cell dim, bool befunge93) {
 					beg.minWith(box.beg);
 
 				else if (box.beg.anyLess(beg)) {
-					auto last = beg;
-					last.minWith(box.end);
+
+					auto last = box.end;
+					last.v[axis] = min(last.v[axis], beg.v[axis]);
+
 					last -= box.beg;
 
 					Coords c = void;
@@ -261,8 +263,8 @@ struct FungeSpace(cell dim, bool befunge93) {
 					end.maxWith(box.end);
 
 				else if (box.end.anyGreater(end)) {
-					auto last = end - box.beg;
-					last.maxWith(InitCoords!(0));
+					auto last = InitCoords!(0);
+					last.v[axis] = max(last.v[axis], end.v[axis] - box.beg.v[axis]);
 
 					Coords c = void;
 
