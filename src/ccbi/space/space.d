@@ -157,8 +157,6 @@ struct FungeSpace(cell dim, bool befunge93) {
 			bool begSp = (*this)[lastBeg] == ' ',
 			     endSp = (*this)[lastEnd] == ' ';
 
-			stats.space.lookups += 2;
-
 			if (begSp && endSp) {
 				beg = InitCoords!(cell.max,cell.max,cell.max);
 				end = InitCoords!(cell.min,cell.min,cell.min);
