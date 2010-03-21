@@ -393,7 +393,12 @@ void counterclockwise() {
 
 			auto p = reserve(i*j);
 
-			if (cip.stack.mode & INVERT_MODE) {
+			static if (GOT_MODE)
+				auto mode = cip.stack.mode;
+			else
+				const mode = 0;
+
+			if (mode & INVERT_MODE) {
 				p += i*j - 1;
 				for (c.y = o.y + j; c.y-- > o.y;)
 				for (c.x = o.x + i; c.x-- > o.x;)

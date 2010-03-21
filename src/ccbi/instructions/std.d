@@ -539,8 +539,11 @@ Request beginBlock() {
 		}
 
 		auto stack = new typeof(*cip.stack);
-		*stack = typeof(*stack)(
-			cip.stack.isDeque, cip.stack.isDeque ? &dequeStats : &stackStats);
+		static if (GOT_MODE)
+			*stack = typeof(*stack)(
+				cip.stack.isDeque, cip.stack.isDeque ? &dequeStats : &stackStats);
+		else
+			*stack = typeof(*stack)(&stackStats);
 
 		cip.stackStack.push(stack);
 	} catch {
@@ -550,7 +553,7 @@ Request beginBlock() {
 	auto soss = cip.stack;
 	auto toss = cip.stackStack.top;
 
-	if (soss.isDeque)
+	static if (GOT_MODE) if (soss.isDeque)
 		toss.deque.mode = soss.deque.mode;
 
 	auto n = soss.pop;
@@ -603,7 +606,7 @@ void endBlock() {
 	auto oldStack = cip.stackStack.pop;
 	cip.stack     = cip.stackStack.top;
 
-	if (cip.stack.isDeque)
+	static if (GOT_MODE) if (cip.stack.isDeque)
 		cip.stack.deque.mode = oldStack.deque.mode;
 
 	auto n = oldStack.pop;
@@ -643,7 +646,7 @@ void stackUnderStack() {
 	auto soss = cip.stackStack.top;
 	cip.stackStack.push(tmp);
 
-	if (cip.stack.isDeque)
+	static if (GOT_MODE) if (cip.stack.isDeque)
 		soss.deque.mode = cip.stack.deque.mode;
 
 	typeof(cip.stack) src, tgt;
@@ -658,7 +661,12 @@ void stackUnderStack() {
 	} else
 		return;
 
-	switch (cip.stack.mode) {
+	static if (GOT_MODE)
+		auto mode = cip.stack.mode;
+	else
+		const mode = 0;
+
+	switch (mode) {
 		case 0:                        // [... 3,2,1] --> [... 1,2,3]
 		case QUEUE_MODE | INVERT_MODE: // [1,2,3 ...] --> [3,2,1 ...]
 		{
@@ -1264,7 +1272,7 @@ void getSysInfo() {
 		p[0..sysInfoConstantTop.length] = sysInfoConstantTop;
 
 		// Cheap solution to invertmode
-		if (cip.stack.mode & INVERT_MODE)
+		static if (GOT_MODE) if (cip.stack.mode & INVERT_MODE)
 			origP[0 .. p + sysInfoConstantTop.length - origP].reverse;
 
 		// And done.

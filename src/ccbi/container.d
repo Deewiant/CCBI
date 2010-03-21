@@ -200,8 +200,8 @@ struct Stack(T) {
 		T* array;
 		size_t capacity;
 		size_t head;
-		ContainerStats* stats;
 	}
+	ContainerStats* stats;
 
 	static typeof(*this) opCall(ContainerStats* stats, size_t n = 0100)
 	{

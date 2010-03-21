@@ -34,6 +34,7 @@ struct IP(cell dim, bool befunge93) {
 	mixin (EmitGot!("HRTI", fings));
 	mixin (EmitGot!("IIPC", fings));
 	mixin (EmitGot!("IMAP", fings));
+	mixin (EmitGot!("MODE", fings));
 	mixin (EmitGot!("TRDS", fings));
 
 	// Yes, IPs are always heap-allocated: simplifies things
@@ -51,7 +52,10 @@ struct IP(cell dim, bool befunge93) {
 
 			static if (!befunge93) {
 				stack = new typeof(*stack);
-				*stack = typeof(*stack)(false, stackStats);
+				static if (GOT_MODE)
+					*stack = typeof(*stack)(false, stackStats);
+				else
+					*stack = typeof(*stack)(stackStats);
 			} else
 				stack = typeof(stack)(stackStats);
 
@@ -62,7 +66,7 @@ struct IP(cell dim, bool befunge93) {
 		return x;
 	}
 
-	static if (!befunge93)
+	static if (GOT_MODE)
 	invariant {
 		if (this.stackStack)
 			foreach (stack; *stackStack)
@@ -75,7 +79,8 @@ struct IP(cell dim, bool befunge93) {
 		*copy = *this;
 
 		with (*copy) {
-			bool deque = stack.isDeque;
+			static if (GOT_MODE)
+				bool deque = stack.isDeque;
 
 			alias Stack!(.cell) Ctack;
 
@@ -86,14 +91,21 @@ struct IP(cell dim, bool befunge93) {
 				*stackStack = typeof(*stackStack)(*oldSS);
 
 				foreach (inout stack; *stackStack) {
-					assert (deque == stack.isDeque);
+					static if (GOT_MODE)
+						assert (deque == stack.isDeque);
+
 					auto old = stack;
 					stack = new typeof(*stack);
-					stack.isDeque = deque;
-					if (deque)
-						stack.deque = Deque(old.deque);
-					else
-						stack.stack = Ctack(old.stack);
+
+					static if (GOT_MODE) {
+						stack.isDeque = deque;
+
+						if (deque)
+							stack.deque = Deque(old.deque);
+						else
+							stack.stack = Ctack(old.stack);
+					} else
+						*stack = Ctack(*old);
 				}
 				stack = stackStack.top;
 			} else {
@@ -103,11 +115,16 @@ struct IP(cell dim, bool befunge93) {
 
 				auto old = stack;
 				stack = new typeof(*stack);
-				stack.isDeque = deque;
-				if (deque)
-					stack.deque = Deque(old.deque);
-				else
-					stack.stack = Ctack(old.stack);
+
+				static if (GOT_MODE) {
+					stack.isDeque = deque;
+
+					if (deque)
+						stack.deque = Deque(old.deque);
+					else
+						stack.stack = Ctack(old.stack);
+				} else
+					*stack = Ctack(*old);
 			}
 
 			// deep copy semantics
@@ -189,11 +206,13 @@ struct IP(cell dim, bool befunge93) {
 
 	static if (befunge93)
 		Stack!(.cell) stack;
-	else
+	else static if (GOT_MODE)
 		CellContainer* stack;
+	else
+		Stack!(.cell)* stack;
 
 	static if (!befunge93) {
-		Stack!(CellContainer*)* stackStack;
+		Stack!(typeof(stack))* stackStack;
 		Stack!(Semantics)*[26] semantics;
 
 		typeof(semantics[0]) requireSems(.cell i, ContainerStats* stats) {

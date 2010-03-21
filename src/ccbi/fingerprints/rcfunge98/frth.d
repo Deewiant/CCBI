@@ -58,6 +58,11 @@ void forthRoll() {
 		auto u = pop,
 		     s = size;
 
+		static if (GOT_MODE)
+			auto mode = cip.stack.mode;
+		else
+			const mode = 0;
+
 		if (u >= 0) {
 			// ROLL: move the u'th from the top to the top
 			if (u >= s)
@@ -112,7 +117,7 @@ void forthRoll() {
 			auto add = u - s + 1;
 
 			// Easy if we have a deque since it supports the stuff directly
-			if (isDeque) {
+			static if (GOT_MODE) if (isDeque) {
 				if (mode & INVERT_MODE) {
 					auto p = deque.reserveHead(add);
 					p[0..add-1] = 0;
@@ -128,6 +133,9 @@ void forthRoll() {
 			// With a stack, more pain is involved, but at least we don't have to
 			// worry about modes
 			assert (mode == 0);
+
+			static if (!GOT_MODE)
+				auto stack = cip.stack;
 
 			stack.reserve(add);
 

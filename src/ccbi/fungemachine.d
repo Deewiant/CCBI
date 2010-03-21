@@ -74,6 +74,7 @@ private:
 
 	mixin (EmitGot!("IIPC", fings));
 	mixin (EmitGot!("IMAP", fings));
+	mixin (EmitGot!("MODE", fings));
 	mixin (EmitGot!("TRDS", fings));
 
 	IP cip;

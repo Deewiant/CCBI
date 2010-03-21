@@ -46,7 +46,13 @@ void pushN() {
 	cip.stack.push(0);
 
 	auto p = cip.stack.reserve(n);
-	if (cip.stack.mode & INVERT_MODE) {
+
+	static if (GOT_MODE)
+		auto mode = cip.stack.mode;
+	else
+		const mode = 0;
+
+	if (mode & INVERT_MODE) {
 		p += n - 1;
 		while (n--) {
 			*p-- = state.space[c];
