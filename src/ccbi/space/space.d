@@ -215,7 +215,11 @@ struct FungeSpace(cell dim, bool befunge93) {
 				}
 
 				auto last = box.end;
-				last.v[axis] = min(last.v[axis], beg.v[axis]);
+
+				// If our beg is already better than part of the box, don't check
+				// the whole box
+				if (box.end.v[axis] > beg.v[axis])
+					last.v[axis] = beg.v[axis] - cast(cell)1;
 
 				last -= box.beg;
 
@@ -240,12 +244,12 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 				const start = InitCoords!(0);
 
-				static if (axis == 0) {
+				static if (axis == 0)
 					mixin (CoordsLoop!(
 						dim, "c", "start", "last", "<=", "+= 1",
 						CHECK));
 
-				} else static if (axis == 1) {
+				else static if (axis == 1) {
 					mixin (
 						(dim==3 ? OneCoordsLoop!(
 								      3, "c", "start", "last", "<=", "+= 1","")
@@ -287,7 +291,10 @@ struct FungeSpace(cell dim, bool befunge93) {
 				}
 
 				auto last = InitCoords!(0);
-				last.v[axis] = max(last.v[axis], end.v[axis] - box.beg.v[axis]);
+
+				// Careful with underflow here: don't use max
+				if (box.beg.v[axis] < end.v[axis])
+					last.v[axis] = end.v[axis] + cast(cell)1 - box.beg.v[axis];
 
 				Coords c = void;
 
