@@ -574,7 +574,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					}
 					Serr(']').newline.print(`                            "`);
 					foreach (c; &st.bottomToTop)
-						Serr(displayCell(c));
+						Serr(cellChar(c));
 					Serr('"').newline;
 				}
 
@@ -746,7 +746,7 @@ void printCell(
 	char[] post = "",
 	char[] mid = " "
 ) {
-	Serr.format("{}{1} 0x{1:x}{}'{}'{}", pre, c, mid, cast(char)c, post);
+	Serr.format("{}{1} 0x{1:x}{}'{}'{}", pre, c, mid, cellChar(c), post);
 }
 
 char[] stackString(in IP ip) {
@@ -773,7 +773,7 @@ char[] stackString(in IP ip) {
 	stackStr ~= ` "`;
 
 	foreach (c; finalShow)
-		stackStr ~= displayCell(c);
+		stackStr ~= cellChar(c);
 
 	stackStr ~= `"`;
 
@@ -899,7 +899,7 @@ bool readCell(inout cell v, char[] s) {
 	return read(cast(cell_base)v, s);
 }
 
-char[] displayCell(cell c) {
+char[] cellChar(cell c) {
 	const CARET =
 		['@', 'A', 'B', 'C', 'D', 'E',  'F', 'G', 'H', 'I', 'J'
 		,'K', 'L', 'M', 'N', 'O', 'P',  'Q', 'R', 'S', 'T', 'U'
