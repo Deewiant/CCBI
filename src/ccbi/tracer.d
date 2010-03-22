@@ -102,7 +102,10 @@ bs, bps" ~(befunge93?"":" [ip]")~ "
    Show a list of all breakpoints" ~(befunge93?"":" affecting IP, or all if not given")~ "
 
 s(t)ack" ~(befunge93?"":" [ip]")~ "
-   Show the stack" ~(befunge93?"":"(s) of an IP")~ "
+   Show the stack" ~(befunge93?"":"(s) of an IP")
+~(befunge93?"":"
+se(m)antics [ip]
+   Show the current semantics assignments of an IP")~"
 (a)rea (pos) (size)
    Show an area of Funge-Space
 (v)iew (pos)
@@ -593,6 +596,39 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				Serr.newline;
 				break;
 			}
+
+		static if (!befunge93) {
+			// m (ip)
+			case "m", "semantics": {
+				auto ip = tip;
+				if (!readIP(ip, index, args.arg(1), invalidIndices))
+					break;
+
+				auto sems = ip.semantics;
+				for (char ins = 'A'; ins <= 'Z'; ++ins) {
+					Serr(ins)(": [");
+
+					auto i = ins - 'A';
+					if (sems[i]) {
+						foreach (sem; &sems[i].bottomToTop) {
+							Serr(' ')(sem.instruction)('(');
+
+							auto fing = sem.fingerprint;
+							char[cell.sizeof] fingStr;
+							foreach_reverse (inout c; fingStr) {
+								c = cast(char)fing;
+								fing >>>= 8;
+							}
+							Serr(fingStr)(')');
+						}
+						if (!sems[i].empty)
+							Serr(' ');
+					}
+					Serr(']').newline;
+				}
+				break;
+			}
+		}
 
 			// a (pos) (size)
 			case "a", "area": {
