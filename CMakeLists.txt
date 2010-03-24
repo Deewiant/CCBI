@@ -313,9 +313,16 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		COMMAND llvm-link "${CCBI_BC}" ${C_OBJS}
 		        | llvm-dis
 		        | sed "/call void @_d_assert\(/d"
-		        # 10% speedup
-		        | sed "/^define .*FungeMachine18executeInstruction/ s/{/alwaysinline{/"
-		        | sed "/^define .*FungeMachine15executeStandard/ s/{/alwaysinline{/"
+
+		        # Up to 10% speedup in total
+		        | sed "/^define .*FungeMachine18executeInstructionMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*FungeMachine15executeStandardMF/ s/{/alwaysinline{/"
+
+		        # Need to do all of these for noticeable improvement
+		        | sed "/^define .*6Cursor3getMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*2IP4cellMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*2IP19gotoNextInstructionMF/ s/{/alwaysinline{/"
+
 		        | llvm-as
 		        | opt -std-compile-opts -unroll-allow-partial ${LTO}
 		        > "${CCBI_BC_OPT}")
