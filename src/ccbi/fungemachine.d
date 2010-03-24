@@ -322,7 +322,7 @@ private:
 			++stats.fingExecutionCount;
 
 			auto stack = cip.semantics[c - 'A'];
-			if (stack.empty)
+			if (!stack || stack.empty)
 				return unimplemented;
 
 			auto sem = stack.top;
