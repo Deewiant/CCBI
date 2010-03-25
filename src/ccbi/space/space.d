@@ -239,6 +239,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 						last.v[axis] = min(last.v[axis], c.v[axis]);
 						emptyBox = false;
+						break;
 					}
 				}";
 
@@ -310,6 +311,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 						last.v[axis] = max(last.v[axis], c.v[axis]);
 						emptyBox = false;
+						break;
 					}
 				}";
 
