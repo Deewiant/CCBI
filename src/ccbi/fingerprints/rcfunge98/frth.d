@@ -58,7 +58,7 @@ void forthRoll() {
 		auto u = pop,
 		     s = size;
 
-		static if (GOT_MODE)
+		version (MODE)
 			auto mode = cip.stack.mode;
 		else
 			const mode = 0;
@@ -117,7 +117,7 @@ void forthRoll() {
 			auto add = u - s + 1;
 
 			// Easy if we have a deque since it supports the stuff directly
-			static if (GOT_MODE) if (isDeque) {
+			version (MODE) if (isDeque) {
 				if (mode & INVERT_MODE) {
 					auto p = deque.reserveHead(add);
 					p[0..add-1] = 0;
@@ -134,7 +134,7 @@ void forthRoll() {
 			// worry about modes
 			assert (mode == 0);
 
-			static if (!GOT_MODE)
+			version (MODE) {} else
 				auto stack = cip.stack;
 
 			stack.reserve(add);

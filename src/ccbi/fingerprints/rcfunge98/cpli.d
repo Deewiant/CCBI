@@ -84,7 +84,7 @@ void cplxOut() {
 		cell i = pop,
 		     r = pop;
 
-		static if (GOT_TRDS)
+		version (TRDS)
 			if (state.tick < ioAfter)
 				return;
 

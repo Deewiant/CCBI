@@ -72,11 +72,6 @@ private:
 	alias .FungeSpace!(dim, befunge93)  FungeSpace;
 	alias .Dimension !(dim).Coords      InitCoords;
 
-	mixin (EmitGot!("IIPC", fings));
-	mixin (EmitGot!("IMAP", fings));
-	mixin (EmitGot!("MODE", fings));
-	mixin (EmitGot!("TRDS", fings));
-
 	IP cip;
 	FungeState!(dim, befunge93) state;
 
@@ -134,7 +129,7 @@ private:
 		try {
 			initialize();
 			mainLoop: for (;;) {
-				static if (GOT_TRDS)
+				version (TRDS)
 					bool normalTime = TRDS.isNormalTime();
 				else
 					const bool normalTime = true;
@@ -152,7 +147,7 @@ private:
 				} else for (auto j = state.startIdx; j-- > 0;)
 				if (executable(normalTime, state.ips[j])) {
 
-					static if (GOT_TRDS)
+					version (TRDS)
 						TRDS.cipIdx = j;
 
 					cip = state.ips[j];
@@ -183,7 +178,7 @@ private:
 							}
 							break;
 
-					static if (GOT_TRDS) {
+					version (TRDS) {
 						case Request.RETICK:
 							continue mainLoop;
 					}
@@ -193,7 +188,7 @@ private:
 					state.startIdx = state.ips.length;
 
 				if (normalTime) {
-					static if (GOT_TRDS)
+					version (TRDS)
 						if (usingTRDS)
 							TRDS.newTick();
 
@@ -252,7 +247,7 @@ private:
 			cip.stack.push(c);
 		else {
 			static if (!befunge93) if (!flags.allFingsDisabled) {
-				static if (GOT_IMAP)
+				version (IMAP)
 					if (c < cip.mapping.length && c >= 0)
 						c = cip.mapping[c];
 
@@ -365,7 +360,7 @@ private:
 		version (tracer)
 			Tracer.ipStopped(ip);
 
-		static if (GOT_TRDS)
+		version (TRDS)
 			if (usingTRDS)
 				TRDS.ipStopped(ip);
 
@@ -400,15 +395,14 @@ private:
 		if (state.ips.length == 1)
 			return true;
 
-		static if (GOT_TRDS || GOT_IIPC)
-			if (flags.allFingsDisabled)
-				return true;
+		version (IIPC) if (flags.allFingsDisabled) return true;
+		version (TRDS) if (flags.allFingsDisabled) return true;
 
-		static if (GOT_TRDS)
+		version (TRDS)
 			if (usingTRDS && !TRDS.executable(normalTime, ip))
 				return false;
 
-		static if (GOT_IIPC)
+		version (IIPC)
 			if (!IIPC.executable(ip))
 				return false;
 

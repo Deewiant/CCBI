@@ -148,7 +148,7 @@ void get() {
 void input() {
 	cip.stack.push(0);
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 

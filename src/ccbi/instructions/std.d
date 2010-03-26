@@ -539,7 +539,7 @@ Request beginBlock() {
 		}
 
 		auto stack = new typeof(*cip.stack);
-		static if (GOT_MODE)
+		version (MODE)
 			*stack = typeof(*stack)(
 				cip.stack.isDeque, cip.stack.isDeque ? &dequeStats : &stackStats);
 		else
@@ -553,7 +553,7 @@ Request beginBlock() {
 	auto soss = cip.stack;
 	auto toss = cip.stackStack.top;
 
-	static if (GOT_MODE) if (soss.isDeque)
+	version (MODE) if (soss.isDeque)
 		toss.deque.mode = soss.deque.mode;
 
 	auto n = soss.pop;
@@ -606,7 +606,7 @@ void endBlock() {
 	auto oldStack = cip.stackStack.pop;
 	cip.stack     = cip.stackStack.top;
 
-	static if (GOT_MODE) if (cip.stack.isDeque)
+	version (MODE) if (cip.stack.isDeque)
 		cip.stack.deque.mode = oldStack.deque.mode;
 
 	auto n = oldStack.pop;
@@ -646,7 +646,7 @@ void stackUnderStack() {
 	auto soss = cip.stackStack.top;
 	cip.stackStack.push(tmp);
 
-	static if (GOT_MODE) if (cip.stack.isDeque)
+	version (MODE) if (cip.stack.isDeque)
 		soss.deque.mode = cip.stack.deque.mode;
 
 	typeof(cip.stack) src, tgt;
@@ -661,7 +661,7 @@ void stackUnderStack() {
 	} else
 		return;
 
-	static if (GOT_MODE)
+	version (MODE)
 		auto mode = cip.stack.mode;
 	else
 		const mode = 0;
@@ -728,7 +728,7 @@ void put() {
 void outputDecimal() {
 	auto n = cip.stack.pop;
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 
@@ -742,7 +742,7 @@ void outputDecimal() {
 void outputCharacter() {
 	auto c = cast(ubyte)cip.stack.pop;
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 
@@ -756,7 +756,7 @@ void outputCharacter() {
 
 // Input Decimal
 void inputDecimal() {
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 
@@ -812,7 +812,7 @@ void reallyInputDecimal() {
 
 // Input Character
 void inputCharacter() {
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return cip.stack.push('T');
 
@@ -887,7 +887,7 @@ void outputFile() {
 	if (flags.sandboxMode)
 		return reverse;
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 
@@ -1272,7 +1272,7 @@ void getSysInfo() {
 		p[0..sysInfoConstantTop.length] = sysInfoConstantTop;
 
 		// Cheap solution to invertmode
-		static if (GOT_MODE) if (cip.stack.mode & INVERT_MODE)
+		version (MODE) if (cip.stack.mode & INVERT_MODE)
 			origP[0 .. p + sysInfoConstantTop.length - origP].reverse;
 
 		// And done.
@@ -1483,7 +1483,7 @@ Request splitIP() {
 	with (*state.ips[$-1]) {
 		id = ++state.currentID;
 
-		static if (GOT_IIPC)
+		version (IIPC)
 			parentID = cip.id;
 
 		reverse();

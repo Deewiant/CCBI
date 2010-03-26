@@ -18,16 +18,6 @@ template HexCode(char[] s) {
 }
 static assert (HexCode!("ASDF") == 0x_41_53_44_46);
 
-////////////////////////////////////////////
-// Emit a boolean GOT_x if xs[0] in xs[1..$]
-
-template EmitGot(xs...) {
-	static if (TupleHas!(xs[0], xs[1..$]))
-		const EmitGot = "enum { GOT_" ~ xs[0] ~ " = true  }";
-	else
-		const EmitGot = "enum { GOT_" ~ xs[0] ~ " = false }";
-}
-
 //////////
 // General
 

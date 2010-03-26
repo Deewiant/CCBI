@@ -47,7 +47,7 @@ void pushN() {
 
 	auto p = cip.stack.reserve(n);
 
-	static if (GOT_MODE)
+	version (MODE)
 		auto mode = cip.stack.mode;
 	else
 		const mode = 0;

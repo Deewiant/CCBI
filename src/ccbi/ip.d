@@ -17,7 +17,6 @@ public import ccbi.cell;
        import ccbi.fingerprint;
        import ccbi.fingerprints.all;
        import ccbi.stats;
-       import ccbi.templateutils : EmitGot;
        import ccbi.utils;
        import ccbi.space.cursor;
 
@@ -31,12 +30,6 @@ struct IP(cell dim, bool befunge93) {
 	else
 		alias ALL_FINGERPRINTS fings;
 
-	mixin (EmitGot!("HRTI", fings));
-	mixin (EmitGot!("IIPC", fings));
-	mixin (EmitGot!("IMAP", fings));
-	mixin (EmitGot!("MODE", fings));
-	mixin (EmitGot!("TRDS", fings));
-
 	// Yes, IPs are always heap-allocated: simplifies things
 	static typeof(this) opCall(
 		Coords pos,
@@ -47,12 +40,12 @@ struct IP(cell dim, bool befunge93) {
 		with (*x) {
 			static if (!befunge93)
 				id = 0;
-			static if (GOT_IIPC)
+			version (IIPC)
 				parentID = 0;
 
 			static if (!befunge93) {
 				stack = new typeof(*stack);
-				static if (GOT_MODE)
+				version (MODE)
 					*stack = typeof(*stack)(false, stackStats);
 				else
 					*stack = typeof(*stack)(stackStats);
@@ -66,7 +59,7 @@ struct IP(cell dim, bool befunge93) {
 		return x;
 	}
 
-	static if (GOT_MODE)
+	version (MODE)
 	invariant {
 		if (this.stackStack)
 			foreach (stack; *stackStack)
@@ -79,7 +72,7 @@ struct IP(cell dim, bool befunge93) {
 		*copy = *this;
 
 		with (*copy) {
-			static if (GOT_MODE)
+			version (MODE)
 				bool deque = stack.isDeque;
 
 			alias Stack!(.cell) Ctack;
@@ -91,13 +84,13 @@ struct IP(cell dim, bool befunge93) {
 				*stackStack = typeof(*stackStack)(*oldSS);
 
 				foreach (inout stack; *stackStack) {
-					static if (GOT_MODE)
+					version (MODE)
 						assert (deque == stack.isDeque);
 
 					auto old = stack;
 					stack = new typeof(*stack);
 
-					static if (GOT_MODE) {
+					version (MODE) {
 						stack.isDeque = deque;
 
 						if (deque)
@@ -116,7 +109,7 @@ struct IP(cell dim, bool befunge93) {
 				auto old = stack;
 				stack = new typeof(*stack);
 
-				static if (GOT_MODE) {
+				version (MODE) {
 					stack.isDeque = deque;
 
 					if (deque)
@@ -137,7 +130,7 @@ struct IP(cell dim, bool befunge93) {
 			}
 
 			// deep copy mapping
-			static if (GOT_IMAP)
+			version (IMAP)
 				mapping = mapping.dup;
 
 			if (s)
@@ -201,12 +194,12 @@ struct IP(cell dim, bool befunge93) {
 	static if (!befunge93)
 		.cell id = void;
 
-	static if (GOT_IIPC)
+	version (IIPC)
 		.cell parentID = void;
 
 	static if (befunge93)
 		Stack!(.cell) stack;
-	else static if (GOT_MODE)
+	else version (MODE)
 		CellContainer* stack;
 	else
 		Stack!(.cell)* stack;
@@ -227,7 +220,7 @@ struct IP(cell dim, bool befunge93) {
 		}
 	}
 
-	static if (GOT_IMAP)
+	version (IMAP)
 		.cell[] mapping;
 
 	enum : typeof(mode) {
@@ -262,12 +255,12 @@ struct IP(cell dim, bool befunge93) {
 		uint _MODE_count = 0, _IMAP_count = 0;
 	}
 
-	static if (GOT_HRTI) {
+	version (HRTI) {
 		StopWatch timer;
 		bool timerMarked = false;
 	}
 
-	static if (GOT_TRDS) {
+	version (TRDS) {
 		Coords tardisPos, tardisReturnPos, tardisDelta, tardisReturnDelta;
 		ulong tardisTick, tardisReturnTick, jumpedTo, jumpedAt;
 	}

@@ -223,7 +223,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 	auto minimalValid = size_t.max;
 
 	foreach (i, ip; ips) {
-		static if (GOT_TRDS) if (state.tick < ip.jumpedTo) {
+		version (TRDS) if (state.tick < ip.jumpedTo) {
 			--ipCount;
 			invalidIndices[i] = true;
 			continue;
@@ -408,7 +408,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 			case "i", "ips": {
 				Serr.formatln("{} IPs, in reverse order of execution:", ipCount);
 				foreach (i, ip; ips) {
-					static if (GOT_TRDS)
+					version (TRDS)
 						if (state.tick < ip.jumpedTo)
 							continue;
 
@@ -823,7 +823,7 @@ char[] modeString(in IP ip) {
 	if (ip.mode & IP.STRING)      str[i++] = '"';
 	if (ip.mode & IP.HOVER)       str[i++] = 'H';
 
-	static if (GOT_MODE) if (ip.stack.isDeque) {
+	version (MODE) if (ip.stack.isDeque) {
 		auto q = ip.stack.deque;
 		if (q.mode & QUEUE_MODE)   str[i++] = 'Q';
 		if (q.mode & INVERT_MODE)  str[i++] = 'I';

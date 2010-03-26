@@ -390,7 +390,7 @@ void queryBounds() {
 void printDrawing() {
 	tryAddPoint();
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 

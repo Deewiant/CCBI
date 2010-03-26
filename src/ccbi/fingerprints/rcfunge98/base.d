@@ -36,7 +36,7 @@ import tango.text.convert.Integer : intToString = toString;
 import tango.text.Util            : repeat;
 
 void output(char[] fmt)() {
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return cip.stack.pop(1);
 
@@ -54,7 +54,7 @@ void outputBase() {
 	if (base <= 0 || base > 36)
 		return reverse();
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 
@@ -97,7 +97,7 @@ void inputBase() {
 	if (base <= 0 || base > 36)
 		return reverse();
 
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return cip.stack.push(0);
 

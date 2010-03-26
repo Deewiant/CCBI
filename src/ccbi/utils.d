@@ -173,7 +173,7 @@ void pushStringz(char[] s) {
 void pushString(in char[] s) {
 	auto p = cip.stack.reserve(s.length);
 
-	static if (GOT_MODE) if (cip.stack.mode & INVERT_MODE) {
+	version (MODE) if (cip.stack.mode & INVERT_MODE) {
 		foreach (c; s)
 			*p++ = cast(cell)c;
 		return;

@@ -63,7 +63,7 @@ void orthoPut() {
 
 // output string
 void outputString() {
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return popString();
 

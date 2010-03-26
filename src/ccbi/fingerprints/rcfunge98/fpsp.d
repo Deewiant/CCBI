@@ -88,7 +88,7 @@ void fromInt() { auto c = cip.stack.pop; Union u; u.f = math.rndint(c); pushFl(u
 void toInt() { auto u = popFl; cip.stack.push(cast(cell)math.rndint(u.f)); }
 void print() {
 	auto u = popFl;
-	static if (GOT_TRDS)
+	version (TRDS)
 		if (state.tick < ioAfter)
 			return;
 	Sout.format("{:f6} ", u.f);
