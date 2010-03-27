@@ -139,16 +139,9 @@ struct AABB(cell dim) {
 		{
 			if (delta > 0) {
 				beg = edge1;
-				if (from >= edge1 && from <= edge2)
-					beg = from + cast(cell)1;
-
-				end = min(beg + delta - cast(cell)1, edge2);
-
+				end = min(beg + delta + cast(cell)1, edge2);
 			} else {
 				end = edge2;
-				if (from >= edge1 && from <= edge2)
-					end = from - cast(cell)1;
-
 				beg = max(end + delta - cast(cell)1, edge1);
 			}
 		}
