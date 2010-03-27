@@ -239,7 +239,9 @@ private:
 
 		cip.gotoNextInstruction();
 
-		auto c = cip.unsafeCell;
+		// In stringmode we might be at a space which is right next to a box, but
+		// not in it.
+		auto c = cip.mode & IP.STRING ? cip.cell : cip.unsafeCell;
 
 		if (c == '"')
 			cip.mode ^= IP.STRING;

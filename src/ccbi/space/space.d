@@ -387,7 +387,22 @@ package:
 			return false;
 	}
 
-	bool findBox(Coords pos, out AABB aabb, out size_t idx) {
+	// The AABB parameter has to be ref regardless of what the proper semantics
+	// seem. (Or rather, it's more convenient to make it ref than to make
+	// temporaries at the call sites where it matters.)
+	//
+	// Consider: we move to just outside a box in stringmode. (In other cases we
+	// would move into the box, but in stringmode we have to stop at the space.)
+	// We are now not in the box we were in previously, so we check findBox()
+	// for a new one, but don't find one: fine, we're at a space.
+	//
+	// Next we move by a convenient delta into (0,0), which just so happens to
+	// be what the "out" in findBox initialized the box to. Alas, it's not the
+	// correct box, just something with a null pointer and beg and end: boom.
+	//
+	// Aside from that, it's a nice optimization, since we don't then waste
+	// cycles nullifying it.
+	bool findBox(Coords pos, ref AABB aabb, out size_t idx) {
 		foreach (i, box; boxen) if (box.contains(pos)) {
 			idx  = i;
 			aabb = box;
@@ -395,7 +410,7 @@ package:
 		}
 		return false;
 	}
-	private bool findBox(Coords pos, out AABB aabb) {
+	private bool findBox(Coords pos, ref AABB aabb) {
 		size_t _;
 		return findBox(pos, aabb, _);
 	}
