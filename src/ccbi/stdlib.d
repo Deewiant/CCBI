@@ -276,7 +276,7 @@ private:
 //
 // The comments speak of 32-bit throughout but this works for any unsigned
 // type.
-U modInv(U)(U a) {
+private U modInv(U)(U a) {
 	static assert (isUnsignedIntegerType!(U));
 
 	// No solution if not coprime with 2^32
@@ -286,36 +286,35 @@ U modInv(U)(U a) {
 	// Extended Euclidean algorithm with a few tricks at the start to deal with
 	// the fact that U can't represent the initial modulus
 
-	// We need quot = floor(2^32 / p)
+	// We need quot = floor(2^32 / a)
 	//
-	// floor(2^31 / p) * 2 differs from floor(2^32 / p) by at most 1. I seem
-	// unable to discern what property p needs to have for them to differ, so we
+	// floor(2^31 / a) * 2 differs from floor(2^32 / a) by at most 1. I seem
+	// unable to discern what property a needs to have for them to differ, so we
 	// figure it out using a possibly suboptimal method.
-	U p   = a;
 	U gcd = 1 << (U.sizeof * 8 - 1);
 	U quot;
 
-	if (p <= gcd)
-		quot = gcd / p * cast(U)2;
+	if (a <= gcd)
+		quot = gcd / a * cast(U)2;
 	else
-		// The above algorithm obviously doesn't work if p exceeds gcd:
+		// The above algorithm obviously doesn't work if a exceeds gcd:
 		// fortunately, we know that quot = 1 in all those cases.
 		quot = 1;
 
-	// So now quot is either floor(2^32 / p) or floor(2^32 / p) - 1.
+	// So now quot is either floor(2^32 / a) or floor(2^32 / a) - 1.
 	//
-	// 2^32 = quot * p + rem
+	// 2^32 = quot * a + rem
 	//
-	// If quot is the former, then rem = -p * quot. Otherwise, rem = -p * (1 +
+	// If quot is the former, then rem = -a * quot. Otherwise, rem = -a * (1 +
 	// quot) and quot needs to be corrected.
 	//
 	// So we try the former case. For this to be the correct remainder, it
-	// should be in the range [0,p). If it isn't, we know that quot is off by
+	// should be in the range [0,a). If it isn't, we know that quot is off by
 	// one.
-	U rem = -p * quot;
+	U rem = -a * quot;
 
-	if (rem >= p) {
-		rem -= p;
+	if (rem >= a) {
+		rem -= a;
 		++quot;
 	}
 
@@ -327,17 +326,16 @@ U modInv(U)(U a) {
 	for (U u = 1;;) {
 		U oldX = x;
 
-		gcd = p;
-		p = rem;
+		gcd = a;
+		a = rem;
 		x = u;
 		u = oldX - u*quot;
 
-		if (!p) break;
+		if (!a) break;
 
-		quot = gcd / p;
-		rem  = gcd % p;
+		quot = gcd / a;
+		rem  = gcd % a;
 	}
-
 	return x;
 }
 
@@ -346,17 +344,21 @@ U modInv(U)(U a) {
 //
 // Returns false if there was no solution; if there is a solution, it is stored
 // in the out parameter and true is returned.
-bool modDiv(U)(U a, U b, out U result) {
-
+bool modDiv(U)(U a, U b, out U result)
+in {
+	assert (a != 0);
+} body {
 	// modInv can't deal with even numbers, so handle that here
-	while (b % 2 == 0 && a % 2 == 0) {
-		b /= 2;
+	while (a % 2 == 0 && b % 2 == 0) {
 		a /= 2;
+		b /= 2;
 	}
-	if (b % 2 == 0)
+
+	// a even and b odd: no solution
+	if (a % 2 == 0)
 		return false;
 
-	result = a * modInv(b);
+	result = modInv(a) * b;
 	return true;
 }
 

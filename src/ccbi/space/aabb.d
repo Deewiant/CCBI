@@ -154,8 +154,8 @@ struct AABB(cell dim) {
 				return true;
 			}
 			return modDiv(
-				cast(ucell_base)(to - from),
 				cast(ucell_base)delta,
+				cast(ucell_base)(to - from),
 				moves);
 		}
 		static bool matches(ucell moves, cell e1, cell e2, cell from, cell delta)
