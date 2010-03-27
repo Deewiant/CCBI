@@ -35,6 +35,9 @@ A ipow(A, B)(A x, B exp) {
 	return n;
 }
 
+// Tango's abs isn't templated...
+T abs(T)(T n) { return n < 0 ? -n : n; }
+
 private alias char[][] environment_t;
 private size_t envCount = 0x20;
 private size_t envSize = void;
@@ -277,7 +280,9 @@ private:
 // The comments speak of 32-bit throughout but this works for any unsigned
 // type.
 private U modInv(U)(U a) {
-	static assert (isUnsignedIntegerType!(U));
+	// Typedefs... this is the best we can easily do with respect to checking
+	// whether it's an unsigned integer type or not.
+	static assert (U.min == 0);
 
 	// No solution if not coprime with 2^32
 	if (a % 2 == 0)
@@ -342,16 +347,28 @@ private U modInv(U)(U a) {
 // Solves for x in the equation ax = b (mod 2^(U.sizeof * 8)), given nonzero a
 // and b.
 //
-// Returns false if there was no solution; if there is a solution, it is stored
-// in the out parameter and true is returned.
-bool modDiv(U)(U a, U b, out U result)
+// Returns false if there was no solution.
+//
+// If there is a solution, returns true. A solution is stored in the result
+// parameter.
+//
+// The second out parameter, "gcdLog", holds the binary logarithm of the number
+// of solutions: that is, lg(gcd(a, 2^(U.sizeof * 8))). The solution count
+// іtself can be constructed by raising two to that power, since it is
+// guaranteed to be a power of two.
+//
+// Further solutions can be formed by adding 2^(U.sizeof * 8 - gcdLog) to the
+// one solution given.
+bool modDiv(U)(U a, U b, out U result, out ubyte gcdLog)
 in {
 	assert (a != 0);
 } body {
 	// modInv can't deal with even numbers, so handle that here
+	gcdLog = 0;
 	while (a % 2 == 0 && b % 2 == 0) {
 		a /= 2;
 		b /= 2;
+		++gcdLog;
 	}
 
 	// a even and b odd: no solution
@@ -360,6 +377,42 @@ in {
 
 	result = modInv(a) * b;
 	return true;
+}
+
+// gcd(2^(ucell.sizeof * 8), n) is a power of two: this returns the
+// power, i.e. its binary logarithm.
+ubyte gcdLog(U)(U n) {
+	// Since one of the operands is a power of two, the result is also a
+	// power of two: it's actually two to the power of (number of times we
+	// can divide n by until it becomes odd). The proof is left as an
+	// exercise to the reader.
+
+	// Odd numbers have a trivial gcd of 1.
+	if (n & 1)
+		return 0;
+
+	// We can abuse the bit representation of integers to do the
+	// even-number case in a tricky way.
+
+	// c is the trailing zero count, which we calculate; the gcd is then
+	// 2^c. Algorithm adapted from:
+	//
+	// http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+	// (Credits to Matt Whitlock and Andrew Shapira)
+	ubyte c = 1;
+
+	auto maskBits = U.sizeof * 8 / 2;
+	auto mask = U.max >>> maskBits;
+
+	while (mask > 1) {
+		if ((n & mask) == 0) {
+			n >>>= maskBits;
+			c += maskBits;
+		}
+		maskBits /= 2;
+		mask >>>= maskBits;
+	}
+	return c - (n & 1);
 }
 
 // All set by default

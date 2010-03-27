@@ -7,10 +7,10 @@
 
 module ccbi.space.aabb;
 
-import tango.math.Math            : min, max;
-import tango.stdc.string          : memmove;
+import tango.math.Math   : min, max;
+import tango.stdc.string : memmove;
 
-import ccbi.stdlib        : modDiv;
+import ccbi.stdlib : abs, gcdLog;
 import ccbi.space.coords;
 import ccbi.space.utils;
 
@@ -124,13 +124,23 @@ struct AABB(cell dim) {
 		return data[getIdxNoOffset(p)] = val;
 	}
 
-	bool rayIntersects(Coords from, Coords dir, out ucell steps, out Coords at)
+	bool rayIntersects(Coords o, Coords delta, out ucell moveCnt, out Coords at)
 	in {
 		// It should be a ray and not a point
-		assert (dir != 0);
+		assert (delta != 0);
 	} out (intersects) {
 		assert (!intersects || this.contains(at));
 	} body {
+		// {{{ Helpers
+		static bool matches(ucell moves, cell e1, cell e2, cell from, cell delta)
+		{
+			if (!delta) {
+				// We check that the zero deltas are correct in advance
+				return true;
+			}
+			cell pos = from + cast(cell)moves * delta;
+			return pos >= e1 && pos <= e2;
+		}
 		// The range of possible coordinates in the given range that the given 1D
 		// ray can collide with.
 		static void getBegEnd(
@@ -145,82 +155,240 @@ struct AABB(cell dim) {
 				beg = max(end + delta - cast(cell)1, edge1);
 			}
 		}
-		static bool getMoves(
-			cell from, cell to, cell delta, out ucell_base moves)
-		{
-			// Optimization: this is the typical case
-			if (delta == 1) {
-				moves = cast(ucell_base)(to - from);
-				return true;
+		// }}}
+
+		// Quick check to start with: if we don't move along an axis, we should
+		// be in the box along it.
+		for (ucell i = 0; i < dim; ++i)
+			if (!delta.v[i] && !(o.v[i] >= beg.v[i] && o.v[i] <= end.v[i]))
+				return false;
+
+		// {{{ Long explanation
+		//
+		// The basic idea here: check, for each point in the box, how many steps
+		// it takes for the ray to reach it (or whether it can reach it at all).
+		// Then select the minimum as the answer and return true (or, if no
+		// points can be reached, return false).
+		//
+		// What could be done for each point is solving dim-1 linear diophantine
+		// equations, one for each axis. (See the getMoves() helper.) Thus we'd
+		// get dim-1 sets of move counts that would reach that point. The minimal
+		// solution for the point is then the minimum of their intersection.
+		//
+		// As an optimization, note that we only need to solve one equation, then
+		// simply try each of the resulting move counts for the other axes,
+		// checking whether they also reach the point under consideration.
+		//
+		// This can be extended to reduce the number of points we have to check,
+		// since if we are solving e.g. the equation for the X-coordinate, we
+		// obviously need to do it only for points with a different X-coordinate:
+		// the equation would be the exact same for the others. Now we are no
+		// longer looking at a particular point, rather a line segment within the
+		// box. For the other axes, we now only check that their result falls
+		// within the box, not caring which particular point it hits. (See the
+		// matches() helper.)
+		//
+		// We've got two alternative approaches based on the above basic ideas:
+		//
+		// 	1. Realize that the set of points which can actually be reached
+		// 	   with a given delta is limited to some points near the edge of
+		// 	   the box: if the delta is (1,0), only the leftmost edge of the
+		// 	   box can be touched, and thus only they need to be checked. (See
+		// 	   the getBegEnd() helper.)
+		//
+		// 	   The number of different (coordinate, move count) pairs that we
+		// 	   have to check in this approach is:
+		//
+		// 	   sum_i gcd(2^32, delta[i]) * min(|delta[i]|, end[i]-beg[i]+1)
+		//
+		// 	   (Where gcd(2^32, delta[i]) is the number of move count solutions
+		// 	   for axis i, assuming a 32-bit ucell. See helper gcd().)
+		//
+		// 	2. Realize that checking along one axis is sufficient to find all
+		// 	   answers for the whole box. If we go over every solution for
+		// 	   every X-coordinate in the box, there is no point in checking
+		// 	   other axes, since any solutions for them have to have
+		// 	   corresponding solutions in the X-axis.
+		//
+		// 	   The number of pairs to check here is:
+		//
+		// 	   min_i gcd(2^32, delta[i]) * (end[i]-beg[i]+1)
+		//
+		// To minimize the amount of work we have to do, we want to pick the one
+		// with less pairs to check. So, when does the following inequality hold,
+		// i.e. when do we prefer method 1?
+		//
+		// min(gx*sx, gy*sy, gz*sz) >   gx*min(sx,|dx|)
+		//                            + gy*min(sy,|dy|)
+		//                            + gz*min(sz,|dz|)
+		//
+		// (Where d[xyz] = delta.[xyz], g[xyz] = gcd(2^32, delta.[xyz]), and
+		// s[xyz] = end.[xyz]-beg.[xyz]+1.)
+		//
+		// For this to be true, we want the delta along each axis to be less than
+		// the box size along that axis. Consider, if only two deltas out of
+		// three are less:
+		//
+		// min(gx*sx, gy*sy, gz*sz) > gx*|dx| + gy*|dy| + gz*sz
+		//
+		// One of the summands on the RHS is an argument of the min on the LHS,
+		// and thus the inequality is clearly false since the summands are all
+		// positive.
+		//
+		// With all three less, we can't sensibly simplify this any further:
+		//
+		// min(gx*sx, gy*sy, gz*sz) > gx*|dx| + gy*|dy| + gz*|dz|
+		//
+		// So let's start by checking that.
+		// }}}
+		ucell sumPairs1 = 0;
+		ucell minPairs2 = ucell.max;
+
+		// Need to have a default here for the case when everything overflows
+		ubyte axis2 = 0;
+
+		for (ubyte i = 0; i < dim; ++i) {
+			if (!delta.v[i])
+				continue;
+
+			auto p = gcdLog(cast(ucell)delta.v[i]);
+			auto g = cast(ucell)1 << p;
+			auto s = cast(ucell)(this.end.v[i] - this.beg.v[i] + 1);
+			auto d = cast(ucell)abs(delta.v[i]);
+
+			// The multiplications can overflow: we can check for that quickly
+			// since we have the gcdLog:
+			//
+			// g * x <= ucell.max
+			//     x <= ucell.max / g
+			//     x <= 2^(ucell bits - p)
+			//
+			// But if p is zero, we get 2^(ucell bits) which is ucell.max + 1 and
+			// therefore overflows to 0. When p is zero, g is 1, so use ucell.max
+			// in that case.
+			auto mulMax = p ? 1 << ucell.sizeof*8 - p : ucell.max;
+
+			if (s <= mulMax) {
+				auto gs = g * s;
+				if (gs < minPairs2) {
+					minPairs2 = gs;
+					axis2 = i;
+				}
+			} else {
+				// If g*s overflows, the minimum doesn't grow, so just ignore that
+				// case.
 			}
-			return modDiv(
-				cast(ucell_base)delta,
-				cast(ucell_base)(to - from),
-				moves);
-		}
-		static bool matches(ucell moves, cell e1, cell e2, cell from, cell delta)
-		{
-			cell pos = from + cast(cell)moves * delta;
-			return pos >= e1 && pos <= e2;
+
+			if (d <= mulMax) {
+				// The d*s multiplication doesn't overflow, but adding the product
+				// to sumPairs1 still might.
+				auto ds = d * s;
+				if (sumPairs1 <= ucell.max - ds)
+					sumPairs1 += ds;
+				else {
+					// sumPairs1 is bigger than an ucell can hold: either minPairs2
+					// is less or they're both really huge. If minPairs2 is less, we
+					// know what to do. If they're both huge, we make the reasonable
+					// assumption that no matter what we do, it's still going to
+					// take a really long time, so just pick one arbitrarily.
+					goto method2;
+				}
+			} else {
+				// As above: sumPairs1 exceeds the size of an ucell.
+				goto method2;
+			}
 		}
 
+		// The move count can plausibly be ucell.max so we can't use an
+		// initial setting like that for the maximum: we need an auxiliary
+		// boolean.
 		ucell bestMoves = void;
 		bool gotMoves = false;
 
-		for (size_t i = 0; i < dim; ++i) {
-			if (!dir.v[i]) {
-				// We never move along this axis: make sure we're contained in the
-				// box.
-				if (!(from.v[i] >= this.beg.v[i] && from.v[i] <= this.end.v[i]))
-					return false;
-				continue;
+		// Now we know which method is cheaper, so pick the better one and get
+		// working. If they're equal, we can pick either: method 2 seems
+		// computationally a bit cheaper in that case (no, I haven't measured
+		// it), so do that for the equal case.
+		if (sumPairs1 < minPairs2) {
+			// Method 1: check a few points along each edge.
+
+			// For each axis...
+			for (ucell i = 0; i < dim; ++i) {
+				// ... with a nonzero delta...
+				if (!delta.v[i])
+					continue;
+
+				// ... consider the 1D ray along the axis, and figure out the
+				// coordinate range in the box that it can plausibly hit.
+				cell a, b;
+				getBegEnd(beg.v[i], end.v[i], o.v[i], delta.v[i], a, b);
+
+				// For each point that we might hit...
+				for (cell p = a; p <= b; ++p) {
+					// ... figure out the move counts that hit it which would also
+					// be improvements to bestMoves.
+					ucell moves, increment;
+					auto n = getMoves(
+						o.v[i], p, delta.v[i],
+						moves, increment, gotMoves ? &bestMoves : null);
+
+					// For each of the plausible move counts, in order...
+					nextMoveCount: for (ucell c = 0; c < n; ++c) {
+						auto m = moves + c*increment;
+
+						// ... make sure that along the other axes, with the same
+						// number of moves, we fall within the box.
+						for (ucell j = 0; j < dim; ++j) if (i != j)
+							if (!matches(m, beg.v[j], end.v[j], o.v[j], delta.v[j]))
+								continue nextMoveCount;
+
+						// If we did, we have a better solution for the whole ray,
+						// and we can move to the next point. (Since getMoves()
+						// guarantees that any later m's for this point would be
+						// greater.)
+						bestMoves = m;
+						gotMoves  = true;
+						break;
+					}
+				}
+			}
+		} else {
+method2:
+			// Method 2: check all points along a selected axis. Practically
+			// identical to the point-loop in method 1: won't be repeating the
+			// comments here.
+
+			// If we aborted method selection early, our selected axis might have
+			// a zero delta: rectify that.
+			if (!delta.v[axis2]) {
+				assert (axis2 == 0);
+				do ++axis2; while (!delta.v[axis2]);
 			}
 
-			// Figure out the coordinates in the box that this 1D ray can
-			// plausibly hit.
-			cell rangeBeg, rangeEnd;
-			getBegEnd(
-				this.beg.v[i], this.end.v[i],
-				from.v[i], dir.v[i], rangeBeg, rangeEnd);
+			for (cell p = beg.v[axis2]; p <= end.v[axis2]; ++p) {
+				ucell moves, increment;
+				auto n = getMoves(o.v[axis2], p, delta.v[axis2],
+				                  moves, increment, gotMoves ? &bestMoves : null);
 
-			// For each coordinate...
-			matchCoords: for (cell c = rangeBeg; c <= rangeEnd; ++c) {
+				nextMoveCount2: for (ucell c = 0; c < n; ++c) {
+					auto m = moves + c*increment;
 
-				// ... figure out the number of moves needed to reach that
-				// coordinate...
-				ucell moves;
-				if (!getMoves(from.v[i], c, dir.v[i], moves))
-					continue;
+					for (ucell j = 0; j < dim; ++j) if (axis2 != j)
+						if (!matches(m, beg.v[j], end.v[j], o.v[j], delta.v[j]))
+							continue nextMoveCount2;
 
-				// Grab only the lowest.
-				//
-				// If we gotMoves then bestMoves definitely works. The bestMoves
-				// that we want is the minimal moves, the one that first hits the
-				// box, so don't bother with anything longer whether it would
-				// intersect or not.
-				if (gotMoves && moves >= bestMoves)
-					continue;
-
-				// ... and make sure that the other axes also need the same number
-				// of moves.
-				for (auto j = 0; j < dim; ++j)
-					if (i != j && dir.v[j]
-					 && !matches(
-					 	moves, this.beg.v[j], this.end.v[j], from.v[j], dir.v[j])
-					)
-						continue matchCoords;
-
-				bestMoves = moves;
-				gotMoves  = true;
+					bestMoves = m;
+					gotMoves  = true;
+					break;
+				}
 			}
 		}
-
-		if (gotMoves) {
-			steps = bestMoves;
-			at.v[] = from.v[] + cast(cell)bestMoves * dir.v[];
-			return true;
-		} else
+		if (!gotMoves)
 			return false;
+
+		moveCnt = bestMoves;
+		at.v[] = o.v[] + cast(cell)bestMoves * delta.v[];
+		return true;
 	}
 
 	bool overlaps(AABB b) {

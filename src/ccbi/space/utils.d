@@ -10,6 +10,7 @@ module ccbi.space.utils;
 import tango.core.Exception : onOutOfMemoryError;
 import tango.stdc.stdlib    : malloc, realloc;
 
+import ccbi.stdlib : modDiv;
 import ccbi.space.coords;
 
 template Dimension(cell dim) {
@@ -82,4 +83,116 @@ template CoordsLoop(
 	else
 		const CoordsLoop = OneCoordsLoop!(dim,   c, begC, endC, cmp, op, f)
 		                 ~    CoordsLoop!(dim-1, c, begC, endC, cmp, op, f);
+}
+
+// The number of moves it takes to get from "from" to "to" with delta
+// "delta". Returns the number of such solutions.
+//
+// Since there may be multiple solutions, gives the minimal solution in
+// "moves", the number of solutions in "count", and the constant
+// increment between the solutions in "increment". The value of increment
+// is undefined if the count is zero.
+//
+// If given a non-null bestMoves, adjusts the count so that all the
+// resulting move counts are lesser than it.
+ucell getMoves(cell from, cell to, cell delta,
+               out ucell moves, out ucell increment, ucell* bestMoves)
+out (count) {
+	if (count) {
+		for (auto i = count; i-- > 1;)
+			assert (moves + (i-1)*increment < moves + i*increment);
+
+		if (bestMoves)
+			assert (moves + (count-1)*increment < *bestMoves);
+	}
+} body {
+	auto diff = cast(ucell)(to - from);
+
+	// Optimization: these are the typical cases
+	if (delta == 1) {
+		moves = diff;
+		return bestMoves && moves >= *bestMoves ? 0 : 1;
+
+	} else if (delta == -1) {
+		moves = -diff;
+		return bestMoves && moves >= *bestMoves ? 0 : 1;
+	} else
+		return expensiveGetMoves(diff, delta, moves, increment, bestMoves);
+}
+ucell expensiveGetMoves(ucell to, cell delta,
+                        out ucell moves, out ucell increment, ucell* bestMoves)
+{
+	ubyte countLg;
+	if (!modDiv(cast(ucell)delta, to, moves, countLg))
+		return 0;
+
+	auto count = cast(ucell)1 << countLg;
+	increment = cast(ucell)1 << (ucell.sizeof*8 - countLg);
+
+	// Ensure the solutions are in order, with moves being minimal.
+	//
+	// Since the solutions are cyclical, either they are already in order
+	// (i.e. moves is the least and moves + (count-1)*increment is the
+	// greatest), or there are two increasing substrings.
+	//
+	// If the first is lesser than the last, they're in order. (If they're
+	// equal, count is 1. A singleton is trivially in order.)
+	//
+	// E.g. [1 2 3 4 5].
+	ucell minPos = 0;
+	auto last = moves + (count-1)*increment;
+
+	if (moves > last) {
+		// Otherwise, we have to find the starting point of the second
+		// substring. This binary search does the job.
+		//
+		// E.g. [3 4 5 1 2] (mod 6).
+		ucell low = 1, high = count;
+		for (;;) {
+			assert (low < high);
+
+			// Since we start at low = 1 and the number of solutions is
+			// always a power of two, this is guaranteed to happen
+			// eventually.
+			if (high - low == 1) {
+				minPos = (moves + low*increment > moves + high*increment)
+						 ? high : low;
+				moves += minPos * increment;
+				break;
+			}
+
+			auto mid = (low + high) >>> 1;
+
+			auto val = moves + mid*increment;
+
+			if (val > moves)
+				low = mid + cast(ucell)1;
+			else {
+				assert (val < last);
+				high = mid;
+			}
+		}
+	}
+	if (!bestMoves)
+		return count;
+
+	// We have a bestMoves to stay under: reduce count to ensure that we
+	// do stay under it.
+
+	// Time for another binary search.
+	for (ucell low = 0, high = count;;) {
+		assert (low <= high);
+
+		if (high - low <= 1)
+			return moves + low*increment >= *bestMoves ? low : high;
+
+		auto mid = (low + high) >>> 1;
+
+		auto val = moves + mid*increment;
+
+		if (val < *bestMoves)
+			low = mid + cast(ucell)1;
+		else
+			high = mid;
+	}
 }
