@@ -668,7 +668,6 @@ private:
 	} body {
 		++stats.space.boxesPlaced;
 
-		auto beg = aabb.beg, end = aabb.end;
 		size_t food = void;
 		size_t foodSize = 0;
 		size_t usedCells = aabb.size;
@@ -954,27 +953,26 @@ private:
 
 	// Finds the bounds of the tightest AABB containing all the boxen referred by
 	// indices, as well as the largest box among them, and keeps a running sum of
-	// their lengths.
+	// their sizes.
 	//
 	// Assumes they're all allocated and max isn't.
 	void minMaxSize(
 		Coords* beg, Coords* end,
 		ref size_t max, ref size_t maxSize,
-		ref size_t length,
+		ref size_t size,
 		size_t[] indices)
 	{
 		foreach (i; indices)
-			minMaxSize(beg, end, max, maxSize, length, i);
+			minMaxSize(beg, end, max, maxSize, size, i);
 	}
-
 	void minMaxSize(
 		Coords* beg, Coords* end,
 		ref size_t max, ref size_t maxSize,
-		ref size_t length,
+		ref size_t size,
 		size_t i)
 	{
 		auto box = boxen[i];
-		length += box.size;
+		size += box.size;
 		if (box.size > maxSize) {
 			maxSize = box.size;
 			max = i;
@@ -983,6 +981,9 @@ private:
 		if (end) end.maxWith(box.end);
 	}
 
+	// Fills in the input values with the minMaxSize data, returning what the
+	// given validator delegate returns.
+	//
 	// The input delegate takes:
 	// - box that subsumes (unallocated)
 	// - box to be subsumed (allocated)
@@ -992,22 +993,22 @@ private:
 		bool delegate(AABB, AABB, size_t) valid,
 		ref Coords beg, ref Coords end,
 		ref size_t max, ref size_t maxSize,
-		ref size_t length,
+		ref size_t usedCells,
 		size_t idx)
 	{
 		auto
 			tryBeg = beg, tryEnd = end,
 			tryMax = max, tryMaxSize = maxSize,
-			tryLen = length;
+			tryUsed = usedCells;
 
-		minMaxSize(&tryBeg, &tryEnd, tryMax, tryMaxSize, tryLen, idx);
+		minMaxSize(&tryBeg, &tryEnd, tryMax, tryMaxSize, tryUsed, idx);
 
-		if (valid(AABB(tryBeg, tryEnd), boxen[idx], length)) {
-			beg     = tryBeg;
-			end     = tryEnd;
-			max     = tryMax;
-			maxSize = tryMaxSize;
-			length  = tryLen;
+		if (valid(AABB(tryBeg, tryEnd), boxen[idx], usedCells)) {
+			beg       = tryBeg;
+			end       = tryEnd;
+			max       = tryMax;
+			maxSize   = tryMaxSize;
+			usedCells = tryUsed;
 			return true;
 		} else
 			return false;
