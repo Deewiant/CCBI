@@ -988,7 +988,7 @@ private:
 	// - box to be subsumed (allocated)
 	// - number of cells that are currently contained in any box that the subsumer
 	//   contains
-	size_t validMinMaxSize(
+	bool validMinMaxSize(
 		bool delegate(AABB, AABB, size_t) valid,
 		ref Coords beg, ref Coords end,
 		ref size_t max, ref size_t maxSize,
