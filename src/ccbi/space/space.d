@@ -1329,7 +1329,9 @@ private:
 			// If i == input.length it was all spaces
 			if (i != input.length) {
 				i = input.length;
-				while (i > 0 && input[--i] == ' '){}
+
+				// No need to check bounds here since it can't be all spaces
+				while (input[--i] == ' '){}
 
 				end.x += i;
 			}
