@@ -635,7 +635,7 @@ private:
 			}
 		}
 		justPlacedBig = false;
-		return AABB(c - NEWBOX_PAD, c + NEWBOX_PAD);
+		return AABB(c.clampedSub(NEWBOX_PAD), c.clampedAdd(NEWBOX_PAD));
 	}
 
 	void placeBox(AABB aabb) {
@@ -1003,7 +1003,15 @@ private:
 
 		minMaxSize(&tryBeg, &tryEnd, tryMax, tryMaxSize, tryUsed, idx);
 
-		if (valid(AABB(tryBeg, tryEnd), boxen[idx], usedCells)) {
+		auto tryBox = AABB(tryBeg, tryEnd);
+
+		// Disallow boxes that cover an entire axis... (The size along that axis
+		// is zero so it's not caught elsewhere.)
+		for (ucell i = 0; i < dim; ++i)
+			if (tryBox.end.v[i] == tryBox.beg.v[i] - 1)
+				return false;
+
+		if (valid(tryBox, boxen[idx], usedCells)) {
 			beg       = tryBeg;
 			end       = tryEnd;
 			max       = tryMax;

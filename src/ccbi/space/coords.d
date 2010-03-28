@@ -76,4 +76,25 @@ struct Coords(cell dim) {
 		"Add", "+",
 		"Sub", "-"
 	));
+
+	Coords clampedAdd(cell c) {
+		Coords co = *this;
+		foreach (inout x; co.v) {
+			if (x > cell.max - c)
+				x = cell.max;
+			else
+				x += c;
+		}
+		return co;
+	}
+	Coords clampedSub(cell c) {
+		Coords co = *this;
+		foreach (inout x; co.v) {
+			if (x < cell.min + c)
+				x = cell.min;
+			else
+				x -= c;
+		}
+		return co;
+	}
 }

@@ -10,7 +10,7 @@ module ccbi.space.aabb;
 import tango.math.Math   : min, max;
 import tango.stdc.string : memmove;
 
-import ccbi.stdlib : abs, gcdLog;
+import ccbi.stdlib : abs, clampedAdd, gcdLog;
 import ccbi.space.coords;
 import ccbi.space.utils;
 
@@ -431,7 +431,9 @@ method2:
 				if (i != j && !(beg.v[j] == b.beg.v[j] && end.v[j] == b.end.v[j]))
 						continue outer;
 
-			if (end.v[i]+1 == b.beg.v[i] || b.end.v[i]+1 == beg.v[i] || overlap)
+			if (clampedAdd(end.v[i], cast(cell)1) == b.beg.v[i]
+			 || clampedAdd(b.end.v[i], cast(cell)1) == beg.v[i]
+			 || overlap)
 				return true;
 		}
 		return false;
