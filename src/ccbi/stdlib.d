@@ -309,18 +309,20 @@ in {
 // For all unsigned integer types U and odd values a of that type, it holds
 // that a * modInv!(U)(a) = 1.
 //
-// For even values, this returns 0: there's no inverse.
+// For even values, this asserts: there's no inverse.
 //
 // The comments speak of 32-bit throughout but this works for any unsigned
 // type.
-private U modInv(U)(U a) {
+private U modInv(U)(U a)
+out (inv) {
+	assert (inv != 0);
+} body {
 	// Typedefs... this is the best we can easily do with respect to checking
 	// whether it's an unsigned integer type or not.
 	static assert (U.min == 0);
 
 	// No solution if not coprime with 2^32
-	if (a % 2 == 0)
-		return 0;
+	assert (a % 2);
 
 	// Extended Euclidean algorithm with a few tricks at the start to deal with
 	// the fact that U can't represent the initial modulus
