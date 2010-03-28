@@ -47,7 +47,7 @@ public:
 						bak = true;
 					else
 						infLoop(
-							"IP diverged while being placed",
+							"IP diverged while being placed.",
 							c.toString(), delta.toString());
 				}
 			}
