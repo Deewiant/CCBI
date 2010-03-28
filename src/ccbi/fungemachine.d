@@ -239,27 +239,29 @@ private:
 
 		cip.gotoNextInstruction();
 
-		// In stringmode we might be at a space which is right next to a box, but
-		// not in it.
-		auto c = cip.mode & IP.STRING ? cip.cell : cip.unsafeCell;
+		if (cip.mode & IP.STRING) {
+			// In stringmode we might be at a space which is right next to a box,
+			// but not in it.
+			auto c = cip.cell;
 
-		if (c == '"')
-			cip.mode ^= IP.STRING;
-		else if (cip.mode & IP.STRING)
-			cip.stack.push(c);
-		else {
-			static if (!befunge93) if (!flags.allFingsDisabled) {
-				version (IMAP)
-					if (c < cip.mapping.length && c >= 0)
-						c = cip.mapping[c];
-
-				if (isSemantics(c))
-					return executeSemantics(c);
-			}
-
-			return executeStandard(c);
+			if (c == '"')
+				cip.mode &= ~IP.STRING;
+			else
+				cip.stack.push(c);
+			return Request.MOVE;
 		}
-		return Request.MOVE;
+
+		auto c = cip.unsafeCell;
+
+		static if (!befunge93) if (!flags.allFingsDisabled) {
+			version (IMAP)
+				if (c < cip.mapping.length && c >= 0)
+					c = cip.mapping[c];
+
+			if (isSemantics(c))
+				return executeSemantics(c);
+		}
+		return executeStandard(c);
 	}
 
 	mixin StdInstructions!() Std;
