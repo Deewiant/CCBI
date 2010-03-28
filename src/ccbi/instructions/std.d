@@ -205,7 +205,15 @@ void turnLeft() {
 }
 
 // Absolute Vector
-void absoluteVector() { popVector(cip.delta); }
+void absoluteVector() {
+	version (detectInfiniteLoops)
+		if (cip.stack.empty && state.ips.length == 1)
+			throw new InfiniteLoopException(
+				"x instruction at " ~ cip.pos.toString(),
+				"The lone IP has an empty stack: "
+				"caught by the x with no means of escape...");
+	popVector(cip.delta);
+}
 
 }
 
