@@ -268,6 +268,40 @@ private:
 	public override size_t read(void[]) { return Eof; }
 }
 
+// Solves for x in the equation ax = b (mod 2^(U.sizeof * 8)), given nonzero a
+// and b.
+//
+// Returns false if there was no solution.
+//
+// If there is a solution, returns true. A solution is stored in the result
+// parameter.
+//
+// The second out parameter, "gcdLog", holds the binary logarithm of the number
+// of solutions: that is, lg(gcd(a, 2^(U.sizeof * 8))). The solution count
+// іtself can be constructed by raising two to that power, since it is
+// guaranteed to be a power of two.
+//
+// Further solutions can be formed by adding 2^(U.sizeof * 8 - gcdLog) to the
+// one solution given.
+bool modDiv(U)(U a, U b, out U result, out ubyte gcdLog)
+in {
+	assert (a != 0);
+} body {
+	// modInv can't deal with even numbers, so handle that here
+	gcdLog = 0;
+	while (a % 2 == 0 && b % 2 == 0) {
+		a /= 2;
+		b /= 2;
+		++gcdLog;
+	}
+
+	// a even and b odd: no solution
+	if (a % 2 == 0)
+		return false;
+
+	result = modInv(a) * b;
+	return true;
+}
 // Solves for x in the equation ax = 1 (mod 2^(U.sizeof * 8)), given a.
 // Alternatively stated, finds the modular inverse of a in the same ring as the
 // type's normal integer arithmetic works.
@@ -342,41 +376,6 @@ private U modInv(U)(U a) {
 		rem  = gcd % a;
 	}
 	return x;
-}
-
-// Solves for x in the equation ax = b (mod 2^(U.sizeof * 8)), given nonzero a
-// and b.
-//
-// Returns false if there was no solution.
-//
-// If there is a solution, returns true. A solution is stored in the result
-// parameter.
-//
-// The second out parameter, "gcdLog", holds the binary logarithm of the number
-// of solutions: that is, lg(gcd(a, 2^(U.sizeof * 8))). The solution count
-// іtself can be constructed by raising two to that power, since it is
-// guaranteed to be a power of two.
-//
-// Further solutions can be formed by adding 2^(U.sizeof * 8 - gcdLog) to the
-// one solution given.
-bool modDiv(U)(U a, U b, out U result, out ubyte gcdLog)
-in {
-	assert (a != 0);
-} body {
-	// modInv can't deal with even numbers, so handle that here
-	gcdLog = 0;
-	while (a % 2 == 0 && b % 2 == 0) {
-		a /= 2;
-		b /= 2;
-		++gcdLog;
-	}
-
-	// a even and b odd: no solution
-	if (a % 2 == 0)
-		return false;
-
-	result = modInv(a) * b;
-	return true;
 }
 
 // gcd(2^(ucell.sizeof * 8), n) is a power of two: this returns the
