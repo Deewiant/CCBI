@@ -419,56 +419,21 @@ method2:
 	// True if we can create a new AABB which covers exactly this and the
 	// argument: no more, no less
 	bool canFuseWith(AABB b)
-	out (result) {
-		if (result) {
+	out (yes) {
+		if (yes)
 			static if (dim > 1)
 				assert (this.onSameAxisAs(b));
-		}
 	} body {
-		static if (dim == 1)
-			return end.x+1 == b.beg.x || beg.x == b.end.x+1 || overlaps(b);
-		else static if (dim == 2) {
-			bool overlap = false;
-			if (
-				beg.x == b.beg.x && end.x == b.end.x &&
-				(end.y+1 == b.beg.y || beg.y == b.end.y+1
-				 || overlap || (overlap = overlaps(b),overlap))
-			)
-				return true;
+		bool overlap = this.overlaps(b);
+		outer:
+		for (cell i = 0; i < dim; ++i) {
+			for (cell j = 0; j < dim; ++j)
+				if (i != j && !(beg.v[j] == b.beg.v[j] && end.v[j] == b.end.v[j]))
+						continue outer;
 
-			if (
-				beg.y == b.beg.y && end.y == b.end.y &&
-				(end.x+1 == b.beg.x || beg.x == b.end.x+1
-				 || overlap || (overlap = overlaps(b),overlap))
-			)
-				return true;
-		} else static if (dim == 3) {
-			bool overlap = false;
-			if (
-				beg.x == b.beg.x && end.x == b.end.x &&
-				beg.z == b.beg.z && end.z == b.end.z &&
-				(end.y+1 == b.beg.y || beg.y == b.end.y+1
-				 || overlap || (overlap = overlaps(b),overlap))
-			)
-				return true;
-
-			if (
-				beg.y == b.beg.y && end.y == b.end.y &&
-				beg.z == b.beg.z && end.z == b.end.z &&
-				(end.x+1 == b.beg.x || beg.x == b.end.x+1
-				 || overlap || (overlap = overlaps(b),overlap))
-			)
-				return true;
-
-			if (
-				beg.x == b.beg.x && end.x == b.end.x &&
-				beg.y == b.beg.y && end.y == b.end.y &&
-				(end.z+1 == b.beg.z || beg.z == b.end.z+1
-				 || overlap || (overlap = overlaps(b),overlap))
-			)
+			if (end.v[i]+1 == b.beg.v[i] || b.end.v[i]+1 == beg.v[i] || overlap)
 				return true;
 		}
-
 		return false;
 	}
 
