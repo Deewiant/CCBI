@@ -1155,14 +1155,14 @@ private:
 
 				static if (dim >= 2) {
 					width = box.width;
-					hit |= (beg.x == aabb.beg.x) << 0;
+					hit |= (beg.x == aabb.beg.x && beg.y != ls.y) << 0;
 
 					// Befunge needs this to skip leading newlines
 					pageStart = box.getIdx(ps) - (arr.ptr - box.data);
 				}
 				static if (dim >= 3) {
 					area = box.area;
-					hit |= (beg.y == aabb.beg.y) << 1;
+					hit |= (beg.y == aabb.beg.y && beg.z != ls.z) << 1;
 				}
 
 				f(arr, width, area, lineStart, pageStart, hit);
