@@ -107,6 +107,7 @@ template StdInstructions() {
 import tango.io.device.File     : File;
 import tango.io.device.FileMap  : FileMap;
 import tango.io.stream.Buffered : BufferedOutput;
+import tango.math.Math          : max;
 import tango.text.Util          : join;
 import tango.time.Clock;
 
