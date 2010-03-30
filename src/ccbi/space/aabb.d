@@ -72,6 +72,13 @@ struct AABB(cell dim) {
 		return sz;
 	}
 
+	size_t volumeOn(ubyte axis) {
+		assert (axis < dim);
+		static if (dim >= 2) if (axis == 1) return width;
+		static if (dim >= 3) if (axis == 2) return area;
+		return 1;
+	}
+
 	void alloc() {
 		data = cmalloc(size);
 		data[0..size] = ' ';
@@ -85,6 +92,19 @@ struct AABB(cell dim) {
 		assert (!result || this.overlaps(b));
 	} body {
 		return contains(b.beg) && contains(b.end);
+	}
+
+	// Works even if this is an unsafe box with beg > end.
+	bool safeContains(Coords p) {
+		for (ucell i = 0; i < dim; ++i) {
+			if (beg.v[i] > end.v[i]) {
+				if (!(p.v[i] >= beg.v[i] || p.v[i] <= end.v[i]))
+					return false;
+			} else
+				if (!(p.v[i] >= beg.v[i] && p.v[i] <= end.v[i]))
+					return false;
+		}
+		return true;
 	}
 
 	cell opIndex(Coords p)

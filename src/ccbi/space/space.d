@@ -1047,22 +1047,63 @@ private:
 	// and writes it performed, respectively.
 	public void map(Coords a,Coords b,void delegate(cell[],ref Stat,ref Stat) f)
 	{
-		map(AABB(a, b), f);
-	}
-	void map(AABB aabb, void delegate(cell[], ref Stat, ref Stat) f) {
+		auto aabb = AABB(a, b);
 		placeBox(aabb);
+		mapNoPlace(aabb, f, null);
+	}
 
+	// If an area in the given range does not fall into any allocated area,
+	// simply does not call the function for that area: instead calls the second
+	// function with the number of cells skipped. It may be null, in which case
+	// it is obviously not called.
+	//
+	// Of course, the first function may still get an array full of spaces any
+	// number of times.
+	public void mapNoAlloc(
+		Coords a, Coords b, void delegate(cell[], ref Stat, ref Stat) f,
+		                    void delegate(size_t) g = null)
+	{
+		auto aabb = AABB(a,b);
+		mapNoPlace(aabb, f, g);
+
+		if (usingBak && aabb.overlaps(AABB.unsafe(bak.beg, bak.end))) {
+			foreach (c, v; bak.data) {
+				if (aabb.contains(c)) {
+					auto nv = v;
+					f((&nv)[0..1], stats.space.lookups, stats.space.assignments);
+					if (nv != v)
+						bak.data[c] = nv;
+				}
+			}
+		}
+	}
+
+	// If g is non-null the AABB should be finalized, since sizes are used
+	// to calculate its argument.
+	void mapNoPlace(
+		AABB aabb, void delegate(cell[], ref Stat, ref Stat) f,
+		           void delegate(size_t) g)
+	{
 		auto beg = aabb.beg;
 
-		for (bool hitEnd = false;;) foreach (box; boxen) {
-			if (box.overlaps(AABB.unsafe(beg, aabb.end))) {
+		iterating: for (bool hitEnd = false;;) {
+			foreach (box; boxen) if (box.contains(beg)) {
 				f(box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd),
 				  stats.space.lookups, stats.space.assignments);
 				if (hitEnd)
 					return;
 				else
-					break;
+					continue iterating;
 			}
+
+			// No hits for beg: find the next beg we can hit, or abort if there's
+			// nothing left.
+			size_t skipped = 0;
+			auto found = getNextIn(beg, aabb, skipped);
+			if (g)
+				g(skipped);
+			if (!found)
+				break;
 		}
 	}
 	// Passes some extra data to the delegate, for matching array index
@@ -1079,19 +1120,14 @@ private:
 	//
 	// Since this is currently only used from this class, we update stats
 	// directly instead of passing them to the delegate.
-	void map(
-		AABB aabb, void delegate(cell[], size_t,size_t,size_t,size_t, ubyte) f)
+	void mapNoPlace(
+		AABB aabb, void delegate(cell[], size_t,size_t,size_t,size_t, ubyte) f,
+		           void delegate(size_t) g)
 	{
-		// This ensures we don't have to worry about bak, but also means that we
-		// can't use this as much as we might like since we risk box count
-		// explosion
-		placeBox(aabb);
-
 		auto beg = aabb.beg;
 
-		for (bool hitEnd = false;;) foreach (box; boxen) {
-
-			if (box.overlaps(AABB.unsafe(beg, aabb.end))) {
+		iterating: for (bool hitEnd = false;;) {
+			foreach (box; boxen) if (box.contains(beg)) {
 				size_t
 					width = void,
 					area = void,
@@ -1100,12 +1136,12 @@ private:
 				// These depend on the original beg and thus have to be initialized
 				// before the call to getContiguousRange
 
-				// {box.beg.x, aabb.beg.y, aabb.beg.z}
+				// {box.beg.x, beg.y, beg.z}
 				Coords ls = beg;
 				ls.x = box.beg.x;
 
 				static if (dim >= 2) {
-					// {box.beg.x, box.beg.y, aabb.beg.z}
+					// {box.beg.x, box.beg.y, beg.z}
 					Coords ps = box.beg;
 					ps.v[2..$] = beg.v[2..$];
 				}
@@ -1134,9 +1170,95 @@ private:
 				if (hitEnd)
 					return;
 				else
-					break;
+					continue iterating;
+			}
+
+			size_t skipped = 0;
+			auto found = getNextIn(beg, aabb, skipped);
+			if (g)
+				g(skipped);
+			if (!found)
+				break;
+		}
+	}
+
+	// The next allocated point after pt which is also within the given AABB.
+	// Updates skipped to reflect the number of unallocated cells skipped.
+	bool getNextIn(inout Coords pt, AABB aabb, inout size_t skipped)
+	in {
+		AABB _;
+		assert (!findBox(pt, _));
+	} out (found) {
+		if (found) {
+			AABB _;
+			assert (findBox(pt, _));
+		}
+	} body {
+		auto bestIn = boxen.length;
+		cell bestCoord = void;
+
+		auto wrappedIn = boxen.length;
+		cell bestWrapped = void;
+
+		for (ucell i = 0; i < dim; ++i) {
+			foreach (b, box; boxen) {
+				if ((box.beg.v[i] < bestCoord || bestIn == boxen.length) &&
+				    AABB.unsafe(aabb.beg, aabb.end).safeContains(box.beg) &&
+
+				    // If pt has crossed an axis within the AABB, prevent us from
+				    // grabbing a new pt on the other side of the axis we're
+				    // wrapped around, or we'll just keep looping around that axis.
+				    (pt.v[i] >= aabb.beg.v[i] || box.beg.v[i] <= aabb.end.v[i]))
+				{
+					// If [pt,aabb.end] is wrapped around, take the global minimum
+					// box.beg as a last-resort option if nothing else is found, so
+					// that we wrap around if there's no non-wrapping solution.
+					//
+					// Note that bestWrapped <= bestCoord so we can test this within
+					// here.
+					if (pt.v[i] > aabb.end.v[i] &&
+					    (box.beg.v[i] < bestWrapped || wrappedIn == boxen.length))
+					{
+						bestWrapped = box.beg.v[i];
+						wrappedIn = b;
+
+					// The ordinary best solution is the minimal box.beg greater
+					// than pt.
+					} else if (box.beg.v[i] > pt.v[i]) {
+						bestCoord = box.beg.v[i];
+						bestIn = b;
+					}
+				}
+			}
+			if (bestIn == boxen.length && wrappedIn < boxen.length) {
+				bestCoord = bestWrapped;
+				bestIn = wrappedIn;
+			}
+			if (bestIn < boxen.length) {
+				auto old = pt;
+
+				pt.v[0..i] = aabb.beg.v[0..i];
+				pt.v[i] = bestCoord;
+
+				// Remember that old was already a space, or we wouldn't have
+				// called this function in the first place. Hence skipped is always
+				// at least one.
+				++skipped;
+
+				for (ucell j = 0; j < dim-1; ++j)
+					skipped += (aabb.end.v[j] - old.v[j]) * aabb.volumeOn(j);
+
+				skipped += (pt.v[$-1] - old.v[$-1] - 1) * aabb.volumeOn(dim-1);
+
+				// When setting pt.v[0..i] above, we may not end up in any box. So
+				// just go again with the updated pt.
+				if (i > 0 && !boxen[bestIn].contains(pt) && !findBox(pt, aabb))
+					return getNextIn(pt, aabb, skipped);
+
+				return true;
 			}
 		}
+		return false;
 	}
 
 	// Takes ownership of the Array, closing it.
@@ -1212,13 +1334,21 @@ private:
 			auto pEnd = input.ptr + input.length;
 
 			if (binary) {
-				map(aabb, (cell[] arr,ref Stat,ref Stat) {
+				mapNoPlace(aabb, (cell[] arr,ref Stat,ref Stat) {
 					foreach (ref x; arr) {
 						ubyte b = *p++;
 						if (b != ' ') {
 							x = cast(cell)b;
 							++stats.space.assignments;
 						}
+					}
+				},
+				(size_t n) {
+					while (n--) {
+						if (*p == ' ')
+							++p;
+						else
+							break;
 					}
 				});
 			} else {
@@ -1227,9 +1357,9 @@ private:
 				static if (dim >= 2) auto x = target.x;
 				static if (dim >= 3) auto y = target.y;
 
-				map(aabb, (cell[] arr, size_t width,     size_t area,
-				                       size_t lineStart, size_t pageStart,
-				                       ubyte hit)
+				mapNoPlace(aabb, (cell[] arr, size_t width,     size_t area,
+				                              size_t lineStart, size_t pageStart,
+				                              ubyte hit)
 				{
 					size_t i = 0;
 					while (i < arr.length) {
@@ -1309,6 +1439,14 @@ private:
 								++p;
 							}
 						}
+					}
+				},
+				(size_t n) {
+					while (n--) {
+						if (*p == ' ' || *p == '\r' || *p == '\n' || *p == '\f')
+							++p;
+						else
+							break;
 					}
 				});
 			}

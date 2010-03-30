@@ -209,14 +209,18 @@ void dixiecup() {
 void chicane() {
 	Coords a = popOffsetVector();
 	Coords b = popVector      ();
-	b += a;
 
 	cell val = cip.stack.pop;
 
-	state.space.map(a, b-1, (cell[] arr, ref Stat, ref Stat w) {
+	auto f = (cell[] arr, ref Stat, ref Stat w) {
 		arr[] = val;
 		w += arr.length;
-	});
+	};
+
+	if (val == ' ')
+		state.space.mapNoAlloc(a, a+b-1, f);
+	else
+		state.space.map       (a, a+b-1, f);
 }
 
 void fishhook() {
