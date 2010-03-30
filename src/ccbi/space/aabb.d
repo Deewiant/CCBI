@@ -697,14 +697,6 @@ method2:
 		ref Coords from, Coords to, Coords origBeg, ref bool reachedTo)
 	in {
 		assert (this.contains(from));
-		foreach (i, x; from.v)
-			assert (x <= to.v[i]);
-	} out {
-		foreach (i, x; from.v) {
-			if (!reachedTo)
-				assert (x <= to.v[i]);
-			assert (x >= origBeg.v[i]);
-		}
 	} body {
 		auto fromIdx = getIdx(from);
 
@@ -721,9 +713,13 @@ method2:
 				// changing.
 				endPt.v[i+1..$] = from.v[i+1..$];
 
-				if (endPt.v[i] < to.v[i]) {
-					// Did not reach the endpoint. The next point will be one up on
-					// this axis.
+				if (endPt.v[i] < to.v[i] || from.v[i] > to.v[i]) {
+					// Did not reach the endpoint: either ordinarily or because "to"
+					// is wrapped around with respect to "from", so it's not
+					// possible to reach the endpoint from "from" without going to
+					// another box.
+					//
+					// The next point will be one up on this axis.
 					from.v[i] = endPt.v[i] + cast(cell)1;
 				} else {
 					// Reached "to" on this axis, but the box is too big to go any
@@ -747,7 +743,7 @@ method2:
 		if (endPt.v[$-1] == to.v[$-1])
 			reachedTo = true;
 		else {
-			if (endPt.v[$-1] < to.v[$-1])
+			if (endPt.v[$-1] < to.v[$-1] || from.v[$-1] > to.v[$-1])
 				from.v[$-1] = endPt.v[$-1] + cast(cell)1;
 			else {
 				endPt.v[$-1] = to.v[$-1];
