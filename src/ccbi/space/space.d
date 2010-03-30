@@ -642,11 +642,34 @@ private:
 	}
 
 	void placeBox(AABB aabb) {
-		foreach (box; boxen) if (box.contains(aabb)) {
-			++stats.space.boxesIncorporated;
-			return;
+		// Split the box up along any axes it wraps around on.
+		AABB[1 << dim] aabbs;
+		size_t a = 1;
+		aabbs[0] = aabb;
+
+		for (ucell i = 0; i < dim; ++i) {
+			foreach (inout box; aabbs[0..a]) {
+				if (box.beg.v[i] > box.end.v[i]) {
+					auto end = box.end;
+					end.v[i] = cell.max;
+					aabbs[a++] = AABB.unsafe(box.beg, end);
+					box.beg.v[i] = cell.min;
+				}
+			}
 		}
-		return reallyPlaceBox(aabb);
+
+		placing: foreach (box; aabbs[0..a]) {
+			foreach (placed; boxen) if (placed.contains(box)) {
+				++stats.space.boxesIncorporated;
+				continue placing;
+			}
+
+			// aabb is assumed to be finalized but any split ones aren't
+			if (a > 1)
+				box.finalize();
+
+			reallyPlaceBox(box);
+		}
 	}
 
 	// Returns the placed box, which may be bigger than the given box
