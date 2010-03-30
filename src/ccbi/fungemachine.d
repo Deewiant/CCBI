@@ -129,10 +129,11 @@ private:
 		try {
 			initialize();
 			mainLoop: for (;;) {
-				version (TRDS)
-					bool normalTime = TRDS.isNormalTime();
-				else
-					const bool normalTime = true;
+				bool normalTime = true;
+
+				static if (!befunge93)
+					version (TRDS)
+						normalTime = TRDS.isNormalTime();
 
 				version (tracer)
 					if (flags.tracing && !Tracer.doTrace())
@@ -178,7 +179,7 @@ private:
 							}
 							break;
 
-					version (TRDS) {
+					static if (!befunge93) version (TRDS) {
 						case Request.RETICK:
 							continue mainLoop;
 					}
@@ -188,9 +189,10 @@ private:
 					state.startIdx = state.ips.length;
 
 				if (normalTime) {
-					version (TRDS)
-						if (usingTRDS)
-							TRDS.newTick();
+					static if (!befunge93)
+						version (TRDS)
+							if (usingTRDS)
+								TRDS.newTick();
 
 					++state.tick;
 				}
@@ -364,13 +366,13 @@ private:
 		version (tracer)
 			Tracer.ipStopped(ip);
 
-		version (TRDS)
-			if (usingTRDS)
-				TRDS.ipStopped(ip);
-
 		static if (befunge93)
 			return false;
 		else {
+			version (TRDS)
+				if (usingTRDS)
+					TRDS.ipStopped(ip);
+
 			if (state.ips.length > 1) {
 				state.ips.removeAt(idx);
 

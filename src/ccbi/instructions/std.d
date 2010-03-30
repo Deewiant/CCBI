@@ -737,9 +737,10 @@ void put() {
 void outputDecimal() {
 	auto n = cip.stack.pop;
 
-	version (TRDS)
-		if (state.tick < ioAfter)
-			return;
+	static if (!befunge93)
+		version (TRDS)
+			if (state.tick < ioAfter)
+				return;
 
 	try Sout(n);
 	catch { return reverse; }
@@ -751,9 +752,10 @@ void outputDecimal() {
 void outputCharacter() {
 	auto c = cast(ubyte)cip.stack.pop;
 
-	version (TRDS)
-		if (state.tick < ioAfter)
-			return;
+	static if (!befunge93)
+		version (TRDS)
+			if (state.tick < ioAfter)
+				return;
 
 	cput(c);
 
@@ -765,9 +767,10 @@ void outputCharacter() {
 
 // Input Decimal
 void inputDecimal() {
-	version (TRDS)
-		if (state.tick < ioAfter)
-			return cip.stack.push(0);
+	static if (!befunge93)
+		version (TRDS)
+			if (state.tick < ioAfter)
+				return cip.stack.push(0);
 
 	try Sout.flush(); catch {}
 
@@ -821,9 +824,10 @@ void reallyInputDecimal() {
 
 // Input Character
 void inputCharacter() {
-	version (TRDS)
-		if (state.tick < ioAfter)
-			return cip.stack.push('T');
+	static if (!befunge93)
+		version (TRDS)
+			if (state.tick < ioAfter)
+				return cip.stack.push('T');
 
 	try Sout.flush(); catch {}
 

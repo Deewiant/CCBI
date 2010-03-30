@@ -823,7 +823,7 @@ char[] modeString(in IP ip) {
 	if (ip.mode & IP.STRING)      str[i++] = '"';
 	if (ip.mode & IP.HOVER)       str[i++] = 'H';
 
-	version (MODE) if (ip.stack.isDeque) {
+	static if (!befunge93) version (MODE) if (ip.stack.isDeque) {
 		auto q = ip.stack.deque;
 		if (q.mode & QUEUE_MODE)   str[i++] = 'Q';
 		if (q.mode & INVERT_MODE)  str[i++] = 'I';

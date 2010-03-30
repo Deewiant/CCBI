@@ -59,6 +59,7 @@ struct IP(cell dim, bool befunge93) {
 		return x;
 	}
 
+	static if (!befunge93)
 	version (MODE)
 	invariant {
 		if (this.stackStack)
