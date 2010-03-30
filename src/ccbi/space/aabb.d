@@ -683,28 +683,39 @@ method2:
 		auto endPt = this.end;
 
 		for (ubyte i = 0; i < dim-1; ++i) {
-			if (endPt.v[i] == to.v[i])
+			if (endPt.v[i] == to.v[i]) {
+				// Hit the end point exactly: we'll be going to the next line/page
+				// on this axis
 				from.v[i] = origBeg.v[i];
-			else {
+			} else {
+				// Did not reach the end point or the box is too big to go any
+				// further as a contiguous block. The remaining axes won't be
+				// changing.
 				endPt.v[i+1..$] = from.v[i+1..$];
 
-				if (endPt.v[i] < to.v[i])
+				if (endPt.v[i] < to.v[i]) {
+					// Did not reach the endpoint. The next point will be one up on
+					// this axis.
 					from.v[i] = endPt.v[i] + cast(cell)1;
-				else {
+				} else {
+					// Reached "to" on this axis, but the box is too big to go any
+					// further.
 					endPt.v[i] = to.v[i];
 
+					// If we're at "to" on the other axes as well, we're there.
 					if (endPt.v[i+1..$] == to.v[i+1..$])
 						reachedTo = true;
 					else {
+						// We should go further on the next axis next time around,
+						// since we're done along this one.
 						from.v[i] = origBeg.v[i];
 						++from.v[i+1];
 					}
 				}
-
 				goto end;
 			}
 		}
-		// All the coords but the last were the same: check the last one too
+		// All the coords but the last were the same: check the last one too.
 		if (endPt.v[$-1] == to.v[$-1])
 			reachedTo = true;
 		else {
@@ -712,10 +723,9 @@ method2:
 				from.v[$-1] = endPt.v[$-1] + cast(cell)1;
 			else {
 				endPt.v[$-1] = to.v[$-1];
-				from.v[$-1] = origBeg.v[$-1];
+				reachedTo = true;
 			}
 		}
-
 end:
 		return data[fromIdx .. getIdx(endPt)+1];
 	}
