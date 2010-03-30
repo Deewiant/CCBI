@@ -805,7 +805,7 @@ private:
 		ref size_t usedCells)
 	{
 		auto dg = (AABB b, AABB fodder, size_t usedCells) {
-			return cheaperToAlloc(b.size, usedCells + fodder.size);
+			return cheaperToAlloc(b.clampedSize, usedCells + fodder.size);
 		};
 
 		auto orig = sLen;
@@ -841,7 +841,7 @@ private:
 				overSize = overlap.size;
 
 			return cheaperToAlloc(
-				b.size, usedCells + fodder.size - overSize);
+				b.clampedSize, usedCells + fodder.size - overSize);
 		};
 
 		auto orig = sLen;
@@ -1003,15 +1003,7 @@ private:
 
 		minMaxSize(&tryBeg, &tryEnd, tryMax, tryMaxSize, tryUsed, idx);
 
-		auto tryBox = AABB(tryBeg, tryEnd);
-
-		// Disallow boxes that cover an entire axis... (The size along that axis
-		// is zero so it's not caught elsewhere.)
-		for (ucell i = 0; i < dim; ++i)
-			if (tryBox.end.v[i] == tryBox.beg.v[i] - 1)
-				return false;
-
-		if (valid(tryBox, boxen[idx], usedCells)) {
+		if (valid(AABB(tryBeg, tryEnd), boxen[idx], usedCells)) {
 			beg       = tryBeg;
 			end       = tryEnd;
 			max       = tryMax;

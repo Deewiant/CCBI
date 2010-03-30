@@ -10,7 +10,7 @@ module ccbi.space.aabb;
 import tango.math.Math   : min, max;
 import tango.stdc.string : memmove;
 
-import ccbi.stdlib : abs, clampedAdd, gcdLog;
+import ccbi.stdlib : abs, clampedAdd, clampedMul, gcdLog;
 import ccbi.space.coords;
 import ccbi.space.utils;
 
@@ -62,6 +62,14 @@ struct AABB(cell dim) {
 			area = size;
 			size *= end.z - beg.z + 1;
 		}
+	}
+
+	size_t clampedSize() {
+		size_t sz = 1;
+		for (ucell i = 0; i < dim; ++i)
+			sz = clampedMul(
+				sz, clampedAdd(cast(size_t)(end.v[i] - beg.v[i]), cast(size_t)1));
+		return sz;
 	}
 
 	void alloc() {

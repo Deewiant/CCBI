@@ -39,6 +39,7 @@ A ipow(A, B)(A x, B exp) {
 T abs(T)(T n) { return n < 0 ? -n : n; }
 
 T clampedAdd(T)(T a, T b) { return a > T.max - b ? T.max : a + b; }
+T clampedMul(T)(T a, T b) { return a > T.max / b ? T.max : a * b; }
 
 private alias char[][] environment_t;
 private size_t envCount = 0x20;
