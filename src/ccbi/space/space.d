@@ -50,7 +50,10 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 		// Threshold for switching to BakAABB. Only limits opIndexAssign, not
 		// load().
-		MAX_PLACED_BOXEN = 64;
+		MAX_PLACED_BOXEN = 64,
+
+		// All-bits-set up to the dimth
+		DimensionBits = 0b111 & ~(1 << dim+1);
 
 	static assert (NEWBOX_PAD          >= 0);
 	static assert (BIGBOX_PAD          >  NEWBOX_PAD);
@@ -1127,15 +1130,59 @@ private:
 
 			befunge93Load(input);
 		} else {
-			auto aabb = getAABB(input, binary, target);
+			auto aabbs = getAABBs(input, binary, target);
 
-			if (aabb.end.x < aabb.beg.x)
+			if (aabbs.length == 0)
 				return;
 
-			aabb.finalize;
+			foreach (box; aabbs) {
+				if (end)
+					end.maxWith(box.end);
+				placeBox(box);
+			}
 
-			if (end)
-				end.maxWith(aabb.end);
+			// Build one to rule them all.
+			//
+			// Note that it may have beg > end along any number of axes!
+			auto aabb = aabbs[0];
+			if (aabbs.length > 1) {
+				// If any box was placed past an axis, the end of that axis is the
+				// maximum of the ends of such boxes. Otherwise, it's the plain
+				// maximum.
+				//
+				// Similarly, if any box was placed before an axis, the beg is the
+				// minimum of such boxes' begs.
+				ubyte foundPast = 0, foundBefore = 0;
+
+				for (ucell i = 0; i < dim; ++i) {
+					if (aabb.beg.v[i] < target.v[i]) foundPast   |= 1 << i;
+					else                             foundBefore |= 1 << i;
+				}
+
+				foreach (b, box; aabbs[1..$]) for (ucell i = 0; i < dim; ++i) {
+
+					if (box.beg.v[i] < target.v[i]) {
+						if (foundPast & 1 << i)
+							aabb.end.v[i] = max(aabb.end.v[i], box.end.v[i]);
+						else {
+							aabb.end.v[i] = box.end.v[i];
+							foundPast |= 1 << i;
+						}
+					} else if (!(foundPast & 1 << i))
+						aabb.end.v[i] = max(aabb.end.v[i], box.end.v[i]);
+
+					if (box.beg.v[i] >= target.v[i]) {
+						if (foundBefore & 1 << i)
+							aabb.beg.v[i] = min(aabb.beg.v[i], box.beg.v[i]);
+						else {
+							aabb.beg.v[i] = box.beg.v[i];
+							foundBefore |= 1 << i;
+						}
+					} else if (!(foundBefore & 1 << i))
+						aabb.beg.v[i] = min(aabb.beg.v[i], box.beg.v[i]);
+				}
+				aabb.finalize;
+			}
 
 			auto p = input.ptr;
 
@@ -1299,56 +1346,111 @@ private:
 		}
 	}
 
-	// If nothing would be loaded, end.x < beg.x in the return value
+	// Returns an array of AABBs (a slice out of a static buffer) which describe
+	// where the input should be loaded. There are at most 2^dim of them; in
+	// binary mode, at most 2.
+	//
+	// If nothing would be loaded, returns null.
 	//
 	// target: where input is being loaded to
-	AABB getAABB(
-		ubyte[] input,
-		bool binary,
-		Coords target)
-	{
-		Coords beg = void;
-		Coords end = target;
+	static if (!befunge93)
+	AABB[] getAABBs(ubyte[] input, bool binary, Coords target)
+	out (result) {
+		if (binary)
+			assert (result.length <= 2);
+	} body {
+		AABB[1 << dim] aabbs;
+		size_t a = 0;
+		static typeof(aabbs) aabbsRet;
 
 		if (binary) {
-			beg = target;
+			auto beg = target;
+			auto end = target;
 
 			size_t i = 0;
 			while (i < input.length && input[i++] == ' '){}
 
 			beg.x += i-1;
 
-			// If i == input.length it was all spaces
-			if (i != input.length) {
-				i = input.length;
-
-				// No need to check bounds here since it can't be all spaces
-				while (input[--i] == ' '){}
-
-				end.x += i;
+			if (i == input.length) {
+				// All spaces: nothing to load.
+				return null;
 			}
 
-			return AABB.unsafe(beg, end);
+			i = input.length;
+
+			// No need to check bounds here since it can't be all spaces
+			while (input[--i] == ' '){}
+
+			if (end.x > cell.max - cast(cell)i) {
+				auto begX = beg.x;
+				end.x = cell.max;
+				aabbsRet[a++] = AABB(beg, end);
+
+				beg.x = cell.min;
+			}
+			end.x += i;
+
+			aabbsRet[a++] = AABB(beg, end);
+			return aabbsRet[0..a];
 		}
 
-		beg = InitCoords!(cell.max,cell.max,cell.max);
-		ubyte getBeg = 0b111;
 		auto pos = target;
-		auto lastNonSpace = end;
-		bool foundNonSpace = false;
+
+		// The index a as used below is a bitmask of along which axes pos
+		// overflowed. Thus it changes over time as we read something like:
+		//
+		//          |
+		//   foobarb|az
+		//      qwer|ty
+		// ---------+--------
+		//      arst|mei
+		//     qwfp |
+		//          |
+		//
+		// After the ending 'p', a will not have its maximum value, which was in
+		// the "mei" quadrant. So we have to keep track of it separately.
+		typeof(a) maxA = 0;
+
+		// A bitmask of which axes we want to search for the beginning point for.
+		// Reset completely at overflows and partially at line and page breaks.
+		auto getBeg = DimensionBits;
+
+		// We want minimal boxes, and thus exclude spaces at edges. These are
+		// helpers toward that. lastNonSpace points to the last found nonspace
+		// and foundNonSpaceFor is the index of the box it belonged to.
+		auto lastNonSpace = target;
+		auto foundNonSpaceFor = aabbs.length;
+
+		// Not per-box: if this remains unchanged, we don't need to load a thing.
+		auto foundNonSpaceForAnyone = aabbs.length;
+
+		foreach (ref box; aabbs) {
+			box.beg = InitCoords!(cell.max, cell.max, cell.max);
+			box.end = InitCoords!(cell.min, cell.min, cell.min);
+		}
 
 		static if (dim >= 2) {
 			bool gotCR = false;
 
 			void newLine() {
-				end.x = max(lastNonSpace.x, end.x);
-
-				pos.x = target.x;
-				++pos.y;
 				gotCR = false;
 
-				if (foundNonSpace)
-					getBeg = 0b001;
+				aabbs[a].end.x = max(aabbs[a].end.x, lastNonSpace.x);
+
+				pos.x = target.x;
+
+				if (++pos.y == cell.min) {
+					if (foundNonSpaceFor == a)
+						aabbs[a].end.maxWith(lastNonSpace);
+
+					foundNonSpaceFor = aabbs.length;
+					getBeg = DimensionBits;
+
+					maxA = max(maxA, a |= 0b010);
+				}
+				a &= ~0b001;
+				getBeg = foundNonSpaceFor == a ? 0b001 : 0b011;
 			}
 		}
 
@@ -1369,15 +1471,23 @@ private:
 						newLine();
 
 				static if (dim >= 3) {
-					end.x = max(lastNonSpace.x, end.x);
-					end.y = max(lastNonSpace.y, end.y);
+					aabbs[a].end.x = max(aabbs[a].end.x, lastNonSpace.x);
+					aabbs[a].end.y = max(aabbs[a].end.y, lastNonSpace.y);
 
 					pos.x = target.x;
 					pos.y = target.y;
-					++pos.z;
 
-					if (foundNonSpace)
-						getBeg = 0b011;
+					if (++pos.z == cell.min) {
+						if (foundNonSpaceFor == a)
+							aabbs[a].end.maxWith(lastNonSpace);
+
+						foundNonSpaceFor = aabbs.length;
+						getBeg = DimensionBits;
+
+						maxA = max(maxA, a |= 0b100);
+					}
+					a &= ~0b011;
+					getBeg = foundNonSpaceFor == a ? 0b011 : 0b111;
 				}
 				break;
 
@@ -1387,23 +1497,47 @@ private:
 						newLine();
 
 				if (b != ' ') {
-					foundNonSpace = true;
+					foundNonSpaceFor = foundNonSpaceForAnyone = a;
 					lastNonSpace = pos;
 
 					if (getBeg) for (size_t i = 0; i < dim; ++i) {
-						auto mask = 1 << i;
-						if (getBeg & mask && pos.v[i] < beg.v[i]) {
-							beg.v[i] = pos.v[i];
-							getBeg &= ~mask;
+						if (getBeg & 1 << i) {
+							if (pos.v[i] < aabbs[a].beg.v[i])
+								aabbs[a].beg.v[i] = pos.v[i];
+							getBeg &= ~(1 << i);
 						}
 					}
 				}
-				++pos.x;
+				if (++pos.x == cell.min) {
+					if (foundNonSpaceFor == a)
+						aabbs[a].end.maxWith(lastNonSpace);
+
+					foundNonSpaceFor = aabbs.length;
+					getBeg = DimensionBits;
+
+					maxA = max(maxA, a |= 0b001);
+				}
 				break;
 		}
-		end.maxWith(lastNonSpace);
+		if (foundNonSpaceForAnyone == aabbs.length)
+			return null;
 
-		return AABB.unsafe(beg, end);
+		if (foundNonSpaceFor < aabbs.length)
+			aabbs[foundNonSpaceFor].end.maxWith(lastNonSpace);
+
+		// Since a is a bitmask, the AABBs that we used aren't necessarily in
+		// order. Fix that while copying them to aabbsRet.
+		size_t i = 0;
+		foreach (inout box; aabbs[0..maxA+1]) {
+			if (!(box.beg.x == cell.max && box.end.x == cell.min)) {
+				box.finalize;
+				aabbsRet[i++] = box;
+
+				for (ucell j = 0; j < dim; ++j)
+					assert (box.beg.v[j] <= box.end.v[j]);
+			}
+		}
+		return aabbsRet[0..i];
 	}
 
 	// Outputs space in the range [beg,end).
