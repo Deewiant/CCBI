@@ -427,9 +427,8 @@ private:
 		}
 
 		auto box = getBoxFor(c);
-		auto pox = reallyPlaceBox(box);
-		recentBuf.push(Memory(box, pox, c));
-		aabb = pox;
+		placeBox(box, &c, &aabb);
+		recentBuf.push(Memory(box, aabb, c));
 		return true;
 	}
 	AABB getBoxFor(Coords c)
@@ -437,7 +436,7 @@ private:
 		foreach (box; boxen)
 			assert (!box.contains(c));
 	} out (box) {
-		assert (box.contains(c));
+		assert (box.safeContains(c));
 	} body {
 		if (recentBuf.size() == recentBuf.CAPACITY) {
 
@@ -472,7 +471,7 @@ private:
 						// of i): extend last along the axis where c was outside it.
 						auto end = last.end;
 						end.v[i] += BIGBOX_PAD;
-						return AABB(c, end);
+						return AABB.unsafe(c, end);
 
 					// First of many places in this function where we need to check
 					// the negative direction separately from the positive.
@@ -488,7 +487,7 @@ private:
 
 						auto beg = last.beg;
 						beg.v[i] -= BIGBOX_PAD;
-						return AABB(beg, c);
+						return AABB.unsafe(beg, c);
 
 					} else if (c.v[i] != bigSequenceStart.v[i])
 						break;
@@ -544,7 +543,7 @@ private:
 							// heuristic for the n case but we'd need to move all the
 							// data in the big box to the resulting different big box
 							// anyway. This way is much better.
-							return AABB(bigSequenceStart, end);
+							return AABB.unsafe(bigSequenceStart, end);
 
 						// Negative direction
 						} else if (
@@ -564,7 +563,7 @@ private:
 
 							auto beg = last.beg;
 							beg.v[i] -= BIGBOX_PAD;
-							return AABB(beg, bigSequenceStart);
+							return AABB.unsafe(beg, bigSequenceStart);
 
 						} else if (c.v[i] == firstPlacedBig.v[i])
 							foundOneMatch = true;
@@ -627,12 +626,12 @@ private:
 					if (allAlongPosLine) {
 						auto end = c;
 						end.v[axis] += BIGBOX_PAD;
-						return AABB(c, end);
+						return AABB.unsafe(c, end);
 					} else {
 						assert (allAlongNegLine);
 						auto beg = c;
 						beg.v[axis] -= BIGBOX_PAD;
-						return AABB(beg, c);
+						return AABB.unsafe(beg, c);
 					}
 				}
 			}
@@ -641,7 +640,10 @@ private:
 		return AABB(c.clampedSub(NEWBOX_PAD), c.clampedAdd(NEWBOX_PAD));
 	}
 
-	void placeBox(AABB aabb) {
+	void placeBox(AABB aabb, Coords* reason = null, AABB* reasonBox = null)
+	in {
+		assert ((reason == null) == (reasonBox == null));
+	} body {
 		// Split the box up along any axes it wraps around on.
 		AABB[1 << dim] aabbs;
 		size_t a = 1;
@@ -663,12 +665,10 @@ private:
 				++stats.space.boxesIncorporated;
 				continue placing;
 			}
-
-			// aabb is assumed to be finalized but any split ones aren't
-			if (a > 1)
-				box.finalize();
-
-			reallyPlaceBox(box);
+			box.finalize();
+			auto placed = reallyPlaceBox(box);
+			if (reason && placed.contains(*reason))
+				*reasonBox = placed;
 		}
 	}
 
@@ -1691,11 +1691,9 @@ private:
 		size_t i = 0;
 		foreach (inout box; aabbs[0..maxA+1]) {
 			if (!(box.beg.x == cell.max && box.end.x == cell.min)) {
-				box.finalize;
-				aabbsRet[i++] = box;
-
 				for (ucell j = 0; j < dim; ++j)
 					assert (box.beg.v[j] <= box.end.v[j]);
+				aabbsRet[i++] = box;
 			}
 		}
 		return aabbsRet[0..i];
