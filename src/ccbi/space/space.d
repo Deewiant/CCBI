@@ -1550,7 +1550,7 @@ private:
 			// No need to check bounds here since it can't be all spaces
 			while (input[--i] == ' '){}
 
-			if (end.x > cell.max - i) {
+			if (end.x > cast(cell)(cast(size_t)cell.max - i)) {
 				auto begX = beg.x;
 				end.x = cell.max;
 				aabbsRet[a++] = AABB(beg, end);
