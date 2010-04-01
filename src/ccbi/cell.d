@@ -14,3 +14,6 @@ version (cell64) {
 	alias  int  cell;
 	alias uint ucell;
 }
+
+// Many places assume this.
+static assert (cell.sizeof <= size_t.sizeof);
