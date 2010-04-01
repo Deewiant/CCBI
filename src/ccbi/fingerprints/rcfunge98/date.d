@@ -61,8 +61,8 @@ void pushYMD(Time time) {
 cell getYear(Time time) {
 	return
 		Gregorian.generic.getEra(time) == Gregorian.BC_ERA
-			? -Gregorian.generic.getYear(time)
-			:  Gregorian.generic.getYear(time);
+			? -cast(cell)Gregorian.generic.getYear(time)
+			:            Gregorian.generic.getYear(time);
 }
 
 // Since Tango functions take uint/era instead of int
