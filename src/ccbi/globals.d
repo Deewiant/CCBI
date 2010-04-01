@@ -69,7 +69,7 @@ private char[] FEATURES() {
 	version (tracer)              s ~= " tracer,";
 	version (detectInfiniteLoops) s ~= " extra infinite loop detection,";
 
-	s = "\n" ~ WordWrapFromTo(1, 11, s[0..$-1] ~ ".");
+	s = "\n" ~ WordWrapFromTo(1, 12, s[0..$-1] ~ ".");
 
 	if (ALL_FINGERPRINTS.length > 0) {
 		char[] f = "Fingerprints:";
