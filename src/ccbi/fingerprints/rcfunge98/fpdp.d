@@ -47,19 +47,26 @@ import tango.text.convert.Float : toFloat;
 
 union Union {
 	double d;
-	align (1) struct { cell h, l; }
+	     static if (cell.sizeof == 4) align (1) struct { cell h, l; }
+	else static if (cell.sizeof == 8) cell c;
+	else static assert (false);
 }
-static assert (Union.sizeof == double.sizeof);
 
 Union popDbl() {
 	Union u;
-	u.l = cip.stack.pop;
-	u.h = cip.stack.pop;
+	static if (cell.sizeof == 4) {
+		u.l = cip.stack.pop;
+		u.h = cip.stack.pop;
+	} else
+		u.c = cip.stack.pop;
 	return u;
 }
 void pushDbl(Union u) {
-	cip.stack.push(u.h);
-	cip.stack.push(u.l);
+	static if (cell.sizeof == 4) {
+		cip.stack.push(u.h);
+		cip.stack.push(u.l);
+	} else
+		cip.stack.push(u.c);
 }
 
 void add() { auto u = popDbl; auto d = u.d; u = popDbl; u.d += d; pushDbl(u); }

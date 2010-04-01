@@ -335,7 +335,7 @@ out (inv) {
 	// floor(2^31 / a) * 2 differs from floor(2^32 / a) by at most 1. I seem
 	// unable to discern what property a needs to have for them to differ, so we
 	// figure it out using a possibly suboptimal method.
-	U gcd = 1 << (U.sizeof * 8 - 1);
+	U gcd = cast(U)1 << (U.sizeof * 8 - 1);
 	U quot;
 
 	if (a <= gcd)

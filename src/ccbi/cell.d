@@ -7,7 +7,10 @@
 
 module ccbi.cell;
 
-import tango.stdc.stdint : int_fast32_t, uint_fast32_t;
-
-alias    int_fast32_t  cell;
-alias   uint_fast32_t ucell;
+version (cell64) {
+	alias  long  cell;
+	alias ulong ucell;
+} else {
+	alias  int  cell;
+	alias uint ucell;
+}

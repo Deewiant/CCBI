@@ -63,6 +63,8 @@ private char[] FEATURES() {
 	version  (befunge98)          s ~= " Befunge-98,";
 	version (trefunge98)          s ~= " Trefunge-98,";
 	version  (befunge93)          s ~= " Befunge-93,";
+	version (cell64)              s ~= " 64-bit cells,";
+	else                          s ~= " 32-bit cells,";
 	version (statistics)          s ~= " statistics,";
 	version (tracer)              s ~= " tracer,";
 	version (detectInfiniteLoops) s ~= " extra infinite loop detection,";

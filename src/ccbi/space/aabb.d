@@ -294,7 +294,7 @@ struct AABB(cell dim) {
 			// But if p is zero, we get 2^(ucell bits) which is ucell.max + 1 and
 			// therefore overflows to 0. When p is zero, g is 1, so use ucell.max
 			// in that case.
-			auto mulMax = p ? 1 << ucell.sizeof*8 - p : ucell.max;
+			auto mulMax = p ? cast(ucell)1 << ucell.sizeof*8 - p : ucell.max;
 
 			if (s <= mulMax) {
 				auto gs = g * s;

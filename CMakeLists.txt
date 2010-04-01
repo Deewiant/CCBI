@@ -59,6 +59,8 @@ endforeach()
 set(CCBI_BUILD_TYPE "Release" CACHE STRING
     "How to build CCBI, one of: Release; Debug; Release-LLVM (requires LDC, LLVM, sed, and clang; highly recommended); Release-LLVM-Safer (less LTO, less buggy).")
 
+option(CELL_IS_64_BIT "Stack and Funge-Space cells are 64-bit integers instead of 32-bit." OFF)
+
 option(ENABLE_BEFUNGE93  "Build support for Befunge-93." ON)
 option(ENABLE_FUNGE98_1 "Build support for Unefunge-98 (one-dimensional Funge-98)." OFF)
 option(ENABLE_FUNGE98_2  "Build support for Befunge-98 (two-dimensional Funge-98)." ON)
@@ -80,6 +82,7 @@ macro(ccbiFlagOpt opt flag)
 	endif()
 endmacro()
 
+ccbiFlagOpt(CELL_IS_64_BIT -version=cell64)
 ccbiFlagOpt(ENABLE_BEFUNGE93 -version=befunge93)
 ccbiFlagOpt(ENABLE_FUNGE98_1 -version=unefunge98)
 ccbiFlagOpt(ENABLE_FUNGE98_2 -version=befunge98)

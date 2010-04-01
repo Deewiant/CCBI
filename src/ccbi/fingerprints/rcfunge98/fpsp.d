@@ -47,7 +47,7 @@ import tango.text.convert.Float : toFloat;
 
 union Union {
 	float f;
-	cell c;
+	int c;
 }
 static assert (Union.sizeof == float.sizeof);
 

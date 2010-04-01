@@ -37,7 +37,7 @@ import tango.math.Math : sqrt, sin, cos, PI;
 
 union Union {
 	float f;
-	cell c;
+	int c;
 }
 static assert (Union.sizeof == float.sizeof);
 
