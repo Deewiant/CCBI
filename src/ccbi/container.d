@@ -87,7 +87,11 @@ private template ArgNames(args...) {
 
 struct CellContainer {
 	bool isDeque = false;
-	union {
+	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1055
+	version (DigitalMars) {
+		Stack!(cell) stack;
+		Deque        deque;
+	} else union {
 		Stack!(cell) stack;
 		Deque        deque;
 	}

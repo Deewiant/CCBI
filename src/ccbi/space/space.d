@@ -1133,6 +1133,13 @@ private:
 					area = void,
 					pageStart = void;
 
+				// DMD doesn't like passing uninitialized things to functions...
+				version (DigitalMars) {
+					width = 0;
+					area = 0;
+					pageStart = 0;
+				}
+
 				// These depend on the original beg and thus have to be initialized
 				// before the call to getContiguousRange
 

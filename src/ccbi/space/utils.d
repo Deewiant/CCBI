@@ -15,9 +15,11 @@ import ccbi.space.coords;
 
 template Dimension(cell dim) {
 	template Coords(cell x, cell y, cell z) {
-		     static if (dim == 1) const Coords = .Coords!(dim)(x);
-		else static if (dim == 2) const Coords = .Coords!(dim)(x,y);
-		else static if (dim == 3) const Coords = .Coords!(dim)(x,y,z);
+		// Using {x} instead of Coords(x) and type inference is:
+		// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=4036
+		     static if (dim == 1) const .Coords!(dim) Coords = {x};
+		else static if (dim == 2) const .Coords!(dim) Coords = {x,y};
+		else static if (dim == 3) const .Coords!(dim) Coords = {x,y,z};
 	}
 	template Coords(cell x, cell y) { const Coords = Coords!(x,y,0); }
 	template Coords(cell x)         { const Coords = Coords!(x,0,0); }

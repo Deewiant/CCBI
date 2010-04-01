@@ -20,7 +20,14 @@ private:
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
 	bool bak = false;
-	union {
+	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1055
+	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3991
+	version (DigitalMars) {
+		Coords relPos, oBeg, ob2b, ob2e;
+		AABB box;
+		size_t boxIdx;
+		Coords actualPos, beg, end;
+	} else union {
 		// bak = false
 		struct {
 			Coords relPos = void, oBeg = void, ob2b = void, ob2e = void;
