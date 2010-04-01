@@ -85,7 +85,7 @@ void ctor() {
 	usingTRDS = true;
 	if (loadedTick == loadedTick.max) {
 		loadedTick = state.tick;
-		earlyState = state.deepCopy;
+		state.deepCopyTo(&earlyState);
 
 		// Start executing from the next IP after cip instead of ips.length
 		earlyState.startIdx = cipIdx;
@@ -358,7 +358,7 @@ Request timeJump(IP ip) {
 			travellers.removeAt(i--);
 
 	state.free();
-	state = earlyState.deepCopy(true);
+	earlyState.deepCopyTo(&state, true);
 
 	version (tracer)
 		Tracer.jumpedToPast();

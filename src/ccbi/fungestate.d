@@ -51,10 +51,11 @@ struct FungeState(cell dim, bool befunge93) {
 	version (TRDS)
 		auto timeStopper = size_t.max;
 
-	typeof(*this) deepCopy(bool active = false) {
-		typeof(*this) copy = *this;
-
-		with (copy) {
+	// Since we need to pass the address of the space to the IPs when
+	// deepCopying, we need to take the target address to write to here.
+	void deepCopyTo(typeof(this) copy, bool active = false) {
+		*copy = *this;
+		with (*copy) {
 			space = space.deepCopy();
 
 			static if (!befunge93) {
@@ -66,7 +67,6 @@ struct FungeState(cell dim, bool befunge93) {
 			version (REFC) references = references.dup;
 			version (SUBR) callStack  =  callStack.dup;
 		}
-		return copy;
 	}
 	void free() { space.free(); }
 }
