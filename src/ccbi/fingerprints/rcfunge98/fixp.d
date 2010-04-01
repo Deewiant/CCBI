@@ -45,7 +45,7 @@ void pushFixp(real r) {
 	else if (ieee.isNaN(r))
 		reverse;
 	else
-		cip.stack.push(cast(cell)math.rndint(10000 * r));
+		cip.stack.push(math.rndint(10000 * r));
 }
 real popFixp() {
 	return cast(real)cip.stack.pop / 10000;
@@ -66,19 +66,19 @@ void rand() {
 	auto c = cip.stack.pop;
 	if (c < 0) {
 		c = -c;
-		cip.stack.push(cast(cell)-randomUpTo(c));
+		cip.stack.push(-randomUpTo(c));
 	} else
-		cip.stack.push(cast(cell) randomUpTo(c));
+		cip.stack.push( randomUpTo(c));
 }
 void neg    () { cip.stack.push(-cip.stack.pop); }
-void mulpi  () { cip.stack.push(cast(cell)math.rndint(math.PI * cip.stack.pop)); }
-void abs    () { cip.stack.push(cast(cell)math.abs(cip.stack.pop)); }
+void mulpi  () { cip.stack.push(math.rndint(math.PI * cip.stack.pop)); }
+void abs    () { cip.stack.push(math.abs(cip.stack.pop)); }
 void sqrt   () {
 	auto r = cast(real)cip.stack.pop;
 	if (r < 0)
 		reverse;
 	else
-		cip.stack.push(cast(cell)math.rndint(math.sqrt(r)));
+		cip.stack.push(math.rndint(math.sqrt(r)));
 }
 
 void signbit() { auto n = cip.stack.pop; cip.stack.push(n > 0 ? 1 : (n < 0 ? -1 : 0)); }

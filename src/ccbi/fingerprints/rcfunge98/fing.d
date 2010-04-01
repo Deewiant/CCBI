@@ -24,7 +24,7 @@ private bool popIdx(out cell c) {
 	c = cip.stack.pop;
 	if (c >= 'A')
 		c -= 'A';
-	return isSemantics(cast(cell)(c + 'A'));
+	return isSemantics(c + 'A');
 }
 
 void swap() {

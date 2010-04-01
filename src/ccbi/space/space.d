@@ -222,7 +222,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 				// If our beg is already better than part of the box, don't check
 				// the whole box
 				if (box.end.v[axis] > beg.v[axis])
-					last.v[axis] = beg.v[axis] - cast(cell)1;
+					last.v[axis] = beg.v[axis] - 1;
 
 				last -= box.beg;
 
@@ -298,7 +298,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 
 				// Careful with underflow here: don't use max
 				if (box.beg.v[axis] < end.v[axis])
-					last.v[axis] = end.v[axis] + cast(cell)1 - box.beg.v[axis];
+					last.v[axis] = end.v[axis] + 1 - box.beg.v[axis];
 
 				Coords c = void;
 
@@ -463,7 +463,7 @@ private:
 						// is a candidate for this if block, the fact that the
 						// current axis isn't at bigSequenceStart means that that one
 						// wouldn't be correct.
-						for (cell j = i + cast(cell)1; j < dim; ++j)
+						for (cell j = i + 1; j < dim; ++j)
 							if (c.v[j] != bigSequenceStart.v[j])
 								break outer;
 
@@ -481,7 +481,7 @@ private:
 						if (sawEnd)
 							break;
 						sawBeg = true;
-						for (cell j = i + cast(cell)1; j < dim; ++j)
+						for (cell j = i + 1; j < dim; ++j)
 							if (c.v[j] != bigSequenceStart.v[j])
 								break outer;
 
@@ -515,7 +515,7 @@ private:
 							// we'd match a point like the b in the graphic, which we
 							// do not want.
 							if (!foundOneMatch) {
-								for (cell j = i+cast(cell)1; j < dim; ++j) {
+								for (cell j = i+1; j < dim; ++j) {
 									if (c.v[j] == firstPlacedBig.v[j]) {
 										foundOneMatch = true;
 										break;
@@ -551,7 +551,7 @@ private:
 							 c.v[i] >= firstPlacedBig.v[i] - BIG_SEQ_MAX_SPACING))
 						{
 							if (!foundOneMatch) {
-								for (cell j = i+cast(cell)1; j < dim; ++j) {
+								for (cell j = i+1; j < dim; ++j) {
 									if (c.v[j] == firstPlacedBig.v[j]) {
 										foundOneMatch = true;
 										break;
@@ -581,7 +581,7 @@ private:
 						    v.v[d] >  NEWBOX_PAD &&
 						    v.v[d] <= NEWBOX_PAD + BIG_SEQ_MAX_SPACING)
 						{
-							for (cell j = d + cast(cell)1; j < dim; ++j) {
+							for (cell j = d + 1; j < dim; ++j) {
 								if (v.v[j] != 0) {
 									allAlongPosLine = false;
 									if (!allAlongNegLine)
@@ -594,7 +594,7 @@ private:
 						           v.v[d] <  -NEWBOX_PAD &&
 						           v.v[d] >= -NEWBOX_PAD - BIG_SEQ_MAX_SPACING)
 						{
-							for (cell j = d + cast(cell)1; j < dim; ++j) {
+							for (cell j = d + 1; j < dim; ++j) {
 								if (v.v[j] != 0) {
 									allAlongNegLine = false;
 									if (!allAlongPosLine)
@@ -1345,7 +1345,7 @@ private:
 					foreach (ref x; arr) {
 						ubyte b = *p++;
 						if (b != ' ') {
-							x = cast(cell)b;
+							x = b;
 							++stats.space.assignments;
 						}
 					}
@@ -1374,7 +1374,7 @@ private:
 						ubyte b = *p++;
 						switch (b) {
 							default:
-								arr[i++] = cast(cell)b;
+								arr[i++] = b;
 								++stats.space.assignments;
 								break;
 
@@ -1490,7 +1490,7 @@ private:
 					break loop;
 
 				if (input[i] != ' ')
-					aabb[pos] = cast(cell)input[i];
+					aabb[pos] = input[i];
 
 				if (++pos.x < 80)
 					break;
@@ -1550,7 +1550,7 @@ private:
 			// No need to check bounds here since it can't be all spaces
 			while (input[--i] == ' '){}
 
-			if (end.x > cell.max - cast(cell)i) {
+			if (end.x > cell.max - i) {
 				auto begX = beg.x;
 				end.x = cell.max;
 				aabbsRet[a++] = AABB(beg, end);

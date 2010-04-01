@@ -40,7 +40,7 @@ void getHostByName() {
 		return reverse();
 	}
 
-	cip.stack.push(cast(cell)h.addrList[0]);
+	cip.stack.push(h.addrList[0]);
 }
 
 void peek() {
@@ -57,7 +57,7 @@ void peek() {
 	if (n == -1)
 		reverse();
 	else
-		cip.stack.push(cast(cell)n);
+		cip.stack.push(n);
 }
 
 }

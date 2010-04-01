@@ -101,9 +101,9 @@ bool cputDirect(ubyte c) {
 
 void popVector(out Coords c) {
 	with (c) {
-		static if (dim >= 3) z = cast(cell)cip.stack.pop;
-		static if (dim >= 2) y = cast(cell)cip.stack.pop;
-		                     x = cast(cell)cip.stack.pop;
+		static if (dim >= 3) z = cip.stack.pop;
+		static if (dim >= 2) y = cip.stack.pop;
+		                     x = cip.stack.pop;
 	}
 }
 void popOffsetVector(out Coords c) {
@@ -175,12 +175,12 @@ void pushString(in char[] s) {
 
 	version (MODE) if (cip.stack.mode & INVERT_MODE) {
 		foreach (c; s)
-			*p++ = cast(cell)c;
+			*p++ = c;
 		return;
 	}
 
 	foreach_reverse (c; s)
-		*p++ = cast(cell)c;
+		*p++ = c;
 }
 
 }

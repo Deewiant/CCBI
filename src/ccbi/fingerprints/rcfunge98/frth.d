@@ -22,7 +22,7 @@ mixin (Fingerprint!(
 
 template FRTH() {
 
-void stackSize() { with (*cip.stack) push(cast(cell)size); }
+void stackSize() { with (*cip.stack) push(size); }
 
 void forthOver() {
 	with (*cip.stack) {

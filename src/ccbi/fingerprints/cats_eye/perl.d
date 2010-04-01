@@ -82,7 +82,7 @@ void eval(bool convertToInteger)() {
 
 			cell c = void;
 
-			try c = cast(cell)parse(string);
+			try c = parse(string);
 			catch {
 				c = -1;
 			}

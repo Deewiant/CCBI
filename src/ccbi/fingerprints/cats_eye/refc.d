@@ -25,7 +25,7 @@ template REFC() {
 // Reference
 void reference() {
 	state.references ~= popVector();
-	cip.stack.push(cast(cell)(state.references.length - 1));
+	cip.stack.push(state.references.length - 1);
 }
 
 // Dereference

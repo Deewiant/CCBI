@@ -309,10 +309,10 @@ void canOpener() {
 }
 
 // doric column
-void doricColumn() { with (*cip.stack) push(pop + cast(cell)1); }
+void doricColumn() { with (*cip.stack) push(pop + 1); }
 
 // toilet seat
-void toiletSeat()  { with (*cip.stack) push(pop - cast(cell)1); }
+void toiletSeat()  { with (*cip.stack) push(pop - 1); }
 
 // lightning bolt
 void lightningBolt() { with (*cip.stack) push(-pop); }

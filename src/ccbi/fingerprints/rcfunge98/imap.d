@@ -24,7 +24,7 @@ void ipCtor() {
 	// Support mapping 0 through 255
 	cip.mapping = new typeof(cip.mapping)(256);
 	foreach (j, inout i; cip.mapping)
-		i = cast(cell)j;
+		i = j;
 }
 void ipDtor() {
 	foreach (j, i; cip.mapping)
@@ -54,7 +54,7 @@ void unmap() {
 
 void unmapAll() {
 	foreach (j, inout i; cip.mapping)
-		i = cast(cell)j;
+		i = j;
 }
 
 }

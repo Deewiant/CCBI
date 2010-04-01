@@ -928,7 +928,7 @@ bool readCell(inout cell v, char[] s) {
 	if (!s) return true;
 
 	if (s.length == 1) {
-		v = cast(cell)s[0];
+		v = s[0];
 		return true;
 	}
 

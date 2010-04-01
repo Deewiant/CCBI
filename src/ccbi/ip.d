@@ -210,7 +210,7 @@ struct IP(cell dim, bool befunge93) {
 		Stack!(Semantics)*[26] semantics;
 
 		typeof(semantics[0]) requireSems(.cell i, ContainerStats* stats) {
-			assert (isSemantics(cast(.cell)(i + 'A')));
+			assert (isSemantics(i + 'A'));
 
 			auto sems = semantics[i];
 			if (!sems) {

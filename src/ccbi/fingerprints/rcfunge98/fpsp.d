@@ -85,7 +85,7 @@ void fromASCII() {
 }
 void fromInt() { auto c = cip.stack.pop; Union u; u.f = math.rndint(c); pushFl(u); }
 
-void toInt() { auto u = popFl; cip.stack.push(cast(cell)math.rndint(u.f)); }
+void toInt() { auto u = popFl; cip.stack.push(math.rndint(u.f)); }
 void print() {
 	auto u = popFl;
 	version (TRDS)

@@ -38,7 +38,7 @@ out {
 typeof(StopWatch.microsec()) resolution = -1;
 
 // Granularity
-void granularity() { cip.stack.push(cast(cell)resolution); }
+void granularity() { cip.stack.push(resolution); }
 
 // Mark
 void mark() { cip.timer.start; cip.timerMarked = true; }
@@ -46,7 +46,7 @@ void mark() { cip.timer.start; cip.timerMarked = true; }
 // Timer
 void timer() {
 	if (cip.timerMarked)
-		cip.stack.push(cast(cell)cip.timer.microsec);
+		cip.stack.push(cip.timer.microsec);
 	else
 		reverse();
 }
@@ -56,9 +56,9 @@ void eraseMark() { cip.timerMarked = false; }
 
 // Second
 void second() {
-	cip.stack.push(cast(cell)(
+	cip.stack.push(
 		Clock.now().ticks % TimeSpan.fromSeconds(1).ticks
-		/ TimeSpan.fromMicros(1).ticks));
+		/ TimeSpan.fromMicros(1).ticks);
 }
 
 }

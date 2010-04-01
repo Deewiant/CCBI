@@ -75,7 +75,7 @@ void create() {
 				sockets.length = (sockets.length+1) * 2;
 			sockets[s] = sock;
 
-			push(cast(cell)s);
+			push(s);
 		} catch {
 			reverse();
 		}
@@ -155,11 +155,7 @@ void accept() {
 
 		auto addr = cast(IPv4Address)as.remoteAddress;
 
-		cip.stack.push(
-			cast(cell)addr.port,
-			cast(cell)addr.addr,
-			cast(cell)i
-		);
+		cip.stack.push(addr.port, addr.addr, i);
 	} catch {
 		reverse();
 	}
@@ -185,10 +181,10 @@ void receive() {
 		if (got == Berkeley.ERROR)
 			return reverse();
 
-		push(cast(cell)got);
+		push(got);
 
 		for (typeof(got) i = 0; i < got; ++i, ++c.x)
-			state.space[c] = cast(cell)buffer[i];
+			state.space[c] = buffer[i];
 	}
 }
 
@@ -210,7 +206,7 @@ void send() {
 
 		auto sent = sockets[s].send(buffer[0..len]);
 
-		push(cast(cell)sent);
+		push(sent);
 
 		if (sent == Berkeley.ERROR)
 			return reverse();
@@ -267,7 +263,7 @@ void toInt() {
 	if (n == IPv4Address.ADDR_NONE)
 		return reverse();
 	else
-		cip.stack.push(cast(cell)n);
+		cip.stack.push(n);
 }
 
 }

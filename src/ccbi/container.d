@@ -673,7 +673,7 @@ struct Deque {
 		}
 
 		foreach (c; cs)
-			head.array[head.head++] = cast(cell)c;
+			head.array[head.head++] = c;
 	}
 	private void pushTail(C...)(C cs) {
 		size_t i = 0;
@@ -690,7 +690,7 @@ struct Deque {
 				// i.e. push what we can into the current tail.
 				foreach (j, c; cs) {
 					if (tail.tail > 0)
-						tail.array[--tail.tail] = cast(cell)c;
+						tail.array[--tail.tail] = c;
 					else {
 						i = j;
 						break;
@@ -704,7 +704,7 @@ struct Deque {
 		// Another tuple hacks, equivalent to foreach (c; cs[i..$]).
 		foreach (j, c; cs)
 			if (j >= i)
-				tail.array[--tail.tail] = cast(cell)c;
+				tail.array[--tail.tail] = c;
 	}
 
 	bool empty() { return head == tail && head.head <= head.tail; }

@@ -83,7 +83,7 @@ void append() {
 void compare() {
 	auto s = popString().dup;
 
-	cip.stack.push(cast(cell)ascii.compare(s, popString()));
+	cip.stack.push(ascii.compare(s, popString()));
 }
 
 // Done like so so that \n flushes
@@ -128,8 +128,8 @@ void get() {
 			}
 
 			if (zeroLeft) {
-				auto toEnd   = cast(ucell)(cell.max - c.x + 1);
-				auto fromBeg = cast(ucell)(c2.x - cell.min);
+				ucell toEnd   = cell.max - c.x + 1;
+				ucell fromBeg = c2.x - cell.min;
 
 				size_t neededLen = toEnd + fromBeg;
 
@@ -201,7 +201,7 @@ void length() {
 	auto s = popString();
 
 	pushStringz(s);
-	cip.stack.push(cast(cell)s.length);
+	cip.stack.push(s.length);
 }
 
 void put() {
@@ -210,7 +210,7 @@ void put() {
 	auto s = popStringWithZero();
 
 	foreach (ch; s) {
-		state.space[c] = cast(cell)ch;
+		state.space[c] = ch;
 		++c.x;
 	}
 }
@@ -239,7 +239,7 @@ void itoa() {
 void atoi() {
 	auto s = popString();
 
-	try cip.stack.push(cast(cell)parse(s));
+	try cip.stack.push(parse(s));
 	catch {
 		reverse();
 	}

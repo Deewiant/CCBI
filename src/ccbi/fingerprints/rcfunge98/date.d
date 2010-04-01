@@ -53,16 +53,16 @@ Time popYMD() {
 void pushYMD(Time time) {
 	cip.stack.push(
 		getYear(time),
-		cast(cell)Gregorian.generic.getMonth(time),
-		cast(cell)Gregorian.generic.getDayOfMonth(time)
+		Gregorian.generic.getMonth(time),
+		Gregorian.generic.getDayOfMonth(time)
 	);
 }
 
 cell getYear(Time time) {
-	return cast(cell)(
+	return
 		Gregorian.generic.getEra(time) == Gregorian.BC_ERA
 			? -Gregorian.generic.getYear(time)
-			:  Gregorian.generic.getYear(time));
+			:  Gregorian.generic.getYear(time);
 }
 
 // Since Tango functions take uint/era instead of int
@@ -82,7 +82,7 @@ void addDays() {
 void dayDiff() {
 	try {
 		auto t2 = popYMD().span, t1 = popYMD().span;
-		cip.stack.push(cast(cell)((t1 -= t2).days));
+		cip.stack.push((t1 -= t2).days);
 	} catch {}
 }
 
@@ -101,7 +101,7 @@ void ymdToJdn() {
 			t = popYMD().span,
 			epoch = Gregorian.generic.toTime(4714,11,24, 0,0,0,0, Gregorian.BC_ERA).span;
 
-		cip.stack.push(cast(cell)(t - epoch).days);
+		cip.stack.push((t - epoch).days);
 	} catch {}
 }
 
@@ -127,12 +127,12 @@ void yearDayToFull() {
 }
 
 void weekDay() {
-	try cip.stack.push(cast(cell)((Gregorian.generic.getDayOfWeek(popYMD())-1) % 7));
+	try cip.stack.push((Gregorian.generic.getDayOfWeek(popYMD())-1) % 7);
 	catch {}
 }
 
 void yearDay() {
-	try cip.stack.push(cast(cell) (Gregorian.generic.getDayOfYear(popYMD())-1));
+	try cip.stack.push(Gregorian.generic.getDayOfYear(popYMD())-1);
 	catch {}
 }
 

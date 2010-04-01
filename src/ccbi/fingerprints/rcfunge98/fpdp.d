@@ -100,7 +100,7 @@ void fromASCII() {
 }
 void fromInt() { auto c = cip.stack.pop; Union u; u.d = math.rndint(c); pushDbl(u); }
 
-void toInt() { auto u = popDbl; cip.stack.push(cast(cell)math.rndint(u.d)); }
+void toInt() { auto u = popDbl; cip.stack.push(math.rndint(u.d)); }
 void print() {
 	auto u = popDbl;
 	version (TRDS)

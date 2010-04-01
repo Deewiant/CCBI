@@ -369,8 +369,8 @@ Request timeJump(IP ip) {
 void stop  () { ++stats.timeStopped; state.timeStopper = cipIdx;     }
 void resume() {                      state.timeStopper = size_t.max; }
 
-void now () { cip.stack.push(cast(cell)state.tick); }
-void maxT() { cip.stack.push(cast(cell)loadedTick); }
+void now () { cip.stack.push(state.tick); }
+void maxT() { cip.stack.push(loadedTick); }
 
 void reset() {
 	cip.mode &=

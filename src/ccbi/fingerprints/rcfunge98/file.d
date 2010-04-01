@@ -39,11 +39,11 @@ FileHandle[] handles;
 cell nextFreeHandle() {
 	foreach (i, h; handles)
 		if (h.handle is null)
-			return cast(cell)i;
+			return i;
 
 	auto n = handles.length;
 	handles.length = (handles.length + 1) * 2;
-	return cast(cell)n;
+	return n;
 }
 
 void fopen() {
@@ -137,7 +137,7 @@ void fgets() {
 		str.length = s;
 
 		pushStringz(str);
-		cip.stack.push(cast(cell)str.length);
+		cip.stack.push(str.length);
 	} catch {
 		return reverse();
 	}
@@ -170,7 +170,7 @@ void ftell() {
 		return reverse();
 	}
 
-	cip.stack.push(cast(cell)p);
+	cip.stack.push(p);
 }
 
 void fseek() {
@@ -220,7 +220,7 @@ void fread() {
 
 	Coords pos = handles[h].buf;
 	foreach (b; buf) {
-		state.space[pos] = cast(cell)b;
+		state.space[pos] = b;
 		++pos.x;
 	}
 }

@@ -58,7 +58,7 @@ void getEnv() {
 }
 
 void getEnvCount() {
-	cip.stack.push(cast(cell)environment().length);
+	cip.stack.push(environment().length);
 }
 
 void putEnv() {

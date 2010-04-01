@@ -37,15 +37,15 @@ void useLocal() { state.utc = false; }
 template TimeFunc(char[] internal_f, char[] f, char[] offset = "0") {
 	const TimeFunc =
 		"void " ~ internal_f ~ "() {"
-		"	cip.stack.push(cast(cell)("
-		"		(state.utc ? Clock.now : WallClock.now).time." ~f~ " + " ~offset~ "));"
+		"	cip.stack.push("
+		"		(state.utc ? Clock.now : WallClock.now).time." ~f~ " + " ~offset~ ");"
 		"}";
 }
 template DateFunc(char[] internal_f, char[] f, char[] offset = "0") {
 	const DateFunc =
 		"void " ~ internal_f ~ "() {"
-		"	cip.stack.push(cast(cell)(Gregorian.generic."
-		"		" ~f~ "(state.utc ? Clock.now : WallClock.now) + " ~offset~ "));"
+		"	cip.stack.push(Gregorian.generic."
+		"		" ~f~ "(state.utc ? Clock.now : WallClock.now) + " ~offset~ ");"
 		"}";
 }
 

@@ -80,7 +80,7 @@ void toggleEcho  () { if (!ccbi_echo  (cip.stack.pop)) reverse; }
 void toggleInput () { if (!ccbi_cbreak(cip.stack.pop)) reverse; }
 void toggleKeypad() { if (!ccbi_keypad(cip.stack.pop)) reverse; }
 
-void   get() { cip.stack.push(cast(cell)ccbi_getch()); }
+void   get() { cip.stack.push(ccbi_getch()); }
 void unget() { if (!ccbi_ungetch(cip.stack.pop)) reverse; }
 
 void init() {

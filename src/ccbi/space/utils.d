@@ -108,7 +108,7 @@ out (count) {
 			assert (moves + (count-1)*increment < *bestMoves);
 	}
 } body {
-	auto diff = cast(ucell)(to - from);
+	ucell diff = to - from;
 
 	// Optimization: these are the typical cases
 	if (delta == 1) {
@@ -168,7 +168,7 @@ ucell expensiveGetMoves(ucell to, cell delta,
 			auto val = moves + mid*increment;
 
 			if (val > moves)
-				low = mid + cast(ucell)1;
+				low = mid + 1;
 			else {
 				assert (val < last);
 				high = mid;
@@ -193,7 +193,7 @@ ucell expensiveGetMoves(ucell to, cell delta,
 		auto val = moves + mid*increment;
 
 		if (val < *bestMoves)
-			low = mid + cast(ucell)1;
+			low = mid + 1;
 		else
 			high = mid;
 	}

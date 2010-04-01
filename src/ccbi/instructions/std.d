@@ -296,13 +296,13 @@ Request iterate() {
 
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9': {
 			auto p = cip.stack.reserve(n);
-			p[0..n] = cast(cell)(i - '0');
+			p[0..n] = i - '0';
 			return r;
 		}
 
 		case 'a', 'b', 'c', 'd', 'e', 'f': {
 			auto p = cip.stack.reserve(n);
-			p[0..n] = cast(cell)(i - 'a');
+			p[0..n] = i - 'a';
 			return r;
 		}
 
@@ -383,13 +383,13 @@ Request iterate() {
 // ---------------
 
 // Logical Not
-void logicalNot() { cip.stack.push(cast(cell)!cip.stack.pop); }
+void logicalNot() { cip.stack.push(!cip.stack.pop); }
 
 // Greater Than
 void greaterThan() {
 	cell c = cip.stack.pop;
 
-	cip.stack.push(cast(cell)(cip.stack.pop > c));
+	cip.stack.push(cip.stack.pop > c);
 }
 
 // East-West If, North-South If
@@ -845,7 +845,7 @@ void inputCharacter() {
 		return reverse();
 	}
 
-	cip.stack.push(cast(cell)c);
+	cip.stack.push(c);
 }
 
 // File Input/Output
@@ -1079,7 +1079,7 @@ void execute() {
 		cip.stack.push(cell.min);
 		return reverse;
 	}
-	cip.stack.push(cast(cell)system(cmd));
+	cip.stack.push(system(cmd));
 }
 
 }
@@ -1149,7 +1149,7 @@ void computeArgsCache() { // {{{
 		if (farg.length) {
 			*q++ = 0;
 			foreach_reverse (c; farg)
-				*q++ = cast(cell)c;
+				*q++ = c;
 			wasNull = false;
 
 		} else if (!wasNull) {
@@ -1172,7 +1172,7 @@ void computeEnvCache() { // {{{
 	foreach_reverse (var; env) {
 		*q++ = 0;
 		foreach_reverse (c; var)
-			*q++ = cast(cell)c;
+			*q++ = c;
 	}
 } // }}}
 
@@ -1209,7 +1209,7 @@ void getSysInfo() {
 		// We're going to push everything: reserve space for it all and copy it
 		// on
 
-		auto oldStackSize = cast(cell)cip.stack.size;
+		auto oldStackSize = cip.stack.size;
 
 		// Top 9 cells; 5 vectors; another 3 cells; at least one stack size;
 		// command line arguments terminated by double null; environment
@@ -1243,25 +1243,25 @@ void getSysInfo() {
 
 		if (cip.stackStack) {
 			foreach (stack; &cip.stackStack.topToBottom)
-				*p++ = cast(cell)stack.size;
+				*p++ = stack.size;
 			*(p-1) = oldStackSize;
 		} else
 			*p++ = oldStackSize;
 
-		*p++ = cast(cell)cip.stackCount;
+		*p++ = cip.stackCount;
 
 		// Time + date
 
 		auto now = Clock.toDate();
 
-		*p++ = cast(cell)(
+		*p++ =
 			now.time.hours   * 256 * 256 +
 			now.time.minutes * 256       +
-			now.time.seconds);
-		*p++ = cast(cell)(
+			now.time.seconds;
+		*p++ =
 			(now.date.year - 1900) * 256 * 256 +
 			now.date.month         * 256       +
-			now.date.day);
+			now.date.day;
 
 		// Bounds
 
@@ -1319,18 +1319,18 @@ void getSysInfo() {
 		case 9 + dim*5, 9 + dim*5 + 1: {
 			auto now = Clock.toDate();
 			if (arg == 9 + dim*5)
-				return cip.stack.push(cast(cell)(
+				return cip.stack.push(
 					(now.date.year - 1900) * 256 * 256 +
 					now.date.month         * 256       +
-					now.date.day));
+					now.date.day);
 			else
-				return cip.stack.push(cast(cell)(
+				return cip.stack.push(
 					now.time.hours   * 256 * 256 +
 					now.time.minutes * 256       +
-					now.time.seconds));
+					now.time.seconds);
 		}
 
-		case 9 + dim*5 + 2: return cip.stack.push(cast(cell)cip.stackCount);
+		case 9 + dim*5 + 2: return cip.stack.push(cip.stackCount);
 		default: break;
 	}
 	arg -= 9 + dim*5 + 2 + 1;
@@ -1342,9 +1342,9 @@ void getSysInfo() {
 	if (arg < cip.stackCount) {
 		// We might not have a stack stack, so special case the TOSS
 		if (arg == 0)
-			return cip.stack.push(cast(cell)cip.stack.size);
+			return cip.stack.push(cip.stack.size);
 		else
-			return cip.stack.push(cast(cell)cip.stackStack.at(arg).size);
+			return cip.stack.push(cip.stackStack.at(arg).size);
 	}
 
 	arg -= cip.stackCount;
@@ -1429,7 +1429,7 @@ Request loadSemantics() {
 		return reverse();
 
 	foreach (i; ins)
-		cip.requireSems(cast(cell)(i - 'A'), &semanticStats)
+		cip.requireSems(i - 'A', &semanticStats)
 		   .push(Semantics(fingerprint, i));
 
 	cip.stack.push(fingerprint, 1);
@@ -1466,7 +1466,7 @@ void unloadSemantics() {
 
 	bool rev = false;
 	foreach (i; ins) {
-		assert (isSemantics(cast(cell)i));
+		assert (isSemantics(i));
 
 		auto sem = cip.semantics[i - 'A'];
 		if (!sem || sem.empty)

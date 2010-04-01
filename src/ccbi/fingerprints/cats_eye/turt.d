@@ -64,8 +64,8 @@ char[] tcToString(tc n) {
 }
 // }}}
 // {{{ Non-template helpers
-real toRad(cell c) { return                 (PI / 180.0) * c;  }
-cell toDeg(real r) { return cast(cell)round((180.0 / PI) * r); }
+real toRad(cell c) { return       (PI / 180.0) * c;  }
+cell toDeg(real r) { return round((180.0 / PI) * r); }
 
 uint toRGB(cell c) { return cast(uint)(c & ((1 << 24) - 1)); }
 
@@ -361,7 +361,7 @@ void teleport() {
 
 // Query Pen
 void queryPen() {
-	cip.stack.push(cast(cell)turt.penDown);
+	cip.stack.push(turt.penDown);
 }
 
 // Query Heading
@@ -371,18 +371,12 @@ void queryHeading() {
 
 // Query Position
 void queryPosition() {
-	cip.stack.push(
-		cast(cell)turt.p.x,
-		cast(cell)turt.p.y);
+	cip.stack.push(turt.p.x, turt.p.y);
 }
 
 // Query Bounds
 void queryBounds() {
-	cip.stack.push(
-		cast(cell)MIN,
-		cast(cell)MIN,
-		cast(cell)MAX,
-		cast(cell)MAX);
+	cip.stack.push(MIN, MIN, MAX, MAX);
 }
 
 // Print Current Drawing

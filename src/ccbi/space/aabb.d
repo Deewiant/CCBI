@@ -166,7 +166,7 @@ struct AABB(cell dim) {
 				// We check that the zero deltas are correct in advance
 				return true;
 			}
-			cell pos = from + cast(cell)moves * delta;
+			cell pos = from + moves * delta;
 			return pos >= e1 && pos <= e2;
 		}
 		// The range of possible coordinates in the given range that the given 1D
@@ -177,10 +177,10 @@ struct AABB(cell dim) {
 		{
 			if (delta > 0) {
 				beg = edge1;
-				end = min(beg + delta + cast(cell)1, edge2);
+				end = min(beg + delta + 1, edge2);
 			} else {
 				end = edge2;
-				beg = max(end + delta - cast(cell)1, edge1);
+				beg = max(end + delta - 1, edge1);
 			}
 		}
 		// }}}
@@ -279,10 +279,10 @@ struct AABB(cell dim) {
 			if (!delta.v[i])
 				continue;
 
-			auto p = gcdLog(cast(ucell)delta.v[i]);
-			auto g = cast(ucell)1 << p;
-			auto s = cast(ucell)(this.end.v[i] - this.beg.v[i] + 1);
-			auto d = cast(ucell)abs(delta.v[i]);
+			ubyte p = gcdLog(cast(ucell)delta.v[i]);
+			ucell g = cast(ucell)1 << p;
+			ucell s = this.end.v[i] - this.beg.v[i] + 1;
+			ucell d = abs(delta.v[i]);
 
 			// The multiplications can overflow: we can check for that quickly
 			// since we have the gcdLog:
@@ -415,7 +415,7 @@ method2:
 			return false;
 
 		moveCnt = bestMoves;
-		at.v[] = o.v[] + cast(cell)bestMoves * delta.v[];
+		at.v[] = o.v[] + bestMoves * delta.v[];
 		return true;
 	}
 
@@ -459,8 +459,8 @@ method2:
 				if (i != j && !(beg.v[j] == b.beg.v[j] && end.v[j] == b.end.v[j]))
 						continue outer;
 
-			if (clampedAdd(end.v[i], cast(cell)1) == b.beg.v[i]
-			 || clampedAdd(b.end.v[i], cast(cell)1) == beg.v[i]
+			if (clampedAdd!(cell)(end.v[i], 1) == b.beg.v[i]
+			 || clampedAdd!(cell)(b.end.v[i], 1) == beg.v[i]
 			 || overlap)
 				return true;
 		}
@@ -720,7 +720,7 @@ method2:
 					// another box.
 					//
 					// The next point will be one up on this axis.
-					from.v[i] = endPt.v[i] + cast(cell)1;
+					from.v[i] = endPt.v[i] + 1;
 				} else {
 					// Reached "to" on this axis, but the box is too big to go any
 					// further.
@@ -744,7 +744,7 @@ method2:
 			reachedTo = true;
 		else {
 			if (endPt.v[$-1] < to.v[$-1] || from.v[$-1] > to.v[$-1])
-				from.v[$-1] = endPt.v[$-1] + cast(cell)1;
+				from.v[$-1] = endPt.v[$-1] + 1;
 			else {
 				endPt.v[$-1] = to.v[$-1];
 				reachedTo = true;
