@@ -9,7 +9,5 @@ module ccbi.cell;
 
 import tango.stdc.stdint : int_fast32_t, uint_fast32_t;
 
-typedef int_fast32_t  cell;
-alias   int_fast32_t  cell_base;
-typedef uint_fast32_t ucell;
-alias   uint_fast32_t ucell_base;
+alias    int_fast32_t  cell;
+alias   uint_fast32_t ucell;

@@ -892,9 +892,9 @@ bool readIP(ref IP ip, ref size_t idx, char[] s, bool[size_t] invalidIndices) {
 bool readCoords(inout Coords c, char[][] args) {
 	assert (args.length == dim);
 
-	                     if (!read(cast(cell_base)c.x, args[0])) return false;
-	static if (dim >= 2) if (!read(cast(cell_base)c.y, args[1])) return false;
-	static if (dim >= 3) if (!read(cast(cell_base)c.z, args[2])) return false;
+	                     if (!read(c.x, args[0])) return false;
+	static if (dim >= 2) if (!read(c.y, args[1])) return false;
+	static if (dim >= 3) if (!read(c.z, args[2])) return false;
 
 	return true;
 }
@@ -932,7 +932,7 @@ bool readCell(inout cell v, char[] s) {
 		return true;
 	}
 
-	return read(cast(cell_base)v, s);
+	return read(v, s);
 }
 
 char[] cellChar(cell c) {

@@ -72,7 +72,7 @@ void rand() {
 }
 void neg    () { cip.stack.push(-cip.stack.pop); }
 void mulpi  () { cip.stack.push(cast(cell)math.rndint(math.PI * cip.stack.pop)); }
-void abs    () { cip.stack.push(cast(cell)math.abs(cast(cell_base)cip.stack.pop)); }
+void abs    () { cip.stack.push(cast(cell)math.abs(cip.stack.pop)); }
 void sqrt   () {
 	auto r = cast(real)cip.stack.pop;
 	if (r < 0)
