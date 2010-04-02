@@ -426,7 +426,7 @@ private:
 
 	version (statistics) void printStats(FormatOutput!(char) put) {
 		put("============").newline;
-		put(" Statistics ").newline;
+		put(" Statistics" ).newline;
 		put("============").newline;
 		put.newline;
 
