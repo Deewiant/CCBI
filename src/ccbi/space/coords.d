@@ -10,6 +10,7 @@ module ccbi.space.coords;
 import tango.text.convert.Integer : format;
 
 public import ccbi.cell;
+       import ccbi.stdlib : clampedAdd, clampedSub;
        import ccbi.templateutils;
 
 struct Coords(cell dim) {
@@ -79,22 +80,14 @@ struct Coords(cell dim) {
 
 	Coords clampedAdd(cell c) {
 		Coords co = *this;
-		foreach (inout x; co.v) {
-			if (x > cell.max - c)
-				x = cell.max;
-			else
-				x += c;
-		}
+		foreach (inout x; co.v)
+			x = .clampedAdd(x, c);
 		return co;
 	}
 	Coords clampedSub(cell c) {
 		Coords co = *this;
-		foreach (inout x; co.v) {
-			if (x < cell.min + c)
-				x = cell.min;
-			else
-				x -= c;
-		}
+		foreach (inout x; co.v)
+			x = .clampedSub(x, c);
 		return co;
 	}
 }
