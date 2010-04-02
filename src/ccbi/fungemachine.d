@@ -531,8 +531,9 @@ private:
 			if (stat.n != 1)
 				put('s');
 
-			if (stat.fin)
+			if (stat.fin.length)
 				put(' ')(stat.fin);
+
 			put.newline;
 		}
 	}
