@@ -38,8 +38,38 @@ A ipow(A, B)(A x, B exp) {
 // Tango's abs isn't templated...
 T abs(T)(T n) { return n < 0 ? -n : n; }
 
-T clampedAdd(T)(T a, T b) { return a > T.max - b ? T.max : a + b; }
-T clampedMul(T)(T a, T b) { return a > T.max / b ? T.max : a * b; }
+version (LDC) {
+	struct Overflow(T) { T n; bool overflow; }
+	pragma (intrinsic, "llvm.sadd.with.overflow.i#") Overflow!(T) soadd(T)(T,T);
+	pragma (intrinsic, "llvm.uadd.with.overflow.i#") Overflow!(T) uoadd(T)(T,T);
+	pragma (intrinsic, "llvm.ssub.with.overflow.i#") Overflow!(T) sosub(T)(T,T);
+	pragma (intrinsic, "llvm.usub.with.overflow.i#") Overflow!(T) uosub(T)(T,T);
+	pragma (intrinsic, "llvm.smul.with.overflow.i#") Overflow!(T) somul(T)(T,T);
+	pragma (intrinsic, "llvm.umul.with.overflow.i#") Overflow!(T) uomul(T)(T,T);
+
+	T clampedAdd(T)(T a, T b) {
+		static if (isUnsignedIntegerType!(T)) alias uoadd oadd;
+		else                                  alias soadd oadd;
+		auto r = oadd(a, b);
+		return r.overflow ? T.max : r.n;
+	}
+	T clampedSub(T)(T a, T b) {
+		static if (isUnsignedIntegerType!(T)) alias uosub osub;
+		else                                  alias sosub osub;
+		auto r = osub(a, b);
+		return r.overflow ? T.min : r.n;
+	}
+	T clampedMul(T)(T a, T b) {
+		static if (isUnsignedIntegerType!(T)) alias uomul omul;
+		else                                  alias somul omul;
+		auto r = omul(a, b);
+		return r.overflow ? T.max : r.n;
+	}
+} else {
+	T clampedAdd(T)(T a, T b) { return a > T.max - b ? T.max : a + b; }
+	T clampedSub(T)(T a, T b) { return a < T.min + b ? T.min : a - b; }
+	T clampedMul(T)(T a, T b) { return a > T.max / b ? T.max : a * b; }
+}
 
 private alias char[][] environment_t;
 private size_t envCount = 0x20;
@@ -383,6 +413,8 @@ out (inv) {
 	return x;
 }
 
+version (LDC) pragma (intrinsic, "llvm.cttz.i#") T cttz(T)(T);
+
 // gcd(2^(ucell.sizeof * 8), n) is a power of two: this returns the
 // power, i.e. its binary logarithm.
 ubyte gcdLog(U)(U n) {
@@ -399,7 +431,12 @@ ubyte gcdLog(U)(U n) {
 	// even-number case in a tricky way.
 
 	// c is the trailing zero count, which we calculate; the gcd is then
-	// 2^c. Algorithm adapted from:
+	// 2^c.
+
+	version (LDC)
+		return cttz(n);
+
+	// Algorithm adapted from:
 	//
 	// http://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
 	// (Credits to Matt Whitlock and Andrew Shapira)
