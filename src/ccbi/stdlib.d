@@ -172,7 +172,7 @@ version (Win32) {
 }
 
 TypedInput!(ubyte) Sin;
-private uint_fast16_t unget;
+private auto unget = uint_fast16_t.max;
 
 ubyte cget() {
 	ubyte c;
