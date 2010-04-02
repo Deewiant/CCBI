@@ -84,13 +84,8 @@ void   get() { cip.stack.push(ccbi_getch()); }
 void unget() { if (!ccbi_ungetch(cip.stack.pop)) reverse; }
 
 void init() {
-	if (cip.stack.pop) {
-		if (!ccbi_initscr())
-			reverse();
-	} else {
-		if (!ccbi_endwin())
-			reverse();
-	}
+	if (!(cip.stack.pop ? ccbi_initscr() : ccbi_endwin()))
+		reverse();
 }
 
 void gotoxy() {
