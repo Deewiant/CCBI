@@ -1,31 +1,51 @@
 CCBI changelog
 --------------
 
-TODO for 2.0:
-	fix fingerprint destructors: MODE(NULL(MODE) -> don't call destructor!
-	since we're implementing FNGR anyway, I guess we can keep a count for each
-	instruction of a fingerprint, or something (so we know when unloading what
-	fingerprint an instruction belongs to)
+2010-04-06, 2.0:
+	Unefunge-98, Trefunge-98, and Befunge-93 support.
 
-Before final release:
-	check all imports, remove unneeded
-	make sure all files have proper header comment
-	remove any debug prints
-	make sure Stdout/Stderr aren't used ~anywhere, only Sout/Serr
-	grep XXX FIXME TODO
+	Both 32-bit and 64-bit cell support.
 
-2009-??-??, 1.0.21
+	New AABB-based Funge-Space implementation with massive (one or two orders
+	of magnitude, or a lot more) speed and memory use improvements.
+
+	New deque implementation and using C memory functions for the stack and
+	deque: more significant speed and memory use improvements.
+
+	New tracer with more convenient UI, multiple breakpoints support, etc.
+
+	New fingerprints, from Rc/Funge-98:
+		FING
+		REXP
+
+	New arguments:
+		--stats:           statistics output.
+		--detect-infinity: detect some kinds of infinite loops.
+		--sandbox:         sandbox mode, for safe execution.
+
+	Build system is now CMake-based. Allows versioning away pretty much all
+	features for which it is sensible to do so.
+
+	Rewrote y to make it a lot faster, especially when given a positive
+	argument.
+
 	Bugfix for i:
 		Initialize vb to va instead of 0 so that it gets set properly even if
 		the whole file is placed in negative Funge-Space.
+
 	Bugfix for k:
 		0k x executed the x.
 
-	Do memory-mapped input for i and the initial load, faster in theory if not
-	noticeably.
+	Bugfix for y:
+		The tightest, not the loosest, bounds for Funge-Space are reported.
 
-	Funge-Space doesn't cache space cells any longer: lower memory usage and
-	probably a bit faster, too.
+	HRTI now accepts a resolution of zero.
+
+	TRDS now sets its earliest time lazily, to when it is first loaded, so that
+	we don't have to copy the whole Funge-Space for every program at startup.
+
+	... and plenty of other optimizations.
+	... and probably plenty of other fixes I've forgot to mention.
 
 2009-03-28, 1.0.20
 	FILE's R now reflects on EOF.
