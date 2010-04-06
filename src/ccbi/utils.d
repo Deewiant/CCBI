@@ -52,24 +52,10 @@ void removeAt(T)(inout T[] a, size_t i)
 in {
   assert (i < a.length);
 } body {
-
   if (i < a.length - 1)
     memmove(&a[i], &a[i+1], (a.length - (i+1)) * a[i].sizeof);
 
   a.length = a.length - 1;
-}
-
-// remove range [i,j)
-void removeAt(T)(inout T[] a, size_t i, size_t j)
-in {
-  assert (i < a.length && j <= a.length);
-} body {
-  if (j == haystack.length)
-    a.length = a.length - i;
-  else {
-    memmove(&a[i], &a[j], (a.length - j) * a[i].sizeof);
-    a.length = a.length - (j - i);
-  }
 }
 
 char[] unwords(char[][] s) { return s.join(" "); }
