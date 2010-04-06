@@ -73,7 +73,7 @@ typeof(state.tick) loadedTick = state.tick.max;
 // have been executed.
 //
 // Set externally by FungeMachine.
-size_t cipIdx = void;
+typeof(state.ips).Iterator cipIt = void;
 
 // When rerunning time to jump point, don't output (since that isn't
 // "happening")
@@ -89,9 +89,11 @@ void ctor() {
 		loadedTick = state.tick;
 		state.deepCopyTo(&earlyState);
 
-		// Start executing from the next IP after cip instead of ips.length
-		earlyState.startIdx = cipIdx;
-		earlyState.useStartIdx = true;
+		// Start executing from the next IP after cip instead of the first
+		auto nextIt = cipIt;
+		nextIt++;
+		earlyState.startIt = nextIt;
+		earlyState.useStartIt = true;
 	}
 }
 void dtor() {
@@ -111,30 +113,31 @@ void dtor() {
 // {{{ FungeMachine callbacks
 
 bool isNormalTime() {
-	return state.timeStopper >= state.ips.length;
+	return state.timeStopper is null;
 }
 bool executable(bool normalTime, IP ip) {
-	return (normalTime || state.ips[state.timeStopper] is ip)
+	return (normalTime || ip is state.timeStopper)
 	    && state.tick >= ip.jumpedTo;
 }
 
 void newTick() {
 	// If an IP is jumping to the future and it is the only one alive,
 	// just jump.
-	if (state.ips[0].jumpedTo > state.tick && state.ips.length == 1)
-		state.tick = state.ips[0].jumpedTo;
+	if (state.ips.first.val.jumpedTo > state.tick && state.ips.length == 1)
+		state.tick = state.ips.first.val.jumpedTo;
 
-	// Must be appended: preserves correct execution order
 	foreach (ip; travellers) if (state.tick == ip.jumpedTo) {
 		++stats.travellerArrived;
-		state.ips ~= ip.deepCopy(true, &state.space);
+
+		// Arriving travellers must be the first to execute
+		state.ips.prependTo(state.ips.first, ip.deepCopy(true, &state.space));
 	}
 }
 
 void ipStopped(IP ip) {
 	// Resume time if the time stopper dies
-	if (!isNormalTime() && ip is state.ips[state.timeStopper])
-		state.timeStopper = size_t.max;
+	if (!isNormalTime() && ip is state.timeStopper)
+		resume();
 
 	// Store data of stopped IPs which have jumped
 	// See jump() for the reason
@@ -369,8 +372,8 @@ Request timeJump(IP ip) {
 	return Request.RETICK;
 }
 
-void stop  () { ++stats.timeStopped; state.timeStopper = cipIdx;     }
-void resume() {                      state.timeStopper = size_t.max; }
+void stop  () { ++stats.timeStopped; state.timeStopper = cip;  }
+void resume() {                      state.timeStopper = null; }
 
 void now () { cip.stack.push(state.tick); }
 void maxT() { cip.stack.push(loadedTick); }

@@ -10,7 +10,6 @@ module ccbi.tracer;
 
 template Tracer() {
 
-import tango.core.Array           : find;
 import tango.core.Traits          : isSignedIntegerType, isUnsignedIntegerType;
 import tango.io.Console           : Cin;
 import tango.math.Math            : min;
@@ -317,7 +316,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					break;
 
 				Serr.formatln("Successfully killed IP {}.", idx);
-				return stop(idx);
+				return stop(state.ips.iterOf(idx));
 		}
 
 			case "q", "quit", ":q": return false;
@@ -375,12 +374,18 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 				if (!ip || ip in ipSet) {
 
 					Serr("Position ")(pos)(", IPs:");
-					foreach (i, ignored; ipSet) {
+					foreach (i, _; ipSet) {
 						Serr(' ');
 						if (i is null)
 							Serr("(all)");
-						else static if (!befunge93)
-							Serr(ips.find(i));
+						else static if (!befunge93) {
+							foreach (idx, ii; ips) {
+								if (ii is i) {
+									Serr(idx);
+									break;
+								}
+							}
+						}
 					}
 					Serr.newline;
 				}
@@ -392,8 +397,14 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 						Serr(' ');
 						if (i is null)
 							Serr("(all)");
-						else static if (!befunge93)
-							Serr(ips.find(i));
+						else static if (!befunge93) {
+							foreach (idx, ii; ips) {
+								if (ii is i) {
+									Serr(idx);
+									break;
+								}
+							}
+						}
 						Serr(stringsAlso ? ",1" : ",0");
 					}
 					Serr.newline;

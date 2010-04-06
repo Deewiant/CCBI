@@ -119,8 +119,8 @@ private:
 		static if (befunge93)
 			tip = cip = ip;
 		else {
-			state.ips.length = 1;
-			tip = state.ips[0] = ip;
+			tip = ip;
+			state.ips = typeof(state.ips)(ip);
 		}
 
 		version (Posix)
@@ -143,24 +143,24 @@ private:
 
 				static if (befunge93) {
 					switch (executeInstruction()) {
-						case Request.STOP: stop(0); break mainLoop;
+						case Request.STOP: stop(); break mainLoop;
 						case Request.MOVE: cip.move;
 						default:           break;
 					}
 				} else {
-					version (TRDS) if (state.useStartIdx) {
-						for (auto j = state.startIdx; j--;) {
-							switch (executeIP(normalTime, j)) {
+					version (TRDS) if (state.useStartIt) {
+						for (auto it = state.startIt; it.ok;) {
+							switch (executeIP(normalTime, it)) {
 								default:             break;
 								case Request.QUIT:   break mainLoop;
 								case Request.RETICK: continue mainLoop;
 							}
 						}
-						state.useStartIdx = false;
+						state.useStartIt = false;
 						goto tickDone;
 					}
-					for (auto j = state.ips.length; j--;) {
-						switch (executeIP(normalTime, j)) {
+					for (auto it = state.ips.first; it.ok;) {
+						switch (executeIP(normalTime, it)) {
 							default:             break;
 							case Request.QUIT:   break mainLoop;
 							case Request.RETICK: continue mainLoop;
@@ -219,47 +219,42 @@ private:
 	// Semi-arbitrarily reuses Request to prevent having to make an enum just
 	// for this...
 	static if (!befunge93)
-	Request executeIP(bool normalTime, size_t idx) {
-		if (!executable(normalTime, state.ips[idx]))
+	Request executeIP(bool normalTime, inout typeof(state.ips).Iterator it) {
+		if (!executable(normalTime, it.val)) {
+			it++;
 			return Request.NONE;
+		}
 
 		version (TRDS)
-			TRDS.cipIdx = idx;
+			TRDS.cipIt = it;
 
-		cip = state.ips[idx];
+		cip = it.val;
 		switch (executeInstruction()) {
 			case Request.MOVE:
 				cip.move();
 
-			default: break;
+			default:
+				it++;
+				return Request.NONE;
 
 			case Request.FORK:
+				state.ips.prependTo(it, cip);
 				stats.newMax(stats.maxIpsLive, state.ips.length);
-				if (idx < state.ips.length-2) {
-					// ips[$-1] is new and in the wrong place, position it
-					// immediately after this one
-					auto ip = state.ips[$-1];
-					memmove(
-						&state.ips[idx+2], &state.ips[idx+1],
-						(state.ips.length - (idx+1)) * ip.sizeof);
-					state.ips[idx+1] = ip;
-				}
 				goto case Request.MOVE;
 
 			case Request.STOP:
-				if (!stop(idx)) {
+				if (!stop(it)) {
 			case Request.QUIT:
 					stats.ipStopped += state.ips.length;
 					return Request.QUIT;
 				}
-				break;
+				return Request.NONE;
 
 		static if (!befunge93) version (TRDS) {
 			case Request.RETICK:
 				return Request.RETICK;
 		}
 		}
-		return Request.NONE;
 	}
 
 	Request executeInstruction() {
@@ -382,12 +377,15 @@ private:
 		return Request.MOVE;
 	}
 
-	bool stop(size_t idx) {
-
-		static if (befunge93)
+	bool stop(I...)(inout I it) {
+		static if (befunge93) {
+			static assert (I.length == 0);
 			alias cip ip;
-		else
-			auto ip = state.ips[idx];
+		} else {
+			static assert (I.length == 1);
+			static assert (is(typeof(it[0]) == typeof(state.ips).Iterator));
+			auto ip = it[0].val;
+		}
 
 		version (tracer)
 			Tracer.ipStopped(ip);
@@ -400,7 +398,7 @@ private:
 					TRDS.ipStopped(ip);
 
 			if (state.ips.length > 1) {
-				state.ips.removeAt(idx);
+				it[0] = state.ips.removeAt(it[0]);
 
 				if (ip.stackStack) {
 					foreach (stack; *ip.stackStack) {

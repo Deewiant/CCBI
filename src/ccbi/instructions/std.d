@@ -1528,19 +1528,23 @@ static if (!befunge93) {
 Request splitIP() {
 	++stats.ipForked;
 
-	state.ips ~= cip.deepCopy();
+	auto nip = cip.deepCopy();
 
-	with (*state.ips[$-1]) {
+	with (*nip) {
 		id = ++state.currentID;
 
 		version (IIPC)
 			parentID = cip.id;
 
 		reverse();
-
-		// move past the 't' or forkbomb
-		move();
 	}
+
+	// Set cip here so the Request handler knows what to fork. Move the old cip
+	// here, since the fork handler will obviously move the new cip (which is
+	// also needed, to prevent nip from forkbombing—though the spec forgets to
+	// mention that).
+	cip.move();
+	cip = nip;
 	return Request.FORK;
 }
 

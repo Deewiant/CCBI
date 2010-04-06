@@ -10,6 +10,7 @@ module ccbi.fungestate;
 import tango.core.Tuple;
 
 import ccbi.cell;
+import ccbi.container : UDLL;
 import ccbi.fingerprints.all;
 import ccbi.ip;
 import ccbi.space.space;
@@ -17,8 +18,8 @@ import ccbi.space.space;
 // All state that should be restored when an IP travels to the past belongs
 // here.
 struct FungeState(cell dim, bool befunge93) {
-	alias .Coords!(dim)            Coords;
-	alias .IP    !(dim, befunge93) IP;
+	alias .Coords!(dim)             Coords;
+	alias .IP    !(dim, befunge93)* IP;
 
 	static if (befunge93)
 		alias Tuple!() fings;
@@ -28,11 +29,11 @@ struct FungeState(cell dim, bool befunge93) {
 	FungeSpace!(dim, befunge93) space = void;
 
 	static if (!befunge93) {
-		IP*[] ips;
+		UDLL!(IP, 16) ips;
 
 		version (TRDS) {
-			size_t startIdx = void;
-			bool useStartIdx = false;
+			bool useStartIt = false;
+			typeof(ips).Iterator startIt = void;
 		}
 
 		// For IPs
@@ -53,7 +54,7 @@ struct FungeState(cell dim, bool befunge93) {
 		bool utc = false;
 
 	version (TRDS)
-		auto timeStopper = size_t.max;
+		IP timeStopper = null;
 
 	// Since we need to pass the address of the space to the IPs when
 	// deepCopying, we need to take the target address to write to here.
@@ -63,14 +64,18 @@ struct FungeState(cell dim, bool befunge93) {
 			space = space.deepCopy();
 
 			static if (!befunge93) {
-				ips = ips.dup;
-				foreach (ref ip; ips)
-					ip = ip.deepCopy(active, &space);
+				ips = typeof(ips)(ips.length);
+				foreach (i, ref ip; ips)
+					ip = this.ips[i].deepCopy(active, &space);
 			}
 
 			version (REFC) references = references.dup;
 			version (SUBR) callStack  =  callStack.dup;
 		}
 	}
-	void free() { space.free(); }
+	void free() {
+		space.free();
+		static if (!befunge93)
+			ips.free();
+	}
 }

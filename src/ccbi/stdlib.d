@@ -38,6 +38,12 @@ A ipow(A, B)(A x, B exp) {
 // Tango's abs isn't templated...
 T abs(T)(T n) { return n < 0 ? -n : n; }
 
+// Not overflow-safe
+T ceilDiv(T)(T a, T b) {
+	assert (a < T.max - b + 1);
+	return (a+b-1) / b;
+}
+
 version (LDC) {
 	struct Overflow(T) { T n; bool overflow; }
 	pragma (intrinsic, "llvm.sadd.with.overflow.i#") Overflow!(T) soadd(T)(T,T);

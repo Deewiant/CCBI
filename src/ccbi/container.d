@@ -16,6 +16,7 @@ import tango.stdc.string : memmove;
 
 import ccbi.cell;
 import ccbi.stats;
+import ccbi.stdlib : ceilDiv;
 import ccbi.templateutils;
 
 private {
@@ -1052,6 +1053,8 @@ struct Deque {
 
 // No heap allocation if the length ends up at less than N.
 struct SmallArray(T, size_t N) {
+	static assert (N > 0);
+
 	private {
 		T[N] smallData;
 		T* data = null;
@@ -1096,5 +1099,259 @@ private:
 			data[0..len] = smallData[0..len];
 		} else
 			data = realloc(data, capacity);
+	}
+}
+
+// Unrolled doubly linked list designed for prepending at any position (assumes
+// no appends and thus stores the first element last in each node).
+//
+// Central nodes might have length shorter than N.
+struct UDLL(T, ubyte N) {
+	static assert (N > 0);
+	static assert (N-1 < ubyte.max - (2+1)); // Beware ceilDiv overflow
+
+	private {
+		struct Node {
+			Node* prev, next;
+			ubyte beg;
+			T[N] data;
+
+			ubyte length() { return N - beg; }
+		}
+		Node* tail = void;
+		size_t len = 0;
+	}
+	struct Iterator {
+		private {
+			Node* node;
+			ubyte i;
+		}
+
+		T val() { return node.data[i]; }
+
+		bool ok() { return node !is null; }
+		void opPostInc() {
+			if (i < N-1)
+				++i;
+			else {
+				node = node.next;
+				if (node)
+					i = node.beg;
+			}
+		}
+	}
+
+	static typeof(*this) opCall(T t) {
+		typeof(*this) dll;
+		with (dll) {
+			tail = malloc!(Node)(1);
+			tail.prev = tail.next = null;
+			tail.beg = N-1;
+			len = 1;
+			tail.data[N-1] = t;
+		}
+		return dll;
+	}
+	static typeof(*this) opCall(size_t n)
+	in {
+		assert (n > 0);
+	} body {
+		typeof(*this) dll;
+		with (dll) {
+			len = n;
+
+			tail = malloc!(Node)(1);
+			tail.prev = null;
+
+			auto lastNode = tail;
+
+			if (n > N) {
+				tail.beg = 0;
+				auto prevNode = tail;
+				for (n -= N; n > N; n -= N) {
+					auto node = malloc!(Node)(1);
+					node.prev = prevNode;
+					prevNode.next = node;
+					node.beg = 0;
+					prevNode = node;
+				}
+				lastNode = prevNode;
+			}
+			lastNode.next = null;
+			lastNode.beg = N - n;
+		}
+		return dll;
+	}
+
+	size_t  length() { return len; }
+	Iterator first() { return Iterator(tail, tail.beg); }
+
+	void free()
+	in {
+		assert (length > 0);
+	} body {
+		len = 0;
+		if (!tail.next)
+			return .free(tail);
+		for (auto node = tail.next;; node = node.next) {
+			.free(node.prev);
+			if (!node.next) {
+				.free(node);
+				break;
+			}
+		}
+	}
+
+	void prependTo(Iterator it, T t) {
+		++len;
+
+		if (it.node.length < N) {
+			if (it.i > it.node.beg) {
+				// Make a gap in it.node.data. E.g. prepending to 3:
+				// [ x 1 2 3 4 5 ]
+				//     b   i
+				// [ x 1 2 3 4 5 ]
+				//   ^ beg - 1, at wrong place
+				// So memmove: [ 1 2 x 3 4 5 ]
+				memmove(
+					it.node.data.ptr + it.node.beg - 1,
+					it.node.data.ptr + it.node.beg,
+					(it.i - it.node.beg) * T.sizeof);
+			}
+			--it.node.beg;
+			it.node.data[it.i - 1] = t;
+			return;
+		}
+
+		auto node = malloc!(Node)(1);
+		node.prev = it.node.prev;
+		node.next = it.node;
+		it.node.prev = node;
+		if (node.prev)
+			node.prev.next = node;
+		else {
+			assert (it.node == tail);
+			tail = node;
+		}
+
+		if (it.i == 0) {
+			// Nothing precedes t so we have no choice (don't bother seeing if
+			// node has a prev and trying to even even more), put it alone into
+			// the new node.
+			node.beg = N-1;
+			node.data[N-1] = t;
+			return;
+		}
+
+		// Try to even things out: copy half (instead of all) of what needs to
+		// move over to the new node, and put t into the old (instead of the
+		// new) node.
+		auto copyOver = ceilDiv!(typeof(it.i))(it.i, 2);
+
+		assert (copyOver > 0);
+
+		node.data[N-copyOver..N] = it.node.data[0..copyOver];
+		node.beg = N-copyOver;
+
+		memmove(
+			it.node.data.ptr + copyOver - 1,
+			it.node.data.ptr + copyOver,
+			(it.i - copyOver) * T.sizeof);
+
+		it.node.beg = copyOver - 1;
+		it.node.data[it.i-1] = t;
+	}
+
+	Iterator removeAt(Iterator it)
+	in {
+		// Not sure if everything works when the whole thing empties...
+		assert (length > 1);
+	} body {
+		--len;
+		if (it.node.length > 1) {
+			if (it.i > it.node.beg) {
+				// Fill the gap in it.node.data. E.g. removing 3:
+				// [ x 1 2 3 4 5 ]
+				//     b   i
+				// [ x 1 2 3 4 5 ]
+				//       ^ beg + 1, at wrong place
+				// So memmove: [ x 1 1 2 4 5 ]
+				memmove(
+					it.node.data.ptr + it.node.beg + 1,
+					it.node.data.ptr + it.node.beg,
+					(it.i - it.node.beg) * T.sizeof);
+			}
+			++it.node.beg;
+			it++;
+			return it;
+		}
+
+		if (it.node.prev) it.node.prev.next = it.node.next;
+		if (it.node.next) it.node.next.prev = it.node.prev;
+
+		if (it.node == tail) tail = tail.next;
+
+		auto next = it.node.next;
+
+		.free(it.node);
+
+		typeof(next.beg) nextBeg = void;
+		if (next)
+			nextBeg = next.beg;
+
+		return Iterator(next, nextBeg);
+	}
+
+	int opApply(int delegate(inout T) f) {
+		for (auto it = first; it.ok; it++)
+			if (auto r = f(it.node.data[it.i]))
+				return r;
+		return 0;
+	}
+
+version (tracer):
+
+	// Indexes from the rear!
+	T opIndex(size_t i)
+	in {
+		assert (i < length);
+	} body {
+		foreach (j, t; *this)
+			if (i == j)
+				return t;
+		assert (false);
+	}
+
+	Iterator iterOf(size_t i)
+	in {
+		assert (i < length);
+	} body {
+		for (auto node = tail;; node = node.next) {
+			if (i < node.length)
+				return Iterator(node, N - (i+1));
+
+			i -= node.length;
+		}
+	}
+
+	// Traverses from the rear, matching opIndex!
+	//
+	// Modifications to the index are dropped.
+	int opApply(int delegate(inout size_t, inout T) f)
+	in {
+		assert (length > 0);
+	} body {
+		auto head = tail;
+		for (; head.next; head = head.next){}
+
+		size_t i = 0;
+		for (auto node = head; node; node = node.prev) {
+			for (auto j = N; j-- > node.beg;) {
+				auto k = i++;
+				if (auto r = f(k, node.data[j]))
+					return r;
+			}
+		}
+		return 0;
 	}
 }
