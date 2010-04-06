@@ -279,7 +279,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		OUTPUT "${CCBI_BC}"
 		DEPENDS ${D_SOURCES}
 		COMMAND ${MKDIR_OBJDIR}
-		COMMAND ldmd ${D_FLAGS} -c -output-bc -singleobj -of${CCBI_BC} -release ${D_SOURCES})
+		COMMAND ${DC} ${D_FLAGS} -c -output-bc -singleobj -of${CCBI_BC} -release ${D_SOURCES})
 
 	# Build .bc's out of the C wrappers
 	foreach(C_SRC ${C_SOURCES})
