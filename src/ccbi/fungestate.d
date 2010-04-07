@@ -29,7 +29,11 @@ struct FungeState(cell dim, bool befunge93) {
 
 	static if (!befunge93) {
 		IP*[] ips;
-		size_t startIdx;
+
+		version (TRDS) {
+			size_t startIdx = void;
+			bool useStartIdx = false;
+		}
 
 		// For IPs
 		cell currentID = 0;

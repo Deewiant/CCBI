@@ -89,6 +89,7 @@ void ctor() {
 
 		// Start executing from the next IP after cip instead of ips.length
 		earlyState.startIdx = cipIdx;
+		earlyState.useStartIdx = true;
 	}
 }
 void dtor() {

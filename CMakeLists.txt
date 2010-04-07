@@ -320,6 +320,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		        # Up to 10% speedup in total
 		        | sed "/^define .*FungeMachine18executeInstructionMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*FungeMachine15executeStandardMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*FungeMachine9executeIPMF/ s/{/alwaysinline{/"
 
 		        # Need to do all of these for noticeable improvement
 		        | sed "/^define .*6Cursor3getMF/ s/{/alwaysinline{/"

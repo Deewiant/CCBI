@@ -117,7 +117,7 @@ private:
 		static if (befunge93)
 			tip = cip = ip;
 		else {
-			state.startIdx = state.ips.length = 1;
+			state.ips.length = 1;
 			tip = state.ips[0] = ip;
 		}
 
@@ -145,49 +145,27 @@ private:
 						case Request.MOVE: cip.move;
 						default:           break;
 					}
-				} else for (auto j = state.startIdx; j-- > 0;)
-				if (executable(normalTime, state.ips[j])) {
-
-					version (TRDS)
-						TRDS.cipIdx = j;
-
-					cip = state.ips[j];
-					switch (executeInstruction()) {
-
-						case Request.MOVE:
-							cip.move();
-
-						default: break;
-
-						case Request.FORK:
-							if (j < state.ips.length-2) {
-								// ips[$-1] is new and in the wrong place, position it
-								// immediately after this one
-								auto ip = state.ips[$-1];
-								memmove(
-									&state.ips[j+2], &state.ips[j+1],
-									(state.ips.length - (j+1)) * ip.sizeof);
-								state.ips[j+1] = ip;
+				} else {
+					version (TRDS) if (state.useStartIdx) {
+						for (auto j = state.startIdx; j--;) {
+							switch (executeIP(normalTime, j)) {
+								default:             break;
+								case Request.QUIT:   break mainLoop;
+								case Request.RETICK: continue mainLoop;
 							}
-							goto case Request.MOVE;
-
-						case Request.STOP:
-							if (!stop(j)) {
-						case Request.QUIT:
-								stats.ipStopped += state.ips.length;
-								break mainLoop;
-							}
-							break;
-
-					static if (!befunge93) version (TRDS) {
-						case Request.RETICK:
-							continue mainLoop;
+						}
+						state.useStartIdx = false;
+						goto tickDone;
 					}
+					for (auto j = state.ips.length; j--;) {
+						switch (executeIP(normalTime, j)) {
+							default:             break;
+							case Request.QUIT:   break mainLoop;
+							case Request.RETICK: continue mainLoop;
+						}
 					}
 				}
-				static if (!befunge93)
-					state.startIdx = state.ips.length;
-
+			tickDone:
 				if (normalTime) {
 					static if (!befunge93)
 						version (TRDS)
@@ -235,6 +213,51 @@ private:
 
 	version (tracer)
 		mixin .Tracer!() Tracer;
+
+	// Semi-arbitrarily reuses Request to prevent having to make an enum just
+	// for this...
+	static if (!befunge93)
+	Request executeIP(bool normalTime, size_t idx) {
+		if (!executable(normalTime, state.ips[idx]))
+			return Request.NONE;
+
+		version (TRDS)
+			TRDS.cipIdx = idx;
+
+		cip = state.ips[idx];
+		switch (executeInstruction()) {
+			case Request.MOVE:
+				cip.move();
+
+			default: break;
+
+			case Request.FORK:
+				if (idx < state.ips.length-2) {
+					// ips[$-1] is new and in the wrong place, position it
+					// immediately after this one
+					auto ip = state.ips[$-1];
+					memmove(
+						&state.ips[idx+2], &state.ips[idx+1],
+						(state.ips.length - (idx+1)) * ip.sizeof);
+					state.ips[idx+1] = ip;
+				}
+				goto case Request.MOVE;
+
+			case Request.STOP:
+				if (!stop(idx)) {
+			case Request.QUIT:
+					stats.ipStopped += state.ips.length;
+					return Request.QUIT;
+				}
+				break;
+
+		static if (!befunge93) version (TRDS) {
+			case Request.RETICK:
+				return Request.RETICK;
+		}
+		}
+		return Request.NONE;
+	}
 
 	Request executeInstruction() {
 		++stats.executionCount;
