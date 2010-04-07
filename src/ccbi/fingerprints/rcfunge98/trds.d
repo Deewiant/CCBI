@@ -129,14 +129,18 @@ void newTick() {
 	foreach (ip; travellers) if (state.tick == ip.jumpedTo) {
 		++stats.travellerArrived;
 
-		// Arriving travellers must be the first to execute
-		state.ips.prependTo(state.ips.first, ip.deepCopy(true, &state.space));
+		// Arriving travellers must be the first to execute.
+		auto arriver = ip.deepCopy(true, &state.space);
+		state.ips.prependTo(state.ips.first, arriver);
+
+		if (arriver.mode & IP.EX_TIME_STOPPER)
+			state.timeStopper = arriver;
 	}
 }
 
 void ipStopped(IP ip) {
 	// Resume time if the time stopper dies
-	if (!isNormalTime() && ip is state.timeStopper)
+	if (ip is state.timeStopper)
 		resume();
 
 	// Store data of stopped IPs which have jumped
@@ -333,9 +337,16 @@ Request timeJump(IP ip) {
 		break;
 	}
 	if (!found) {
+		if (ip is state.timeStopper)
+			ip.mode |= IP.EX_TIME_STOPPER;
+
 		ip.mode |= IP.FROM_FUTURE;
 		travellers ~= ip.deepCopy(false);
 	}
+
+	// Since travellers are deepCopied and all IPs are being reset, no live IP
+	// can be the time stopper. (Hence also the EX_TIME_STOPPER mode.)
+	state.timeStopper = null;
 
 	/+
 	Whenever we jump back in time, history from the jump target forward is
