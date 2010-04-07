@@ -241,7 +241,7 @@ struct IP(cell dim, bool befunge93) {
 		FROM_FUTURE     = 1 << 12 // for tracing TRDS
 	}
 
-	ushort mode = 0;
+	uint mode = 0;
 
 	static if (!befunge93) {
 		// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3509
