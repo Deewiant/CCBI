@@ -114,6 +114,8 @@ private:
 
 		auto ip = IP.opCall(pos, &state.space, &stackStats);
 
+		stats.maxIpsLive = 1;
+
 		static if (befunge93)
 			tip = cip = ip;
 		else {
@@ -232,6 +234,7 @@ private:
 			default: break;
 
 			case Request.FORK:
+				stats.newMax(stats.maxIpsLive, state.ips.length);
 				if (idx < state.ips.length-2) {
 					// ips[$-1] is new and in the wrong place, position it
 					// immediately after this one
@@ -516,6 +519,7 @@ private:
 		ss ~= Stat(null);
 		ss ~= Stat("Forked",                        stats.ipForked,                "IP");
 		ss ~= Stat("Stopped",                       stats.ipStopped,               "IP");
+		ss ~= Stat("Had",                           stats.maxIpsLive,              "IP", "live at maximum");
 		ss ~= Stat(wasWere ~ " dormant",            stats.ipDormant,               "IP");
 		ss ~= Stat("Travelled to the past",         stats.ipTravelledToPast,       "IP");
 		ss ~= Stat("Travelled to the future",       stats.ipTravelledToFuture,     "IP");

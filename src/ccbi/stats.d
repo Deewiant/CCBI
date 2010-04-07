@@ -23,6 +23,7 @@ struct Stats {
 		"execDormant",
 		"ipForked",
 		"ipStopped",
+		"maxIpsLive",
 		"ipDormant",
 		"ipTravelledToPast",
 		"ipTravelledToFuture",
