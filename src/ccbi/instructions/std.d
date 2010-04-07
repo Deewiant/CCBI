@@ -132,17 +132,48 @@ alias .Coords!(dim) Coords;
 // ------------------
 
 // Go East, Go West, Go North, Go South
-void goEast () { if (cip.mode & cip.HOVER) ++cip.delta.x; else reallyGoEast;  }
-void goWest () { if (cip.mode & cip.HOVER) --cip.delta.x; else reallyGoWest;  }
+void goEast() {
+	version (MODE)
+		if (cip.mode & cip.HOVER)
+			return ++cip.delta.x;
+
+	reallyGoEast;
+}
+void goWest() {
+	version (MODE)
+		if (cip.mode & cip.HOVER)
+			return --cip.delta.x;
+	reallyGoWest;
+}
 
 static if (dim >= 2) {
-void goNorth() { if (cip.mode & cip.HOVER) --cip.delta.y; else reallyGoNorth; }
-void goSouth() { if (cip.mode & cip.HOVER) ++cip.delta.y; else reallyGoSouth; }
+void goNorth() {
+	version (MODE)
+		if (cip.mode & cip.HOVER)
+			return --cip.delta.y;
+	reallyGoNorth;
+}
+void goSouth() {
+	version (MODE)
+		if (cip.mode & cip.HOVER)
+			return ++cip.delta.y;
+	reallyGoSouth;
+}
 }
 
 static if (dim >= 3) {
-void goHigh() { if (cip.mode & cip.HOVER) ++cip.delta.z; else reallyGoHigh; }
-void goLow () { if (cip.mode & cip.HOVER) --cip.delta.z; else reallyGoLow; }
+void goHigh() {
+	version (MODE)
+		if (cip.mode & cip.HOVER)
+			return ++cip.delta.z;
+	reallyGoHigh;
+}
+void goLow() {
+	version (MODE)
+		if (cip.mode & cip.HOVER)
+			return --cip.delta.z;
+	reallyGoLow;
+}
 }
 
 void reallyGoEast () { cip.delta = InitCoords!( 1); }
@@ -181,8 +212,9 @@ static if (dim >= 2) {
 
 // Turn Right
 void turnRight() {
-	if (cip.mode & cip.SWITCH)
-		cip.unsafeCell = '[';
+	version (MODE)
+		if (cip.mode & cip.SWITCH)
+			cip.unsafeCell = '[';
 
 	// x = cos(90) x - sin(90) y = -y
 	// y = sin(90) x + cos(90) y =  x
@@ -193,8 +225,9 @@ void turnRight() {
 
 // Turn Left
 void turnLeft() {
-	if (cip.mode & cip.SWITCH)
-		cip.unsafeCell = ']';
+	version (MODE)
+		if (cip.mode & cip.SWITCH)
+			cip.unsafeCell = ']';
 
 	// x = cos(-90) x - sin(-90) y =  y
 	// y = sin(-90) x + cos(-90) y = -x
@@ -537,8 +570,9 @@ static if (!befunge93) {
 
 // Begin Block
 Request beginBlock() {
-	if (cip.mode & cip.SWITCH)
-		cip.unsafeCell = '}';
+	version (MODE)
+		if (cip.mode & cip.SWITCH)
+			cip.unsafeCell = '}';
 
 	try {
 		if (!cip.stackStack) {
@@ -606,8 +640,9 @@ Request beginBlock() {
 
 // End Block
 void endBlock() {
-	if (cip.mode & cip.SWITCH)
-		cip.unsafeCell = '{';
+	version (MODE)
+		if (cip.mode & cip.SWITCH)
+			cip.unsafeCell = '{';
 
 	if (cip.stackCount == 1)
 		return reverse();
@@ -1417,8 +1452,9 @@ private bool popFingerprint(out cell fingerprint) {
 
 // Load Semantics
 Request loadSemantics() {
-	if (cip.mode & cip.SWITCH)
-		cip.unsafeCell = ')';
+	version (MODE)
+		if (cip.mode & cip.SWITCH)
+			cip.unsafeCell = ')';
 
 	cell fingerprint;
 	if (!popFingerprint(fingerprint))
@@ -1453,8 +1489,9 @@ Request loadSemantics() {
 
 // Unload Semantics
 void unloadSemantics() {
-	if (cip.mode & cip.SWITCH)
-		cip.unsafeCell = '(';
+	version (MODE)
+		if (cip.mode & cip.SWITCH)
+			cip.unsafeCell = '(';
 
 	cell fingerprint;
 	if (!popFingerprint(fingerprint))

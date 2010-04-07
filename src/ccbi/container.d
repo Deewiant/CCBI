@@ -85,6 +85,7 @@ private template ArgNames(args...) {
 		alias Tuple!() ArgNames;
 }
 
+version (MODE)
 struct CellContainer {
 	bool isDeque = false;
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1055
@@ -228,6 +229,7 @@ struct Stack(T) {
 		return x;
 	}
 
+	version (MODE)
 	static typeof(*this) opCall(ContainerStats* stats, Deque q) {
 		typeof(*this) x;
 		x.stats = stats;
@@ -393,14 +395,13 @@ enum : byte {
 	QUEUE_MODE  = 1 << 1
 }
 
-// Only used if the MODE fingerprint is loaded.
-//
 // Chunk-style implementation: keeps a doubly linked list of chunks, each of
 // which contains an array of data. Grows forwards as a stack and backwards as
 // a queue.
 //
 // Abnormally, new chunks are only created when growing backwards: when growing
 // forwards, the headmost chunk is merely resized.
+version (MODE)
 struct Deque {
 	private {
 		struct Chunk {
