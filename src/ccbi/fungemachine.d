@@ -114,7 +114,7 @@ private:
 
 		auto ip = IP.opCall(pos, &state.space, &stackStats);
 
-		stats.maxIpsLive = 1;
+		stats.newMax(stats.maxIpsLive, 1);
 
 		static if (befunge93)
 			tip = cip = ip;
