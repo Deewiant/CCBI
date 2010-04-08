@@ -64,9 +64,15 @@ struct FungeState(cell dim, bool befunge93) {
 			space = space.deepCopy();
 
 			static if (!befunge93) {
+				assert (ips.length > 0);
 				ips = typeof(ips)(ips.length);
-				foreach (i, ref ip; ips)
-					ip = this.ips[i].deepCopy(active, &space);
+				auto cit =      ips.first;
+				auto tit = this.ips.first;
+				do {
+					cit.val = tit.val.deepCopy(active, &space);
+					cit++;
+					tit++;
+				} while (tit.ok);
 			}
 
 			version (REFC) references = references.dup;

@@ -1127,7 +1127,8 @@ struct UDLL(T, ubyte N) {
 			ubyte i;
 		}
 
-		T val() { return node.data[i]; }
+		T    val() { return node.data[i]; }
+		void val(T t) { node.data[i] = t; }
 
 		bool ok() { return node !is null; }
 		void opPostInc() {
