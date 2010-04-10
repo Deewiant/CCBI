@@ -37,6 +37,7 @@ version  (FILE) public import ccbi.fingerprints.rcfunge98.file;
 version  (FING) public import ccbi.fingerprints.rcfunge98.fing;
 version  (FIXP) public import ccbi.fingerprints.rcfunge98.fixp;
 version  (FPDP) public import ccbi.fingerprints.rcfunge98.fpdp;
+version  (FPRT) public import ccbi.fingerprints.rcfunge98.fprt;
 version  (FPSP) public import ccbi.fingerprints.rcfunge98.fpsp;
 version  (FRTH) public import ccbi.fingerprints.rcfunge98.frth;
 version  (IIPC) public import ccbi.fingerprints.rcfunge98.iipc;
@@ -101,6 +102,7 @@ private char[] RCFunge98Fingerprints() {
 	version  (FING) s ~= `"FING",`;
 	version  (FIXP) s ~= `"FIXP",`;
 	version  (FPDP) s ~= `"FPDP",`;
+	version  (FPRT) s ~= `"FPRT",`;
 	version  (FPSP) s ~= `"FPSP",`;
 	version  (FRTH) s ~= `"FRTH",`;
 	version  (IIPC) s ~= `"IIPC",`;
