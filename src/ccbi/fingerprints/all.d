@@ -26,6 +26,7 @@ version  (SCKE) public import ccbi.fingerprints.glfunge98.scke;
 version  (JSTR) public import ccbi.fingerprints.jvh      .jstr;
 version  (NCRS) public import ccbi.fingerprints.jvh      .ncrs;
 version (_3DSP) public import ccbi.fingerprints.rcfunge98._3dsp;
+version  (ARRY) public import ccbi.fingerprints.rcfunge98.arry;
 version  (BASE) public import ccbi.fingerprints.rcfunge98.base;
 version  (BOOL) public import ccbi.fingerprints.rcfunge98.bool_;
 version  (CPLI) public import ccbi.fingerprints.rcfunge98.cpli;
@@ -89,6 +90,7 @@ mixin (JesseVanHerkFingerprints());
 private char[] RCFunge98Fingerprints() {
 	char[] s = "alias Tuple!(";
 	version (_3DSP) s ~= `"3DSP",`;
+	version  (ARRY) s ~= `"ARRY",`;
 	version  (BASE) s ~= `"BASE",`;
 	version  (BOOL) s ~= `"BOOL",`;
 	version  (CPLI) s ~= `"CPLI",`;
