@@ -27,6 +27,7 @@ version  (JSTR) public import ccbi.fingerprints.jvh      .jstr;
 version  (NCRS) public import ccbi.fingerprints.jvh      .ncrs;
 version (_3DSP) public import ccbi.fingerprints.rcfunge98._3dsp;
 version  (BASE) public import ccbi.fingerprints.rcfunge98.base;
+version  (BOOL) public import ccbi.fingerprints.rcfunge98.bool_;
 version  (CPLI) public import ccbi.fingerprints.rcfunge98.cpli;
 version  (DATE) public import ccbi.fingerprints.rcfunge98.date;
 version  (DIRF) public import ccbi.fingerprints.rcfunge98.dirf;
@@ -89,6 +90,7 @@ private char[] RCFunge98Fingerprints() {
 	char[] s = "alias Tuple!(";
 	version (_3DSP) s ~= `"3DSP",`;
 	version  (BASE) s ~= `"BASE",`;
+	version  (BOOL) s ~= `"BOOL",`;
 	version  (CPLI) s ~= `"CPLI",`;
 	version  (DATE) s ~= `"DATE",`;
 	version  (DIRF) s ~= `"DIRF",`;
