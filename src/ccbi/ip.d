@@ -225,7 +225,7 @@ struct IP(cell dim, bool befunge93) {
 		}
 	}
 
-	enum : typeof(mode) {
+	enum : uint {
 		STRING          = 1 << 0,
 		HOVER           = 1 << 1, // these two for MODE
 		SWITCH          = 1 << 2,
@@ -242,7 +242,10 @@ struct IP(cell dim, bool befunge93) {
 		FROM_FUTURE     = 1 << 12 // for tracing TRDS
 	}
 
-	uint mode = 0;
+	version (TRDS)
+		uint mode = 0;
+	else
+		ubyte mode = 0;
 
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3509
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3510
