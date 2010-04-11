@@ -319,7 +319,6 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 
 		        # Up to 10% speedup in total
 		        | sed "/^define .*FungeMachine18executeInstructionMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*FungeMachine15executeStandardMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*FungeMachine9executeIPMF/ s/{/alwaysinline{/"
 
 		        # Need to do all of these for noticeable improvement
@@ -327,8 +326,24 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		        | sed "/^define .*2IP4cellMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*2IP19gotoNextInstructionMF/ s/{/alwaysinline{/"
 
+		        # Altogether around 10% on typical programs (which tend to use
+		        # these basic instructions a lot)
+		        | sed "/^define .*3Std3getMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std3putMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std3addMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std8subtractMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std8multiplyMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std3popMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std4swapMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std9duplicateMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std10logicalNotMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*3Std11greaterThanMF/ s/{/alwaysinline{/"
+
+		        # On spacy programs, 5-10%
+		        | sed "/^define .*6Cursor10skipSpacesMF/ s/{/alwaysinline{/"
+
 		        | llvm-as
-		        | opt -std-compile-opts -unroll-allow-partial ${LTO}
+		        | opt -std-compile-opts ${LTO}
 		        > "${CCBI_BC_OPT}")
 
 	# Assemble

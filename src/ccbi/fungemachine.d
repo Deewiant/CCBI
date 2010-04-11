@@ -284,7 +284,23 @@ private:
 			if (isSemantics(c))
 				return executeSemantics(c);
 		}
-		return executeStandard(c);
+
+		// Manually inline executeStandard here: we don't want to inline it in k
+		// so we can't make it alwaysinline, and it's so big that it won't get
+		// inlined otherwise.
+		++stats.stdExecutionCount;
+
+		switch (c) {
+			mixin (Ins!("Std",
+				befunge93 ? " !\"#$%&*+,-./0123456789:<>?@\\^_`gpv|~" :
+				"!\"#$%&'()*+,-./0123456789:<=>?@\\_`abcdefgijknopqrstuxyz{}~" ~
+
+				(dim >= 2 ? "[]^vw|" : "") ~
+				(dim >= 3 ? "hlm"    : "")
+			));
+			default: unimplemented; break;
+		}
+		return Request.MOVE;
 	}
 
 	mixin StdInstructions!() Std;
@@ -307,7 +323,6 @@ private:
 				(dim >= 2 ? "[]^vw|" : "") ~
 				(dim >= 3 ? "hlm"    : "")
 			));
-
 			default: unimplemented; break;
 		}
 		return Request.MOVE;
