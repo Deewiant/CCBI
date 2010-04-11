@@ -171,9 +171,10 @@ ARGS may be one or more of: `
 	~ STAT_HELP
 	~ `
 
- -d, --detect-infinity   Detect situations in which the program is irreversibly
-                         stuck in an infinite loop, aborting with an error
-                         message when that happens.`
+ -I, --infinite-loop     Instead of aborting with an error message when the
+                         program is irreversibly stuck in an infinite loop, be
+                         strictly conforming and actually enter an infinite
+                         loop.`
 	~ INFINITY_NOTE
 	~ SANDBOX_HELP
 	~ TURT_HELP
@@ -306,7 +307,7 @@ int main(char[][] args) {
 	argp("trace")          .aliased('t').bind({ flags.tracing  = true; });
 	argp("warnings")       .aliased('w').bind({ flags.warnings = true; });
 	argp("script")                      .bind({ flags.script   = true; });
-	argp("detect-infinity").aliased('d').bind({ flags.detectInfiniteLoops = true; });
+	argp("infinite-loop")  .aliased('I').bind({ flags.infiniteLoop = true; });
 	argp("sandbox")        .aliased('S').bind({ flags.sandboxMode = true; });
 
 	version (TURT)

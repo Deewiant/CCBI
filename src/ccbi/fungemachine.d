@@ -183,7 +183,7 @@ private:
 			returnVal = 3;
 
 		} catch (InfiniteLoopException e) {
-			if (!flags.detectInfiniteLoops)
+			if (flags.infiniteLoop)
 				for (;;)
 					// We're so fast we can run infinite loops without using the CPU
 					Thread.yield();
