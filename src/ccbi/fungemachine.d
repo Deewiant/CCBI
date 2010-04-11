@@ -281,7 +281,7 @@ private:
 
 		static if (!befunge93) if (!flags.allFingsDisabled) {
 			version (IMAP)
-				if (c < cip.mapping.length && c >= 0)
+				if (cast(ucell)c < cip.mapping.length)
 					c = cip.mapping[c];
 
 			if (isSemantics(c))
