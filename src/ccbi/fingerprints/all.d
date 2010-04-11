@@ -40,6 +40,7 @@ version  (FPDP) public import ccbi.fingerprints.rcfunge98.fpdp;
 version  (FPRT) public import ccbi.fingerprints.rcfunge98.fprt;
 version  (FPSP) public import ccbi.fingerprints.rcfunge98.fpsp;
 version  (FRTH) public import ccbi.fingerprints.rcfunge98.frth;
+version  (ICAL) public import ccbi.fingerprints.rcfunge98.ical;
 version  (IIPC) public import ccbi.fingerprints.rcfunge98.iipc;
 version  (IMAP) public import ccbi.fingerprints.rcfunge98.imap;
 version  (INDV) public import ccbi.fingerprints.rcfunge98.indv;
@@ -105,6 +106,7 @@ private char[] RCFunge98Fingerprints() {
 	version  (FPRT) s ~= `"FPRT",`;
 	version  (FPSP) s ~= `"FPSP",`;
 	version  (FRTH) s ~= `"FRTH",`;
+	version  (ICAL) s ~= `"ICAL",`;
 	version  (IIPC) s ~= `"IIPC",`;
 	version  (IMAP) s ~= `"IMAP",`;
 	version  (INDV) s ~= `"INDV",`;

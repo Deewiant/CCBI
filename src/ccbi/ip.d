@@ -134,6 +134,10 @@ struct IP(cell dim, bool befunge93) {
 			version (IMAP)
 				mapping = mapping.dup;
 
+			// deep copy nexting
+			version (ICAL)
+				nexting = nexting.dup;
+
 			if (s)
 				cursor.space = s;
 
@@ -221,9 +225,6 @@ struct IP(cell dim, bool befunge93) {
 		}
 	}
 
-	version (IMAP)
-		.cell[] mapping;
-
 	enum : typeof(mode) {
 		STRING          = 1 << 0,
 		HOVER           = 1 << 1, // these two for MODE
@@ -243,18 +244,26 @@ struct IP(cell dim, bool befunge93) {
 
 	uint mode = 0;
 
-	static if (!befunge93) {
-		// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3509
-		// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3510
-		//
-		// If we check fing!().ipCtor here, it'll result in errors because the
-		// contents of fing!() are only valid in FungeMachine.
-		//
-		// If we check fing!().ipCtor in FungeMachine and try to pass it here, we
-		// run into the above two bugs.
-		//
-		// So screw automation.
-		uint _MODE_count = 0, _IMAP_count = 0;
+	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3509
+	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3510
+	//
+	// If we check fing!().ipCtor here, it'll result in errors because the
+	// contents of fing!() are only valid in FungeMachine.
+	//
+	// If we check fing!().ipCtor in FungeMachine and try to pass it here, we
+	// run into the above two bugs.
+	//
+	// So screw automation.
+	version (MODE) uint _MODE_count = 0;
+	version (ICAL) uint _ICAL_count = 0;
+	version (IMAP) uint _IMAP_count = 0;
+
+	version (IMAP)
+		.cell[] mapping;
+
+	version (ICAL) {
+		Coords[] nexting;
+		ubyte nextingSz = 0; // [0,80)
 	}
 
 	version (HRTI) {
