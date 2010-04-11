@@ -40,7 +40,8 @@ struct FungeState(cell dim, bool befunge93) {
 		cell currentID = 0;
 	}
 
-	ulong tick = 0;
+	     version (tracer) ulong tick = 0;
+	else version (TRDS)   ulong tick = 0;
 
 	version (REFC)
 		Coords[] references;

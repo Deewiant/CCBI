@@ -174,7 +174,8 @@ private:
 							if (usingTRDS)
 								TRDS.newTick();
 
-					++state.tick;
+					     version (tracer) ++state.tick;
+					else version (TRDS)   ++state.tick;
 				}
 			}
 		} catch (OutOfMemoryException) {
