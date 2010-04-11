@@ -238,10 +238,12 @@ private:
 				it++;
 				return Request.NONE;
 
+		static if (!befunge93) {
 			case Request.FORK:
 				state.ips.prependTo(it, cip);
 				stats.newMax(stats.maxIpsLive, state.ips.length);
 				goto case Request.MOVE;
+		}
 
 			case Request.STOP:
 				if (!stop(it)) {
