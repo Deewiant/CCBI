@@ -246,7 +246,8 @@ semicolon:
 						tessellate(space.jumpToBox(p, delta, box, boxIdx));
 					}
 				}
-			}
+			} else
+				break;
 		} while (unsafeGet() == ' ')
 	}
 	static if (!befunge93)
