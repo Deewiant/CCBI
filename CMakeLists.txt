@@ -304,7 +304,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 	if(CCBI_BUILD_TYPE STREQUAL "Release-LLVM-Safer")
 		# Identical to the default options but removes -inline from between -instcombine and -prune-eh
 		# (And doesn't specify analysis passes explicitly, the transformations will request what they need)
-		set(LTO -internalize ${INTERNALIZE_OPT} -ipsccp -globalopt -constmerge -deadargelim -instcombine -prune-eh -globalopt -globaldce -argpromotion -instcombine -jump-threading -scalarrepl -functionattrs -globalsmodref-aa -loopsimplify -licm -gvn -memcpyopt -dse -instcombine -jump-threading -mem2reg -simplifycfg -globaldce)
+		set(LTO -internalize ${INTERNALIZE_OPT} -ipsccp -globalopt -constmerge -deadargelim -instcombine -prune-eh -globalopt -globaldce -argpromotion -instcombine -jump-threading -scalarrepl -functionattrs -globalsmodref-aa -loopsimplify -licm -gvn -memcpyopt -dse -instcombine -jump-threading -simplifycfg -globaldce)
 	else()
 		set(LTO -std-link-opts ${INTERNALIZE_OPT})
 	endif()
@@ -326,20 +326,7 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		        | sed "/^define .*2IP4cellMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*2IP19gotoNextInstructionMF/ s/{/alwaysinline{/"
 
-		        # Altogether around 10% on typical programs (which tend to use
-		        # these basic instructions a lot)
-		        | sed "/^define .*3Std3getMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std3putMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std3addMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std8subtractMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std8multiplyMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std3popMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std4swapMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std9duplicateMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std10logicalNotMF/ s/{/alwaysinline{/"
-		        | sed "/^define .*3Std11greaterThanMF/ s/{/alwaysinline{/"
-
-		        # On spacy programs, 5-10%
+		        # On spacy programs, another 10% (and most programs are)
 		        | sed "/^define .*6Cursor10skipSpacesMF/ s/{/alwaysinline{/"
 
 		        | llvm-as
