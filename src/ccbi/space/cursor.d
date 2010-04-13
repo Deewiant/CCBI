@@ -19,7 +19,11 @@ private:
 	alias .AABB      !(dim)            AABB;
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
-	bool bak = false;
+	static if (befunge93)
+		const bool bak = false;
+	else
+		bool bak = false;
+
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1055
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3991
 	version (DigitalMars) {
@@ -51,7 +55,7 @@ public:
 
 				if (!space.tryJumpToBox(c, delta, box, boxIdx)) {
 					if (space.usingBak && space.bak.contains(c))
-						bak = true;
+						static if (!befunge93) bak = true;
 					else
 						infLoop(
 							"IP diverged while being placed.",
@@ -73,7 +77,9 @@ public:
 		debug (ExpensiveCursorChecks)
 			assert ((*space)[pos] == c);
 	} body {
-		if (!inBox()) {
+		static if (befunge93)
+			assert (inBox());
+		else if (!inBox()) {
 			auto p = pos;
 			if (!getBox(p)) {
 				++space.stats.space.lookups;
@@ -99,7 +105,9 @@ public:
 		debug (ExpensiveCursorChecks)
 			assert ((*space)[pos] == c);
 	} body {
-		if (!inBox()) {
+		static if (befunge93)
+			assert (inBox());
+		else if (!inBox()) {
 			auto p = pos;
 			if (!getBox(p))
 				return (*space)[p] = c;
@@ -121,6 +129,8 @@ public:
 	Coords pos()         { return bak ? actualPos : relPos + oBeg; }
 	void   pos(Coords c) { bak ? actualPos = c : (relPos = c - oBeg); }
 
+	static if (befunge93) void invalidate() { assert (false); }
+	else
 	void invalidate() {
 		auto p = pos;
 		if (!getBox(p))
@@ -160,6 +170,7 @@ public:
 		}
 	}
 
+	static if (!befunge93)
 	private bool getBox(Coords p) {
 		if (space.findBox(p, box, boxIdx)) {
 			bak = false;
@@ -202,9 +213,12 @@ public:
 
 	static if (befunge93) {
 		void skipMarkers(Coords delta)
-		in   { assert (!inBox()); }
-		out  { assert ( inBox()); }
-		body { pos = space.jumpToBox(pos, delta, box, boxIdx); }
+		in   { assert (!inBox()); assert (!bak); }
+		out  { assert ( inBox()); assert (!bak); }
+		body {
+			if (relPos.x < 0) relPos.x = 79; else if (relPos.x > 79) relPos.x = 0;
+			if (relPos.y < 0) relPos.y = 24; else if (relPos.y > 24) relPos.y = 0;
+		}
 	} else
 	void skipMarkers(Coords delta)
 	in {
