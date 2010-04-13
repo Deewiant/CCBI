@@ -304,7 +304,9 @@ int main(char[][] args) {
 	version (statistics)
 		argp("stats")       .aliased('s').bind({ flags.useStats = true; });
 
-	argp("trace")          .aliased('t').bind({ flags.tracing  = true; });
+	version (tracer)
+		argp("trace")       .aliased('t').bind({ flags.tracing  = true; });
+
 	argp("warnings")       .aliased('w').bind({ flags.warnings = true; });
 	argp("script")                      .bind({ flags.script   = true; });
 	argp("infinite-loop")  .aliased('I').bind({ flags.infiniteLoop = true; });

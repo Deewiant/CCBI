@@ -13,9 +13,10 @@ import ccbi.stdlib : BitFields;
 struct Flags {
 	version (statistics)
 		bool useStats = false;
+	version (tracer)
+		bool tracing = false;
 	bool
 		script              = false,
-		tracing             = false,
 		warnings            = false,
 		infiniteLoop        = false,
 		allFingsDisabled    = false, // Short-cut past enabledFings if true
