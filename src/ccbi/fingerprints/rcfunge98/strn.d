@@ -135,6 +135,7 @@ void get() {
 
 				// Wishful thinking...
 				cip.stack.reserve(neededLen)[0..neededLen] = ' ';
+				len += neededLen;
 				c.x = beg.x;
 			} else
 				throw new SpaceInfiniteLoopException(
