@@ -186,14 +186,16 @@ struct FungeSpace(cell dim, bool befunge93) {
 			}
 
 			if (usingBak) {
-				auto bakBeg = bak.beg;
-				auto bakEnd = bak.end;
+				// Might as well tighten the approximate bak.beg and bak.end while
+				// we're at it
+				auto bakBeg = bak.end;
+				auto bakEnd = bak.beg;
+
 				foreach (c, v; bak.data) {
 					assert (v != ' ');
 					bakBeg.minWith(c);
 					bakEnd.maxWith(c);
 				}
-				// Might as well improve these approximate bounds while we're at it
 				bak.beg = bakBeg;
 				bak.end = bakEnd;
 
