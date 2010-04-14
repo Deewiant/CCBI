@@ -371,13 +371,17 @@ package:
 		AABB _;
 		assert (!findBox(pos, _));
 	} body {
+		alias Dimension!(dim).rayIntersects rayIntersects;
+
 		ucell moves = 0;
 		Coords pos2 = void;
 		size_t idx  = void;
 		foreach (i, box; boxen) {
 			ucell m;
 			Coords c;
-			if (box.rayIntersects(pos, delta, m, c) && (m < moves || !moves)) {
+			if (rayIntersects(pos, delta, box.beg, box.end, m, c)
+			 && (m < moves || !moves))
+			{
 				pos2  = c;
 				idx   = i;
 				moves = m;
