@@ -1,18 +1,15 @@
 #!/bin/sh
 
-n=`grep 'NEWBOX_PAD[[:space:]]*=' src/ccbi/space/space.d | sed -E 's/.*([0-9]+)[,;]/\1/'`
-if [ -z $n ]; then
-	echo "NEWBOX_PAD not found in src/ccbi/space/space.d!"
-	exit 1
-fi
-ins=
-for f in tests/space/*.t; do
-	if [ ! -e "$f.in" ]; then
-		echo $n > "$f.in"
+mkdir -p tests/tmp
+for s in NEWBOX_PAD; do
+	n=`grep "$s[[:space:]]*=" src/ccbi/space/space.d | sed -E 's/.*([0-9]+)[,;]/\1/'`
+	if [ -z "$n" ]; then
+		echo >&2 "$s not found in src/ccbi/space/space.d!"
+		exit 1
 	fi
-	ins="$ins $f.in"
+	echo "$n" > tests/tmp/$s
 done
 
 prove -e tests/runner.pl -r tests $*
 
-rm $ins
+rm -r tests/tmp

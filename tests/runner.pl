@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+use Fcntl      'F_SETFD';
+use File::Temp 'tempfile';
 use Switch;
 
 my $cmd = "bin/ccbi";
@@ -15,8 +17,32 @@ foreach $i (0 .. $#ARGV) {
 }
 
 my $input = @ARGV[$#ARGV];
+my $out; # Needs to be in scope of the exec
 if (-r "$input.in") {
-	$cmd = "$cmd < $input.in";
+	open my $in, '<', "$input.in" or die "Couldn't read $input.in: $!";
+
+	opendir my $dh, "tests/tmp" or die "Couldn't open tests/tmp: $!";
+	%inRepls = grep !/^\./, readdir $dh;
+	closedir $dh;
+
+	$out = tempfile();
+
+	while (<$in>) {
+		chomp;
+		if (exists $inRepls{$_}) {
+			open my $fh, '<', "tests/tmp/$_"
+				or die "Couldn't read tests/tmp/$_: $!";
+			$_ = <$fh>;
+			close $fh;
+		}
+		print $out $_;
+	}
+	close $in;
+
+	fcntl($out, F_SETFD, 0)
+		or die "Couldn't clear close-on-exec on temp file: $!";
+
+	$cmd = "$cmd < /dev/fd/" . fileno $out;
 }
 
-exec $cmd or die "Couldn't exec '$cmd': $!\n";
+exec $cmd or die "Couldn't exec '$cmd': $!";
