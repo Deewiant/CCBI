@@ -4,7 +4,7 @@ mkdir -p tests/tmp
 
 # Parameters
 for s in NEWBOX_PAD; do
-	n=`grep "$s[[:space:]]*=" src/ccbi/space/space.d | sed -E 's/.*([0-9]+)[,;]/\1/'`
+	n=`grep "$s[[:space:]]*=" src/ccbi/space/space.d | sed -E 's/[^0-9]*([0-9]+)[,;]/\1/'`
 	if [ -z "$n" ]; then
 		echo >&2 "$s not found in src/ccbi/space/space.d!"
 		exit 1
