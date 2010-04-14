@@ -51,7 +51,11 @@ public:
 		with (cursor) {
 			space = s;
 
-			if (!getBox(c)) {
+			static if (befunge93) {
+				bool found = space.findBox(c, box, boxIdx);
+				assert (found);
+
+			} else if (!getBox(c)) {
 				if (space.tryJumpToBox(c, delta, box, boxIdx, bak))
 					tessellate(c);
 				else
@@ -171,14 +175,13 @@ public:
 			bak = false;
 			tessellate(p);
 			return true;
-
-		} else if (space.usingBak && space.bak.contains(p)) {
+		}
+		if (space.usingBak && space.bak.contains(p)) {
 			bak = true;
 			tessellate(p);
 			return true;
-
-		} else
-			return false;
+		}
+		return false;
 	}
 
 	void advance(Coords delta) { bak ? actualPos += delta : (relPos += delta); }
