@@ -20,6 +20,12 @@ if (! -e "tests/tmp/$mode") {
 	exit;
 }
 
+if ($arg =~ m[/fingerprints/([^/]+)/] && ! -e "tests/tmp/$1") {
+	my $fing = uc $1;
+	print "1..0 # SKIP: $fing not supported";
+	exit;
+}
+
 $cmd = "$cmd -$mode \"$arg\"";
 
 my $out; # Needs to be in scope of the exec
