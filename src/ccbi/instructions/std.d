@@ -877,7 +877,10 @@ void inputCharacter() {
 			c = '\n';
 		}
 	} catch {
-		return reverse();
+		static if (befunge93)
+			return cip.stack.push(-1);
+		else
+			return reverse();
 	}
 
 	cip.stack.push(c);
