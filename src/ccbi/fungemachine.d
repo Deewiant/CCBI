@@ -391,7 +391,8 @@ private:
 				cast(char)i, i, cip.pos.toString
 			);
 		}
-		reverse;
+		static if (!befunge93)
+			reverse;
 		return Request.MOVE;
 	}
 
