@@ -687,6 +687,33 @@ private:
 			auto placed = reallyPlaceBox(box);
 			if (reason && placed.contains(*reason))
 				*reasonBox = placed;
+
+			// If it crossed bak, we need to fix things up and move any occupied
+			// cells from bak (which is below all boxen) to the appropriate box
+			// (which may not be placed, if it has any overlaps).
+			if (usingBak && placed.overlaps(AABB.unsafe(bak.beg, bak.end))) {
+
+				assert (boxen[$-1] == placed);
+				bool overlaps = false;
+				if (bak.data.size > boxen.length) foreach (b; boxen[0..$-1]) {
+					if (b.overlaps(placed)) {
+						overlaps = true;
+						break;
+					}
+				}
+
+				Coords c = void;
+				cell   v = void;
+				for (auto it = bak.data.iterator; it.next(c, v);) {
+					if (placed.contains(c)) {
+						if (overlaps)
+							(*this)[c] = v;
+						else
+							placed[c] = v;
+						it.remove();
+					}
+				}
+			}
 		}
 	}
 
