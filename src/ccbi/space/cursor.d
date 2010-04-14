@@ -211,8 +211,12 @@ public:
 		in   { assert (!inBox()); assert (!bak); }
 		out  { assert ( inBox()); assert (!bak); }
 		body {
-			if (relPos.x < 0) relPos.x = 79; else if (relPos.x > 79) relPos.x = 0;
-			if (relPos.y < 0) relPos.y = 24; else if (relPos.y > 24) relPos.y = 0;
+			// Since only the cardinal deltas are available, only one axis can
+			// wrap at a time.
+			     if (relPos.x <  0) relPos.x = 79;
+			else if (relPos.x > 79) relPos.x = 0;
+			else if (relPos.y <  0) relPos.y = 24;
+			else if (relPos.y > 24) relPos.y = 0;
 		}
 	} else
 	void skipMarkers(Coords delta)
