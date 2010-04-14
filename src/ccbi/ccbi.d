@@ -349,17 +349,17 @@ int main(char[][] args) {
 	}
 
 	version (funge98) {
-		argp("implementation").aliased('i').halt.bind({ Stderr(  IMPLEMENTATION).newline; });
-		argp("print-fprints") .aliased('p').halt.bind({ Stderr(FINGERPRINT_INFO).newline; });
+		argp("implementation").aliased('i').halt.bind({ Stdout(  IMPLEMENTATION).newline; });
+		argp("print-fprints") .aliased('p').halt.bind({ Stdout(FINGERPRINT_INFO).newline; });
 	}
-	argp("version")          .aliased('v').halt.bind({ Stderr(  VERSION_STRING).newline; });
+	argp("version")          .aliased('v').halt.bind({ Stdout(  VERSION_STRING).newline; });
 
 	argp("help").aliased('?').aliased('h').aliased('H')
-		.halt.bind({ Stderr.formatln(HELP, args[0]); });
+		.halt.bind({ Stdout.formatln(HELP, args[0]); });
 
-	argp( "hlp").halt.bind({ Stderr.formatln(HELP, args[0]); });
-	argp("HELP").halt.bind({ Stderr.formatln(HELP, args[0]); });
-	argp( "HLP").halt.bind({ Stderr.formatln(HELP, args[0]); });
+	argp( "hlp").halt.bind({ Stdout.formatln(HELP, args[0]); });
+	argp("HELP").halt.bind({ Stdout.formatln(HELP, args[0]); });
+	argp( "HLP").halt.bind({ Stdout.formatln(HELP, args[0]); });
 
 	const char[][] ERRORS = [
 		"CCBI :: argument '{0}' expects {2} parameter(s), but has only {1}.\n",

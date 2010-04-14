@@ -20,7 +20,7 @@ for g in 1 2 3; do
 done
 
 # Supported fingerprints
-for f in `bin/ccbi -v 2>&1 >/dev/null | awk '/Fingerprints/{x=1}x{print}' | sed 's/[,.:]/\n/g' | grep -v '^$' | sed '1d;s/^ *//' | tr A-Z a-z`; do
+for f in `bin/ccbi -v | awk '/Fingerprints/{x=1}x{print}' | sed 's/[,.:]/\n/g' | grep -v '^$' | sed '1d;s/^ *//' | tr A-Z a-z`; do
 	touch tests/tmp/$f
 done
 
