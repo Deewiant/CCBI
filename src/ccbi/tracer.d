@@ -13,7 +13,7 @@ template Tracer() {
 import tango.core.Traits          : isSignedIntegerType, isUnsignedIntegerType;
 import tango.io.Console           : Cin;
 import tango.math.Math            : min;
-import tango.text.convert.Integer : parse, convert;
+import tango.text.convert.Integer : parse, convert, trim;
 import tango.text.Ascii           : icompare, toLower;
 
 import ccbi.container;
@@ -877,7 +877,10 @@ bool readIpIndex(inout size_t idx, char[] s, bool[size_t] invalidIndices) {
 		if (!s) return false;
 
 		size_t i;
-		if (!read(i, s) || i >= state.ips.length || i in invalidIndices) {
+		if (!read(i, s))
+			return false;
+
+		if (i >= state.ips.length || i in invalidIndices) {
 			Serr('\'')(s)("' is not a valid IP index.").newline;
 			return false;
 		}
@@ -911,19 +914,32 @@ bool readCoords(inout Coords c, char[][] args) {
 }
 
 bool read(T)(inout T n, char[] s) {
-	try {
-		     static if (isSignedIntegerType  !(T)) n = cast(T)parse  (s);
-		else static if (isUnsignedIntegerType!(T)) n = cast(T)convert(s);
-		else static assert (false, T.stringof);
+	uint ate;
 
+	static if (isSignedIntegerType!(T))
+		n = cast(T)parse(s, 0, &ate);
+
+	else static if (isUnsignedIntegerType!(T)) {
+		bool sign = false;
+		uint radix = 10;
+		ate = trim(s, sign, radix);
+
+		if (sign)
+			goto failed;
+
+		n = cast(T)convert(s[ate..$], radix, &ate);
+	} else
+		static assert (false, T.stringof);
+
+	if (ate > 0)
 		return true;
-	} catch {
-		Serr('\'')(s).format(
-			"' is not a valid {} integer value.",
-			(isSignedIntegerType!(T) ? "" : "un") ~ "signed"
-		).newline;
-		return false;
-	}
+
+failed:
+	Serr('\'')(s).format(
+		"' is not a valid {} integer value.",
+		(isSignedIntegerType!(T) ? "" : "un") ~ "signed"
+	).newline;
+	return false;
 }
 
 bool readBool(inout bool b, char[] s) {
