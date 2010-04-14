@@ -187,10 +187,10 @@ template FindLast(char c, char[] s) {
 //
 // CTFE because it's used in the necessarily-CTFE FEATURES in globals.
 char[] WordWrapFromTo(ubyte pos, ubyte column, char[] s, ubyte wlen = 0) {
-	if (s[wlen .. $] == "") {
+	if (wlen == s.length) {
 		if (pos >= 80) {
 			char[] indent;
-			while (--column)
+			while (column--)
 				indent ~= ' ';
 			return "\n" ~ indent ~ s[0..wlen];
 		} else
