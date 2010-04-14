@@ -337,7 +337,7 @@ T stands for being a time traveler from the future. (TRDS fingerprint.)`
 					Serr("No text given.").newline;
 					break;
 				}
-				if (args.arg(1) == "<") try {
+				if (args[1] == "<") try {
 					auto name = args[2];
 					Sin = new typeof(Sin)(new File(name));
 					Serr("Successfully set stdin to file '")(name)("'.").newline;
