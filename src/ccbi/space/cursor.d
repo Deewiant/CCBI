@@ -51,18 +51,13 @@ public:
 		with (cursor) {
 			space = s;
 
-			if (!space.findBox(c, box, boxIdx)) {
-
-				if (!space.tryJumpToBox(c, delta, box, boxIdx)) {
-					if (space.usingBak && space.bak.contains(c))
-						static if (!befunge93) bak = true;
-					else
-						infLoop(
-							"IP diverged while being placed.",
-							c.toString(), delta.toString());
-				}
+			if (!getBox(c)) {
+				if (space.tryJumpToBox(c, delta, box, boxIdx, bak))
+					tessellate(c);
+				else
+					infLoop("IP diverged while being placed.",
+					        c.toString(), delta.toString());
 			}
-			tessellate(c);
 		}
 		return cursor;
 	}
@@ -241,7 +236,7 @@ findBox:
 				auto p = pos;
 				if (!getBox(p)) {
 					mixin (DetectInfiniteLoop!("processing spaces"));
-					if (space.tryJumpToBox(p, delta, box, boxIdx))
+					if (space.tryJumpToBox(p, delta, box, boxIdx, bak))
 						tessellate(p);
 					else
 						infLoop(
@@ -257,7 +252,7 @@ semicolon:
 					auto p = pos;
 					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("jumping over semicolons"));
-						tessellate(space.jumpToBox(p, delta, box, boxIdx));
+						tessellate(space.jumpToBox(p, delta, box, boxIdx, bak));
 					}
 				}
 			} else
@@ -366,7 +361,7 @@ findBox:
 				auto p = pos;
 				if (!getBox(p)) {
 					mixin (DetectInfiniteLoop!("processing spaces in a string"));
-					if (space.tryJumpToBox(p, delta, box, boxIdx))
+					if (space.tryJumpToBox(p, delta, box, boxIdx, bak))
 						tessellate(p);
 					else
 						infLoop(

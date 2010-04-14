@@ -360,13 +360,16 @@ struct FungeSpace(cell dim, bool befunge93) {
 package:
 	bool usingBak() { return bak.data !is null; }
 
-	Coords jumpToBox(Coords pos, Coords delta, out AABB box, out size_t idx) {
-		bool found = tryJumpToBox(pos, delta, box, idx);
+	Coords jumpToBox(
+		Coords pos, Coords delta, out AABB box, out size_t idx, out bool hitBak)
+	{
+		bool found = tryJumpToBox(pos, delta, box, idx, hitBak);
 		assert (found);
 		return pos;
 	}
 	bool tryJumpToBox(
-		ref Coords pos, Coords delta, out AABB aabb, out size_t boxIdx)
+		ref Coords pos, Coords delta,
+		out AABB aabb, out size_t boxIdx, out bool hitBak)
 	in {
 		AABB _;
 		assert (!findBox(pos, _));
@@ -376,9 +379,9 @@ package:
 		ucell moves = 0;
 		Coords pos2 = void;
 		size_t idx  = void;
+		ucell  m    = void;
+		Coords c    = void;
 		foreach (i, box; boxen) {
-			ucell m;
-			Coords c;
 			if (rayIntersects(pos, delta, box.beg, box.end, m, c)
 			 && (m < moves || !moves))
 			{
@@ -387,13 +390,22 @@ package:
 				moves = m;
 			}
 		}
+
+		if (usingBak && rayIntersects(pos, delta, bak.beg, bak.end, m, c)
+		             && (m < moves || !moves))
+		{
+			pos    = c;
+			hitBak = true;
+			return true;
+		}
 		if (moves) {
 			pos    = pos2;
 			boxIdx = idx;
 			aabb   = boxen[idx];
+			hitBak = false;
 			return true;
-		} else
-			return false;
+		}
+		return false;
 	}
 
 	// The AABB parameter has to be ref regardless of what the proper semantics
