@@ -5,21 +5,26 @@ use File::Temp 'tempfile';
 use Switch;
 
 my $cmd = "bin/ccbi";
-foreach $i (0 .. $#ARGV) {
-	if (@ARGV[$i] =~ /\.(.)98\.t$/) {
-		switch ($1) {
-			case 'u' { $cmd = "$cmd -1" }
-			case 'b' { $cmd = "$cmd -2" }
-			case 't' { $cmd = "$cmd -3" }
-		}
-	}
-	$cmd = "$cmd \"@ARGV[$i]\"";
+my $arg = @ARGV[$#ARGV];
+
+$arg =~ /\.(.)98\.t$/ or die "Unknown test file extension!";
+
+my $mode;
+switch ($1) {
+	case 'u' { $mode = '1' }
+	case 'b' { $mode = '2' }
+	case 't' { $mode = '3' }
+}
+if (! -e "tests/tmp/$mode") {
+	print "1..0 # SKIP: -$mode not supported";
+	exit;
 }
 
-my $input = @ARGV[$#ARGV];
+$cmd = "$cmd -$mode \"$arg\"";
+
 my $out; # Needs to be in scope of the exec
-if (-r "$input.in") {
-	open my $in, '<', "$input.in" or die "Couldn't read $input.in: $!";
+if (-r "$arg.in") {
+	open my $in, '<', "$arg.in" or die "Couldn't read $arg.in: $!";
 
 	opendir my $dh, "tests/tmp" or die "Couldn't open tests/tmp: $!";
 	%inRepls = grep !/^\./, readdir $dh;
