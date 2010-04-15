@@ -302,6 +302,82 @@ package:
 		at.v[] = o.v[] + bestMoves * delta.v[];
 		return true;
 	}
+
+	.Coords!(dim) getEndOfContiguousRange(
+		    .Coords!(dim) endPt,
+		ref .Coords!(dim) from,
+		    .Coords!(dim) to,
+		    .Coords!(dim) origBeg,
+		out bool reachedTo,
+		    .Coords!(dim) tessellBeg,
+		    .Coords!(dim) areaBeg)
+	{
+		static if (dim >= 2)
+			auto initFromV = from.v[1..$];
+
+		for (ubyte i = 0; i < dim-1; ++i) {
+			if (endPt.v[i] == to.v[i]) {
+				// Hit the end point exactly: we'll be going to the next line/page
+				// on this axis
+				from.v[i] = origBeg.v[i];
+			} else {
+				// Did not reach the end point or the box is too big to go any
+				// further as a contiguous block. The remaining axes won't be
+				// changing.
+				endPt.v[i+1..$] = from.v[i+1..$];
+
+				if (endPt.v[i] < to.v[i] || from.v[i] > to.v[i]) {
+					// Did not reach the endpoint: either ordinarily or because "to"
+					// is wrapped around with respect to "from", so it's not
+					// possible to reach the endpoint from "from" without going to
+					// another box.
+					//
+					// The next point will be one up on this axis.
+					from.v[i] = endPt.v[i] + 1;
+				} else {
+					// Reached "to" on this axis, but the box is too big to go any
+					// further.
+					endPt.v[i] = to.v[i];
+
+					// If we're at "to" on the other axes as well, we're there.
+					if (endPt.v[i+1..$] == to.v[i+1..$])
+						reachedTo = true;
+					else {
+						// We should go further on the next axis next time around,
+						// since we're done along this one.
+						from.v[i] = origBeg.v[i];
+						++from.v[i+1];
+					}
+				}
+				goto end;
+			}
+		}
+		// All the coords but the last were the same: check the last one too.
+		if (endPt.v[$-1] == to.v[$-1])
+			reachedTo = true;
+		else {
+			if (endPt.v[$-1] < to.v[$-1] || from.v[$-1] > to.v[$-1])
+				from.v[$-1] = endPt.v[$-1] + 1;
+			else {
+				endPt.v[$-1] = to.v[$-1];
+				reachedTo = true;
+			}
+		}
+end:
+		static if (dim >= 2) for (ubyte i = 0; i < dim-1; ++i) {
+			// If we were going to cross a line/page but we're actually in a box
+			// tessellated in such a way that we can't, wibble things so that we
+			// just go to the end of the line/page.
+			if (endPt.v[i+1] > from.v[i+1] && tessellBeg.v[i] != areaBeg.v[i]) {
+				endPt.v[i+1..$] = initFromV[i..$];
+				from .v[i+1]    = initFromV[i] + 1;
+				from .v[i+2..$] = initFromV[i+1..$];
+				reachedTo = false;
+				break;
+			}
+		}
+		return endPt;
+	}
 }
 
 // Non-dimension-specific utils

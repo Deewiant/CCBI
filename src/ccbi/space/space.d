@@ -28,9 +28,10 @@ struct FungeSpace(cell dim, bool befunge93) {
 	static assert (dim >= 1 && dim <= 3);
 	static assert (!befunge93 || dim == 2);
 
-	alias .AABB     !(dim)        AABB;
-	alias .Coords   !(dim)        Coords;
-	alias .Dimension!(dim).Coords InitCoords;
+	alias .AABB     !(dim)                         AABB;
+	alias .Coords   !(dim)                         Coords;
+	alias .Dimension!(dim).Coords                  InitCoords;
+	alias .Dimension!(dim).getEndOfContiguousRange getEndOfContiguousRange;
 
 	// All arbitrary
 	private const
@@ -1132,8 +1133,27 @@ private:
 		auto beg = aabb.beg;
 
 		iterating: for (bool hitEnd = false;;) {
-			foreach (box; boxen) if (box.contains(beg)) {
-				f(box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd),
+			foreach (b, box; boxen) if (box.contains(beg)) {
+				// Consider:
+				//     +-----+
+				// x---|░░░░░|---+
+				// |░░░|░░░░░|░░░|
+				// |░░░|░░░░░|░B░y
+				// |   |  A  |   |
+				// +---|     |---+
+				//     +-----+
+				// We want to map the range from x to y (shaded). Unless we
+				// tessellate, we'll get the whole thing from box B straight away.
+				auto tesBeg = box.beg;
+				auto tesEnd = box.end;
+				tessellateAt(beg, boxen[0..b], tesBeg, tesEnd);
+
+				auto begIdx = box.getIdx(beg);
+				auto endIdx = box.getIdx(getEndOfContiguousRange(
+					tesEnd, beg, aabb.end, aabb.beg, hitEnd, tesBeg, box.beg));
+				assert (begIdx < endIdx + 1);
+
+				f(box.data[begIdx .. endIdx+1],
 				  stats.space.lookups, stats.space.assignments);
 				if (hitEnd)
 					return;
@@ -1151,6 +1171,7 @@ private:
 				break;
 		}
 	}
+
 	// Passes some extra data to the delegate, for matching array index
 	// calculations with the location of the cell[] (probably quite specific to
 	// file loading, where this is used):
@@ -1172,7 +1193,7 @@ private:
 		auto beg = aabb.beg;
 
 		iterating: for (bool hitEnd = false;;) {
-			foreach (box; boxen) if (box.contains(beg)) {
+			foreach (b, box; boxen) if (box.contains(beg)) {
 				size_t
 					width = void,
 					area = void,
@@ -1186,7 +1207,7 @@ private:
 				}
 
 				// These depend on the original beg and thus have to be initialized
-				// before the call to getContiguousRange
+				// before the call to getEndOfContiguousRange
 
 				// {box.beg.x, beg.y, beg.z}
 				Coords ls = beg;
@@ -1198,7 +1219,16 @@ private:
 					ps.v[2..$] = beg.v[2..$];
 				}
 
-				auto arr = box.getContiguousRange(beg, aabb.end, aabb.beg, hitEnd);
+				auto tesBeg = box.beg;
+				auto tesEnd = box.end;
+				tessellateAt(beg, boxen[0..b], tesBeg, tesEnd);
+
+				auto begIdx = box.getIdx(beg);
+				auto endIdx = box.getIdx(getEndOfContiguousRange(
+					tesEnd, beg, aabb.end, aabb.beg, hitEnd, tesBeg, box.beg));
+
+				assert (begIdx < endIdx + 1);
+				auto arr = box.data[begIdx .. endIdx + 1];
 
 				ubyte hit = 0;
 

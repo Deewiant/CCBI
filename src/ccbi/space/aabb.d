@@ -425,67 +425,6 @@ struct AABB(cell dim) {
 					this.data[j .. j + area.width] = ' ';
 		}
 	}
-
-	cell[] getContiguousRange(
-		ref Coords from, Coords to, Coords origBeg, ref bool reachedTo)
-	in {
-		assert (this.contains(from));
-	} body {
-		auto fromIdx = getIdx(from);
-
-		auto endPt = this.end;
-
-		for (ubyte i = 0; i < dim-1; ++i) {
-			if (endPt.v[i] == to.v[i]) {
-				// Hit the end point exactly: we'll be going to the next line/page
-				// on this axis
-				from.v[i] = origBeg.v[i];
-			} else {
-				// Did not reach the end point or the box is too big to go any
-				// further as a contiguous block. The remaining axes won't be
-				// changing.
-				endPt.v[i+1..$] = from.v[i+1..$];
-
-				if (endPt.v[i] < to.v[i] || from.v[i] > to.v[i]) {
-					// Did not reach the endpoint: either ordinarily or because "to"
-					// is wrapped around with respect to "from", so it's not
-					// possible to reach the endpoint from "from" without going to
-					// another box.
-					//
-					// The next point will be one up on this axis.
-					from.v[i] = endPt.v[i] + 1;
-				} else {
-					// Reached "to" on this axis, but the box is too big to go any
-					// further.
-					endPt.v[i] = to.v[i];
-
-					// If we're at "to" on the other axes as well, we're there.
-					if (endPt.v[i+1..$] == to.v[i+1..$])
-						reachedTo = true;
-					else {
-						// We should go further on the next axis next time around,
-						// since we're done along this one.
-						from.v[i] = origBeg.v[i];
-						++from.v[i+1];
-					}
-				}
-				goto end;
-			}
-		}
-		// All the coords but the last were the same: check the last one too.
-		if (endPt.v[$-1] == to.v[$-1])
-			reachedTo = true;
-		else {
-			if (endPt.v[$-1] < to.v[$-1] || from.v[$-1] > to.v[$-1])
-				from.v[$-1] = endPt.v[$-1] + 1;
-			else {
-				endPt.v[$-1] = to.v[$-1];
-				reachedTo = true;
-			}
-		}
-end:
-		return data[fromIdx .. getIdx(endPt)+1];
-	}
 }
 
 // Modifies the given beg/end pair to give a box which contains the given
