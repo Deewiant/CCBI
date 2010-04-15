@@ -314,7 +314,8 @@ package:
 		    .Coords!(dim) areaBeg)
 	{
 		static if (dim >= 2)
-			auto initFromV = from.v[1..$];
+			// Copy, don't slice!
+			cell[dim-1] initFromV = from.v[1..$];
 
 		for (ubyte i = 0; i < dim-1; ++i) {
 			if (endPt.v[i] == to.v[i]) {
