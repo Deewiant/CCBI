@@ -1023,9 +1023,9 @@ private:
 		}
 	}
 
-	// Finds the bounds of the tightest AABB containing all the boxen referred by
-	// indices, as well as the largest box among them, and keeps a running sum of
-	// their sizes.
+	// Finds the bounds of the tightest AABB containing all the boxen referred
+	// by indices, as well as the largest box among them, and keeps a running
+	// sum of their sizes.
 	//
 	// Assumes they're all allocated and max isn't.
 	void minMaxSize(
