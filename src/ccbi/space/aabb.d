@@ -489,17 +489,32 @@ end:
 }
 
 // Modifies the given beg/end pair to give a box which contains the given
-// coordinates and overlaps with none of the given boxes. The coordinates
+// coordinates but doesn't overlap with any of the given boxes. The coordinates
 // should, of course, be already contained between the beg and end.
 void tessellateAt(cell dim)(
 	Coords!(dim) p, AABB!(dim)[] bs, ref Coords!(dim) beg, ref Coords!(dim) end)
 in {
-	assert (AABB!(dim).unsafe(beg,end).contains(p));
+	assert (Dimension!(dim).contains(p, beg, end));
 } out {
 	foreach (b; bs)
-		assert (!AABB!(dim).unsafe(beg,end).overlaps(b));
+		assert (!AABB!(dim).unsafe(beg, end).overlaps(b));
 } body {
-	foreach (b; bs) foreach (i, x; p.v) {
+	foreach (b; bs)
+		tessellateAt(p, b.beg, b.end, beg, end);
+}
+
+// Since the algorithm is currently just a fold over the boxes, this simpler
+// version exists to avoid heap allocation.
+void tessellateAt(cell dim)(
+	Coords!(dim) p, Coords!(dim) avoidBeg, Coords!(dim) avoidEnd,
+	ref Coords!(dim) beg, ref Coords!(dim) end)
+in {
+	assert (Dimension!(dim).contains(p, beg, end));
+} out {
+	assert (!AABB!(dim).unsafe(beg, end).overlaps(
+		AABB!(dim).unsafe(avoidBeg, avoidEnd)));
+} body {
+	foreach (i, x; p.v) {
 		// This could be improved, consider for instance the bottommost box in
 		// the following graphic and its current tessellation:
 		//
@@ -528,8 +543,7 @@ in {
 		// |  |  |      |  |  |      |  |  |
 		// |  |  |      |  |  |      |  |  |
 		// +--|  |      +--|  |      +--|  |
-		const cell l = 1;
-		if (b.end.v[i] < x) beg.v[i] = max(  beg.v[i], b.end.v[i]+l);
-		if (b.beg.v[i] > x) end.v[i] = min(b.beg.v[i]-l, end.v[i]);
+		if (avoidEnd.v[i] < x) beg.v[i] = max(     beg.v[i], avoidEnd.v[i]+1);
+		if (avoidBeg.v[i] > x) end.v[i] = min(avoidBeg.v[i]-1,    end.v[i]);
 	}
 }

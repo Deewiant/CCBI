@@ -145,24 +145,21 @@ public:
 			tessellateAt(p, space.boxen, beg, end);
 			actualPos = p;
 		} else {
-			// Care only about boxes that are above box
-			auto overlaps = new AABB[boxIdx];
-			size_t i = 0;
-			foreach (b; space.boxen[0..boxIdx])
-				if (b.overlaps(box))
-					overlaps[i++] = b;
-
-			oBeg = box.beg;
-			relPos = p - oBeg;
-
-			// box is now only a view: it shares its data with the original box.
-			// Be careful! Only contains and the *NoOffset functions in it work
-			// properly, since the others (notably, getIdx and thereby
+			// box now becomes only a view: it shares its data with the original
+			// box. Be careful! Only contains and the *NoOffset functions in it
+			// work properly, since the others (notably, getIdx and thereby
 			// opIndex[Assign]) tend to depend on beg and end matching data.
 			//
 			// In addition, it is weird: its width and height are not its own, so
 			// that its getNoOffsets work.
-			tessellateAt(p, overlaps[0..i], box.beg, box.end);
+
+			oBeg = box.beg;
+			relPos = p - oBeg;
+
+			// Care only about boxes that are above box
+			foreach (b; space.boxen[0..boxIdx])
+				if (b.overlaps(box))
+					tessellateAt(p, b.beg, b.end, box.beg, box.end);
 
 			ob2b = box.beg - oBeg;
 			ob2e = box.end - oBeg;
