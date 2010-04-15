@@ -139,6 +139,9 @@ struct AABB(cell dim) {
 
 	cell getNoOffset(Coords p)
 	in {
+		// Can't assert contains(p + beg) since NoOffset usage typically means
+		// that our beg/end don't match data.
+
 		assert (data !is null);
 		assert (getIdxNoOffset(p) < size);
 	} body {
