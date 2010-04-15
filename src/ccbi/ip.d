@@ -32,7 +32,7 @@ struct IP(cell dim, bool befunge93) {
 
 	// Yes, IPs are always heap-allocated: simplifies things
 	static typeof(this) opCall(
-		Coords pos,
+		Coords initPos,
 		FungeSpace* s,
 		ContainerStats* stackStats)
 	{
@@ -52,7 +52,7 @@ struct IP(cell dim, bool befunge93) {
 			} else
 				stack = typeof(stack)(stackStats);
 
-			cursor = typeof(cursor)(pos, delta, s);
+			cursor = typeof(cursor)(initPos, delta, s);
 
 			informSpace();
 		}
