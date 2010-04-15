@@ -5,7 +5,7 @@ use File::Temp 'tempfile';
 use Switch;
 
 my $cmd = "bin/ccbi";
-my $arg = @ARGV[$#ARGV];
+my $arg = $ARGV[$#ARGV];
 
 $arg =~ /\.(.)98\.t$/ or die "Unknown test file extension!";
 
@@ -29,11 +29,11 @@ if ($arg =~ m[/fingerprints/([^/]+)/] && ! -e "tests/tmp/$1") {
 $cmd = "$cmd -$mode \"$arg\"";
 
 my $out; # Needs to be in scope of the exec
-if (-r "$arg.in") {
+if (-e "$arg.in") {
 	open my $in, '<', "$arg.in" or die "Couldn't read $arg.in: $!";
 
 	opendir my $dh, "tests/tmp" or die "Couldn't open tests/tmp: $!";
-	%inRepls = grep !/^\./, readdir $dh;
+	my %inRepls = map { $_ => undef } grep !/^\./, readdir $dh;
 	closedir $dh;
 
 	$out = tempfile();
