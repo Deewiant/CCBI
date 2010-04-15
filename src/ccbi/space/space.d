@@ -1343,14 +1343,19 @@ private:
 				// f hit an EOL: bump beg.y if it hasn't already been bumped
 				`if (beg.y == prevY) {
 					beg.x = aabb.beg.x;
-					if (++beg.y > aabb.end.y)
-						hitEnd = true;
+					if (++beg.y > aabb.end.y) {
+						static if (dim >= 3)
+							goto bumpZ`~box~`;
+						else
+							hitEnd = true;
+					}
 				}
 			}
-			static if (dim >= 3) if (hit == 0b10) {
+			static if (dim >= 3) if (hit == 0b10) {`
 				// Ditto for EOP
-				if (beg.z == prevZ) {
+				`if (beg.z == prevZ) {
 					beg.x = aabb.beg.x;
+bumpZ`~box~`:
 					beg.y = aabb.beg.y;
 					if (++beg.z > aabb.end.z)
 						hitEnd = true;
