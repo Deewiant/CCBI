@@ -1998,7 +1998,8 @@ package struct StaticAABB(cell dim, bool befunge93) {
 		END     = InitCoords!(111, 495,  1),
 		REL_END = InitCoords!(127, 511,  2);
 
-	static if (dim == 1) private cell[SIZE.x]                   arr;
+	// The *1 is some WORKAROUND...
+	static if (dim == 1) private cell[SIZE.x * 1]               arr;
 	static if (dim == 2) private cell[SIZE.x * SIZE.y]          arr;
 	static if (dim == 3) private cell[SIZE.x * SIZE.y * SIZE.z] arr;
 
@@ -2013,7 +2014,9 @@ package struct StaticAABB(cell dim, bool befunge93) {
 	// Used by some things that are generic over this and dynamic boxen.
 	private Coords beg()   { return BEG; }
 	private Coords end()   { return END; }
+	static if (dim >= 2)
 	private size_t width() { return SIZE.x; }
+	static if (dim >= 3)
 	private size_t area () { return SIZE.x * SIZE.y; }
 	private cell*  data () { return arr.ptr; }
 
