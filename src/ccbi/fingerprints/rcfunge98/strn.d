@@ -139,7 +139,8 @@ void get() {
 				c.x = beg.x;
 			} else
 				throw new SpaceInfiniteLoopException(
-					"STRN instruction G", c.toString(), InitCoords!(1).toString(),
+					"STRN G at " ~cip.pos.toString(),
+					c.toString(), InitCoords!(1).toString(),
 					"String starting at " ~start.toString()~ " never terminates.");
 		}
 	}
