@@ -194,12 +194,12 @@ public:
 		const DetectInfiniteLoop = `
 			version (detectInfiniteLoops) {
 				if (gotFirstExit) {
-					if (relPos == firstExit)
+					if (pos == firstExit)
 						infLoop(
 							"IP found itself whilst ` ~doing~ `.",
-							(relPos + oBeg).toString(), delta.toString());
+							pos.toString(), delta.toString());
 				} else {
-					firstExit    = relPos;
+					firstExit    = pos;
 					gotFirstExit = true;
 				}
 			}
