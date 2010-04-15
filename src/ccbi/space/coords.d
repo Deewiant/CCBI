@@ -22,6 +22,8 @@ struct Coords(cell dim) {
 			static if (dim >= 2) { cell y; }
 			static if (dim >= 3) { cell z; }
 		}
+		// Unfortunately some performance-sensitive operations on this have to be
+		// unrolled manually, so we can't use it as much as we'd like.
 		cell[dim] v;
 	}
 
@@ -36,15 +38,23 @@ struct Coords(cell dim) {
 	}
 
 	int opEquals(cell c) {
-		foreach (x; v)
-			if (x != c)
-				return false;
+		                     if (x != c) return false;
+		static if (dim >= 2) if (y != c) return false;
+		static if (dim >= 3) if (z != c) return false;
 		return true;
 	}
 	int opEquals(Coords c) { return v == c.v; }
 
-	void maxWith(Coords c) { foreach (i, ref x; v) if (c.v[i] > x) x = c.v[i]; }
-	void minWith(Coords c) { foreach (i, ref x; v) if (c.v[i] < x) x = c.v[i]; }
+	void maxWith(Coords c) {
+		                     if (c.x > x) x = c.x;
+		static if (dim >= 2) if (c.y > y) y = c.y;
+		static if (dim >= 3) if (c.z > z) z = c.z;
+	}
+	void minWith(Coords c) {
+		                     if (c.x < x) x = c.x;
+		static if (dim >= 2) if (c.y < y) y = c.y;
+		static if (dim >= 3) if (c.z < z) z = c.z;
+	}
 
 	template Ops(T...) {
 		static assert (T.length != 1);
@@ -52,6 +62,7 @@ struct Coords(cell dim) {
 		static if (T.length == 0)
 			const Ops = "";
 		else
+			// Unrolling these isn't worth it
 			const Ops =
 				"Coords op" ~T[0]~ "(cell c) {
 					Coords co = *this;

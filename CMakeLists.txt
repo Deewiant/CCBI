@@ -322,6 +322,8 @@ if(CCBI_BUILD_TYPE MATCHES "^Release-LLVM")
 		        | sed "/^define .*FungeMachine9executeIPMF/ s/{/alwaysinline{/"
 
 		        # Need to do all of these for noticeable improvement
+		        | sed "/^define .*6Cursor5inBoxMF/ s/{/alwaysinline{/"
+		        | sed "/^define .*6Cursor9unsafeGetMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*6Cursor3getMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*2IP4cellMF/ s/{/alwaysinline{/"
 		        | sed "/^define .*2IP19gotoNextInstructionMF/ s/{/alwaysinline{/"
