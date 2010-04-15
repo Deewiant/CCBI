@@ -72,13 +72,8 @@ private:
 	alias .FungeSpace!(dim, befunge93)  FungeSpace;
 	alias .Dimension !(dim).Coords      InitCoords;
 
-	IP cip;
-	FungeState!(dim, befunge93) state;
-
 	static if (!befunge93)
 		IP tip; // traced IP
-	else
-		alias cip tip;
 
 	static if (!befunge93)
 		char[][] fungeArgs;
@@ -88,6 +83,15 @@ private:
 	Flags flags;
 	Stats stats;
 	ContainerStats stackStats, stackStackStats, dequeStats, semanticStats;
+
+	IP cip;
+
+	// Can't forward reference cip...
+	static if (befunge93)
+		alias cip tip;
+
+	// Space is big: make sure it's last, to be nice to the cache.
+	FungeState!(dim, befunge93) state;
 
 	public this(Array source, char[][] args, Flags f) {
 		flags = f;

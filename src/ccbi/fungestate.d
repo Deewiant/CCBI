@@ -26,7 +26,19 @@ struct FungeState(cell dim, bool befunge93) {
 	else
 		alias ALL_FINGERPRINTS fings;
 
-	FungeSpace!(dim, befunge93) space = void;
+	version (REFC)
+		Coords[] references;
+
+	version (SUBR) {
+		cell[] callStack;
+		size_t cs;
+	}
+
+	version (TIME)
+		bool utc = false;
+
+	version (TRDS)
+		IP timeStopper = null;
 
 	static if (!befunge93) {
 		UDLL!(IP, 16) ips;
@@ -43,19 +55,8 @@ struct FungeState(cell dim, bool befunge93) {
 	     version (tracer) ulong tick = 0;
 	else version (TRDS)   ulong tick = 0;
 
-	version (REFC)
-		Coords[] references;
-
-	version (SUBR) {
-		cell[] callStack;
-		size_t cs;
-	}
-
-	version (TIME)
-		bool utc = false;
-
-	version (TRDS)
-		IP timeStopper = null;
+	// Space is big: make sure it's last, to be nice to the cache.
+	FungeSpace!(dim, befunge93) space = void;
 
 	// Since we need to pass the address of the space to the IPs when
 	// deepCopying, we need to take the target address to write to here.

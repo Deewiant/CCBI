@@ -20,9 +20,9 @@ private:
 	alias .FungeSpace!(dim, befunge93) FungeSpace;
 
 	static if (befunge93)
-		const bool bak = false;
+		const ubyte mode = FungeSpace.STATIC;
 	else
-		bool bak = false;
+		ubyte mode = FungeSpace.STATIC;
 
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=1055
 	// WORKAROUND: http://d.puremagic.com/issues/show_bug.cgi?id=3991
@@ -32,13 +32,16 @@ private:
 		size_t boxIdx;
 		Coords actualPos, beg, end;
 	} else union {
-		// bak = false
+		// mode = DYNAMIC
 		struct {
-			Coords relPos = void, oBeg = void, ob2b = void, ob2e = void;
+			// mode = STATIC
+			Coords relPos = void;
+
+			Coords oBeg = void, ob2b = void, ob2e = void;
 			AABB box = void;
 			size_t boxIdx = void;
 		}
-		// bak = true
+		// mode = BAK
 		struct { Coords actualPos = void, beg = void, end = void; }
 	}
 
@@ -56,7 +59,7 @@ public:
 				assert (found);
 
 			} else if (!getBox(c)) {
-				if (space.tryJumpToBox(c, delta, box, boxIdx, bak))
+				if (space.tryJumpToBox(c, delta, box, boxIdx, mode))
 					tessellate(c);
 				else
 					infLoop("IP diverged while being placed.",
@@ -67,8 +70,12 @@ public:
 	}
 
 	private bool inBox() {
-		return bak ? contains(pos, beg, end)
-		           : contains(relPos, ob2b, ob2e);
+		if (mode == FungeSpace.STATIC)
+			return contains(relPos, InitCoords!(0), space.staticBox.REL_END);
+		else if (mode == FungeSpace.DYNAMIC)
+			return contains(relPos, ob2b, ob2e);
+		else
+			return contains(actualPos, beg, end);
 	}
 
 	cell get()
@@ -95,8 +102,13 @@ public:
 			assert ((*space)[pos] == c);
 	} body {
 		++space.stats.space.lookups;
-		return bak ? space.bak[pos]
-		           : box.getNoOffset(relPos);
+
+		if (mode == FungeSpace.STATIC)
+			return space.staticBox.getNoOffset(relPos);
+		else if (mode == FungeSpace.DYNAMIC)
+			return box.getNoOffset(relPos);
+		else
+			return space.bak[pos];
 	}
 
 	void set(cell c)
@@ -121,25 +133,49 @@ public:
 			assert ((*space)[pos] == c);
 	} body {
 		++space.stats.space.assignments;
-		bak ? space.bak[pos] = c
-		    : box.setNoOffset(relPos, c);
+
+		if (mode == FungeSpace.STATIC)
+			space.staticBox.setNoOffset(relPos, c);
+		else if (mode == FungeSpace.DYNAMIC)
+			box.setNoOffset(relPos, c);
+		else
+			space.bak[pos] = c;
 	}
 
-	Coords pos()         { return bak ? actualPos : relPos + oBeg; }
-	void   pos(Coords c) { bak ? actualPos = c : (relPos = c - oBeg); }
+	Coords pos() {
+		if (mode == FungeSpace.STATIC)
+			return relPos + space.staticBox.BEG;
+		else if (mode == FungeSpace.DYNAMIC)
+			return relPos + oBeg;
+		else
+			return actualPos;
+	}
+	void pos(Coords c) {
+		if (mode == FungeSpace.STATIC)
+			relPos = c - space.staticBox.BEG;
+		else if (mode == FungeSpace.DYNAMIC)
+			relPos = c - oBeg;
+		else
+			actualPos = c;
+	}
 
 	static if (befunge93) void invalidate() { assert (false); }
 	else
 	void invalidate() {
 		auto p = pos;
-		if (!getBox(p))
+		if (!getBox(p)) {
 			// Just grab a box which we aren't contained in; skipMarkers will sort
-			// it out
-			box = space.boxen[boxIdx = 0];
+			// it out. Prefer STATIC because it's the fastest to work with.
+			mode = FungeSpace.STATIC;
+		}
 	}
 
 	private void tessellate(Coords p) {
-		if (bak) {
+		if (mode == FungeSpace.STATIC) {
+			// staticBox is the topmost: nothing to do but set relPos.
+			relPos = p - space.staticBox.BEG;
+
+		} else if (mode == FungeSpace.BAK) {
 			beg = space.bak.beg;
 			end = space.bak.end;
 			tessellateAt(p, space.boxen, beg, end);
@@ -157,6 +193,7 @@ public:
 			relPos = p - oBeg;
 
 			// Care only about boxes that are above box
+			tessellateAt(p, space.staticBox.BEG, space.staticBox.END, box.beg, box.end);
 			foreach (b; space.boxen[0..boxIdx])
 				if (b.overlaps(box))
 					tessellateAt(p, b.beg, b.end, box.beg, box.end);
@@ -168,21 +205,36 @@ public:
 
 	static if (!befunge93)
 	private bool getBox(Coords p) {
+		if (space.staticBox.contains(p)) {
+			mode = FungeSpace.STATIC;
+			tessellate(p);
+			return true;
+		}
 		if (space.findBox(p, box, boxIdx)) {
-			bak = false;
+			mode = FungeSpace.DYNAMIC;
 			tessellate(p);
 			return true;
 		}
 		if (space.usingBak && space.bak.contains(p)) {
-			bak = true;
+			mode = FungeSpace.BAK;
 			tessellate(p);
 			return true;
 		}
 		return false;
 	}
 
-	void advance(Coords delta) { bak ? actualPos += delta : (relPos += delta); }
-	void retreat(Coords delta) { bak ? actualPos -= delta : (relPos -= delta); }
+	void advance(Coords delta) {
+		if (mode == FungeSpace.BAK)
+			actualPos += delta;
+		else
+			relPos += delta;
+	}
+	void retreat(Coords delta) {
+		if (mode == FungeSpace.BAK)
+			actualPos -= delta;
+		else
+			relPos -= delta;
+	}
 
 	template DetectInfiniteLoopDecls() {
 		version (detectInfiniteLoops) {
@@ -208,8 +260,8 @@ public:
 
 	static if (befunge93) {
 		void skipMarkers(Coords delta)
-		in   { assert (!inBox()); assert (!bak); }
-		out  { assert ( inBox()); assert (!bak); }
+		in   { assert (!inBox()); assert (mode == FungeSpace.STATIC); }
+		out  { assert ( inBox()); assert (mode == FungeSpace.STATIC); }
 		body {
 			// Since only the cardinal deltas are available, only one axis can
 			// wrap at a time.
@@ -240,7 +292,7 @@ findBox:
 				auto p = pos;
 				if (!getBox(p)) {
 					mixin (DetectInfiniteLoop!("processing spaces"));
-					if (space.tryJumpToBox(p, delta, box, boxIdx, bak))
+					if (space.tryJumpToBox(p, delta, box, boxIdx, mode))
 						tessellate(p);
 					else
 						infLoop(
@@ -256,7 +308,7 @@ semicolon:
 					auto p = pos;
 					if (!getBox(p)) {
 						mixin (DetectInfiniteLoop!("jumping over semicolons"));
-						tessellate(space.jumpToBox(p, delta, box, boxIdx, bak));
+						tessellate(space.jumpToBox(p, delta, box, boxIdx, mode));
 					}
 				}
 			} else
@@ -275,17 +327,24 @@ semicolon:
 
 		// Evidently it is a noticeable performance improvement to lift out the
 		// condition.
-		if (bak) {
-			while (space.bak[actualPos] == ' ') {
-				actualPos += delta;
-				if (!contains(actualPos, beg, end))
+		if (mode == FungeSpace.STATIC) {
+			while (space.staticBox.getNoOffset(relPos) == ' ') {
+				relPos += delta;
+				if (!contains(relPos, InitCoords!(0), space.staticBox.REL_END))
+					return false;
+				++space.stats.space.lookups;
+			}
+		} else if (mode == FungeSpace.DYNAMIC) {
+			while (box.getNoOffset(relPos) == ' ') {
+				relPos += delta;
+				if (!contains(relPos, ob2b, ob2e))
 					return false;
 				++space.stats.space.lookups;
 			}
 		} else {
-			while (box.getNoOffset(relPos) == ' ') {
-				relPos += delta;
-				if (!contains(relPos, ob2b, ob2e))
+			while (space.bak[actualPos] == ' ') {
+				actualPos += delta;
+				if (!contains(actualPos, beg, end))
 					return false;
 				++space.stats.space.lookups;
 			}
@@ -301,7 +360,53 @@ semicolon:
 					pos.toString(), delta.toString());
 
 		// As in skipSpaces, lifting out this condition is worthwhile but ugly.
-		if (bak) {
+		if (mode == FungeSpace.STATIC) {
+			if (inMid)
+				goto continuePrevStat;
+
+			++space.stats.space.lookups;
+			while (space.staticBox.getNoOffset(relPos) == ';') {
+				do {
+					relPos += delta;
+					if (!contains(relPos, InitCoords!(0),space.staticBox.REL_END)) {
+						inMid = true;
+						return false;
+					}
+continuePrevStat:
+					++space.stats.space.lookups;
+				} while (space.staticBox.getNoOffset(relPos) != ';')
+
+				relPos += delta;
+				if (!contains(relPos, InitCoords!(0), space.staticBox.REL_END)) {
+					inMid = false;
+					return false;
+				}
+				++space.stats.space.lookups;
+			}
+		} else if (mode == FungeSpace.DYNAMIC) {
+			if (inMid)
+				goto continuePrevDyn;
+
+			++space.stats.space.lookups;
+			while (box.getNoOffset(relPos) == ';') {
+				do {
+					relPos += delta;
+					if (!contains(relPos, ob2b, ob2e)) {
+						inMid = true;
+						return false;
+					}
+continuePrevDyn:
+					++space.stats.space.lookups;
+				} while (box.getNoOffset(relPos) != ';')
+
+				relPos += delta;
+				if (!contains(relPos, ob2b, ob2e)) {
+					inMid = false;
+					return false;
+				}
+				++space.stats.space.lookups;
+			}
+		} else if (mode == FungeSpace.BAK) {
 			if (inMid)
 				goto continuePrevBak;
 
@@ -319,29 +424,6 @@ continuePrevBak:
 
 				actualPos += delta;
 				if (!contains(actualPos, beg, end)) {
-					inMid = false;
-					return false;
-				}
-				++space.stats.space.lookups;
-			}
-		} else {
-			if (inMid)
-				goto continuePrevBox;
-
-			++space.stats.space.lookups;
-			while (box.getNoOffset(relPos) == ';') {
-				do {
-					relPos += delta;
-					if (!contains(relPos, ob2b, ob2e)) {
-						inMid = true;
-						return false;
-					}
-continuePrevBox:
-					++space.stats.space.lookups;
-				} while (box.getNoOffset(relPos) != ';')
-
-				relPos += delta;
-				if (!contains(relPos, ob2b, ob2e)) {
 					inMid = false;
 					return false;
 				}
@@ -371,7 +453,7 @@ continuePrevBox:
 				if (!getBox(p = pos)) {
 jumpToBox:
 					mixin (DetectInfiniteLoop!("processing spaces in a string"));
-					if (space.tryJumpToBox(p, delta, box, boxIdx, bak))
+					if (space.tryJumpToBox(p, delta, box, boxIdx, mode))
 						tessellate(p);
 					else
 						infLoop(

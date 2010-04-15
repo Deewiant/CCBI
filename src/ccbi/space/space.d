@@ -80,12 +80,17 @@ struct FungeSpace(cell dim, bool befunge93) {
 	}
 	Stats* stats;
 
+	// Since this takes up so much space, it should be the last thing in this
+	// struct, so that boxen and company can be cached together.
+	package StaticAABB!(dim, befunge93) staticBox;
+
 	static typeof(*this) opCall(Stats* stats, Array source) {
 		typeof(*this) x;
 		x.stats = stats;
 		// Not being in with is WORKAROUND:
 		// http://www.dsource.org/projects/ldc/ticket/397
 		// http://www.dsource.org/projects/ldc/ticket/400
+		x.staticBox.initialize();
 		x.load(source, null, InitCoords!(0), false);
 		with (x) {
 			if (boxen.length) {
@@ -127,6 +132,9 @@ struct FungeSpace(cell dim, bool befunge93) {
 	cell opIndex(Coords c) {
 		++stats.space.lookups;
 
+		if (staticBox.contains(c))
+			return staticBox[c];
+
 		AABB box = void;
 		if (findBox(c, box))
 			return box[c];
@@ -137,6 +145,9 @@ struct FungeSpace(cell dim, bool befunge93) {
 	}
 	void opIndexAssign(cell v, Coords c) {
 		++stats.space.assignments;
+
+		if (staticBox.contains(c))
+			return staticBox[c] = v;
 
 		AABB box = void;
 		if (findBox(c, box) || placeBoxFor(c, box))
@@ -149,6 +160,10 @@ struct FungeSpace(cell dim, bool befunge93) {
 		void getLooseBounds(out Coords beg, out Coords end) {
 			beg = lastBeg;
 			end = lastEnd;
+
+			beg.minWith(staticBox.BEG);
+			end.maxWith(staticBox.END);
+
 			foreach (box; boxen) {
 				beg.minWith(box.beg);
 				end.maxWith(box.end);
@@ -209,39 +224,62 @@ struct FungeSpace(cell dim, bool befunge93) {
 		void findBeg(ubyte axis)(ref Coords beg) {
 			bool removed = false;
 
-			nextBox: for (size_t i = 0; i < boxen.length; ++i)
-			if (boxen[i].beg.v[axis] < beg.v[axis]) {
-				auto box = boxen[i];
+			mixin (FindBegIn!("staticBox", "goto nextBox", false));
 
-				// Common case
-				++stats.space.lookups;
-				if (box.getNoOffset(InitCoords!(0)) != ' ') {
-					beg.minWith(box.beg);
-					continue;
+			nextBox: for (size_t i = 0; i < boxen.length; ++i) {
+				auto box = boxen[i];
+				mixin (FindBegIn!("box", "continue nextBox", true));
+			}
+			if (removed)
+				foreach (i; invalidatees)
+					i();
+		}
+		void findEnd(ubyte axis)(ref Coords end) {
+			bool removed = false;
+
+			mixin (FindEndIn!("staticBox", "goto nextBox", false));
+
+			nextBox: for (size_t i = 0; i < boxen.length; ++i) {
+				auto box = boxen[i];
+				mixin (FindEndIn!("box", "continue nextBox", true));
+			}
+			if (removed)
+				foreach (i; invalidatees)
+					i();
+		}
+		template FindBegIn(char[] box, char[] next, bool free) {
+			const FindBegIn = `
+			if (`~box~`.beg.v[axis] < beg.v[axis]) {`
+
+				// Quick check
+				`++stats.space.lookups;
+				if (`~box~`.getNoOffset(InitCoords!(0)) != ' ') {
+					beg.minWith(`~box~`.beg);
+					`~next~`;
 				}
 
-				auto last = box.end;
+				auto last = `~box~`.end;`
 
 				// If our beg is already better than part of the box, don't check
 				// the whole box
-				if (box.end.v[axis] > beg.v[axis])
+				`if (`~box~`.end.v[axis] > beg.v[axis])
 					last.v[axis] = beg.v[axis] - 1;
 
-				last -= box.beg;
+				last -= `~box~`.beg;
 
-				Coords c = void;
+				Coords c = void;`
 
-				// Allow us to think the box is empty iff we're going to traverse
-				// it completely
-				bool emptyBox = box.end.v[axis] <= beg.v[axis];
+				// Allow us to conclude that the box is empty iff we're going to
+				// traverse it completely
+				`bool emptyBox = `~box~`.end.v[axis] <= beg.v[axis];
 
 				const CHECK = "{
 					++stats.space.lookups;
-					if (box.getNoOffset(c) != ' ') {
+					if (`~box~`.getNoOffset(c) != ' ') {
 
-						beg.minWith(c + box.beg);
-						if (beg.v[axis] <= box.beg.v[axis])
-							continue nextBox;
+						beg.minWith(c + `~box~`.beg);
+						if (beg.v[axis] <= `~box~`.beg.v[axis])
+							`~next~`;
 
 						last.v[axis] = min(last.v[axis], c.v[axis]);
 						emptyBox = false;
@@ -273,47 +311,42 @@ struct FungeSpace(cell dim, bool befunge93) {
 				} else
 					static assert (false);
 
+				` ~(free ? `
 				if (emptyBox) {
-					.free(box.data);
+					.free(`~box~`.data);
 					boxen.removeAt(i--);
 					removed = true;
 					++stats.space.emptyBoxesDropped;
-				}
-			}
-			if (removed)
-				foreach (i; invalidatees)
-					i();
+				}` : "") ~ `
+			}`;
 		}
-		void findEnd(ubyte axis)(ref Coords end) {
-			bool removed = false;
-
-			nextBox: for (size_t i = 0; i < boxen.length; ++i)
-			if (boxen[i].end.v[axis] > end.v[axis]) {
-				auto box = boxen[i];
+		template FindEndIn(char[] box, char[] next, bool free) {
+			const FindEndIn = `
+			if (`~box~`.end.v[axis] > end.v[axis]) {
 
 				++stats.space.lookups;
-				if (box[box.end] != ' ') {
-					end.maxWith(box.end);
-					continue;
+				if (`~box~`[`~box~`.end] != ' ') {
+					end.maxWith(`~box~`.end);
+					`~next~`;
 				}
 
-				auto last = InitCoords!(0);
+				auto last = InitCoords!(0);`
 
 				// Careful with underflow here: don't use max
-				if (box.beg.v[axis] < end.v[axis])
-					last.v[axis] = end.v[axis] + 1 - box.beg.v[axis];
+				`if (`~box~`.beg.v[axis] < end.v[axis])
+					last.v[axis] = end.v[axis] + 1 - `~box~`.beg.v[axis];
 
 				Coords c = void;
 
-				bool emptyBox = box.beg.v[axis] >= end.v[axis];
+				bool emptyBox = `~box~`.beg.v[axis] >= end.v[axis];
 
 				const CHECK = "{
 					++stats.space.lookups;
-					if (box.getNoOffset(c) != ' ') {
+					if (`~box~`.getNoOffset(c) != ' ') {
 
-						end.maxWith(c + box.beg);
-						if (end.v[axis] >= box.end.v[axis])
-							continue nextBox;
+						end.maxWith(c + `~box~`.beg);
+						if (end.v[axis] >= `~box~`.end.v[axis])
+							`~next~`;
 
 						last.v[axis] = max(last.v[axis], c.v[axis]);
 						emptyBox = false;
@@ -321,7 +354,7 @@ struct FungeSpace(cell dim, bool befunge93) {
 					}
 				}";
 
-				auto start = box.end - box.beg;
+				auto start = `~box~`.end - `~box~`.beg;
 
 				static if (axis == 0)
 					mixin (CoordsLoop!(
@@ -345,32 +378,37 @@ struct FungeSpace(cell dim, bool befunge93) {
 				} else
 					static assert (false);
 
+				` ~(free ? `
 				if (emptyBox) {
-					.free(box.data);
+					.free(`~box~`.data);
 					boxen.removeAt(i--);
 					removed = true;
 					++stats.space.emptyBoxesDropped;
-				}
-			}
-			if (removed)
-				foreach (i; invalidatees)
-					i();
+				}` : "") ~ `
+			}`;
 		}
 	}
 
 package:
 	bool usingBak() { return bak.data !is null; }
 
+	// Used also by Cursor
+	enum {
+		STATIC  = 0,
+		DYNAMIC = 1,
+		BAK     = 2
+	}
+
 	Coords jumpToBox(
-		Coords pos, Coords delta, out AABB box, out size_t idx, out bool hitBak)
+		Coords pos, Coords delta, out AABB box, out size_t idx, out ubyte hit)
 	{
-		bool found = tryJumpToBox(pos, delta, box, idx, hitBak);
+		bool found = tryJumpToBox(pos, delta, box, idx, hit);
 		assert (found);
 		return pos;
 	}
 	bool tryJumpToBox(
 		ref Coords pos, Coords delta,
-		out AABB aabb, out size_t boxIdx, out bool hitBak)
+		out AABB aabb, out size_t boxIdx, out ubyte hit)
 	in {
 		AABB _;
 		assert (!findBox(pos, _));
@@ -389,21 +427,30 @@ package:
 				pos2  = c;
 				idx   = i;
 				moves = m;
+				hit   = DYNAMIC;
 			}
 		}
-
+		if (rayIntersects(pos, delta, staticBox.BEG, staticBox.END, m, c)
+		 && (m < moves || !moves))
+		{
+			pos2 = c;
+			hit  = STATIC;
+		}
 		if (usingBak && rayIntersects(pos, delta, bak.beg, bak.end, m, c)
 		             && (m < moves || !moves))
 		{
-			pos    = c;
-			hitBak = true;
+			pos = c;
+			hit = BAK;
+			return true;
+		}
+		if (hit == STATIC) {
+			pos = pos2;
 			return true;
 		}
 		if (moves) {
 			pos    = pos2;
 			boxIdx = idx;
 			aabb   = boxen[idx];
-			hitBak = false;
 			return true;
 		}
 		return false;
@@ -680,12 +727,19 @@ private:
 		}
 
 		placing: foreach (box; aabbs[0..a]) {
+			if (staticBox.contains(box.beg) && staticBox.contains(box.end)) {
+				++stats.space.boxesIncorporated;
+				continue placing;
+			}
+
 			foreach (placed; boxen) if (placed.contains(box)) {
 				++stats.space.boxesIncorporated;
 				continue placing;
 			}
+
 			box.finalize();
 			auto placed = reallyPlaceBox(box);
+
 			if (reason && placed.contains(*reason))
 				*reasonBox = placed;
 
@@ -1133,33 +1187,10 @@ private:
 		auto beg = aabb.beg;
 
 		iterating: for (bool hitEnd = false;;) {
-			foreach (b, box; boxen) if (box.contains(beg)) {
-				// Consider:
-				//     +-----+
-				// x---|░░░░░|---+
-				// |░░░|░░░░░|░░░|
-				// |░░░|░░░░░|░B░y
-				// |   |  A  |   |
-				// +---|     |---+
-				//     +-----+
-				// We want to map the range from x to y (shaded). Unless we
-				// tessellate, we'll get the whole thing from box B straight away.
-				auto tesBeg = box.beg;
-				auto tesEnd = box.end;
-				tessellateAt(beg, boxen[0..b], tesBeg, tesEnd);
+			mixin (MapNoPlace!("staticBox", "cast(AABB[])[]", true));
 
-				auto begIdx = box.getIdx(beg);
-				auto endIdx = box.getIdx(getEndOfContiguousRange(
-					tesEnd, beg, aabb.end, aabb.beg, hitEnd, tesBeg, box.beg));
-				assert (begIdx < endIdx + 1);
-
-				f(box.data[begIdx .. endIdx+1],
-				  stats.space.lookups, stats.space.assignments);
-				if (hitEnd)
-					return;
-				else
-					continue iterating;
-			}
+			foreach (b, box; boxen)
+				mixin (MapNoPlace!("box", "boxen[0..b]", false));
 
 			// No hits for beg: find the next beg we can hit, or abort if there's
 			// nothing left.
@@ -1171,7 +1202,42 @@ private:
 				break;
 		}
 	}
+	template MapNoPlace(char[] box, char[] boxesAbove, bool isStatic) {
+		const MapNoPlace = `
+		if (`~box~`.contains(beg)) {`
+			// Consider:
+			//     +-----+
+			// x---|░░░░░|---+
+			// |░░░|░░░░░|░░░|
+			// |░░░|░░░░░|░B░y
+			// |   |  A  |   |
+			// +---|     |---+
+			//     +-----+
+			// We want to map the range from x to y (shaded). Unless we
+			// tessellate, we'll get the whole thing from box B straight away.
+			`
+			auto tesBeg = `~box~`.beg;
+			auto tesEnd = `~box~`.end;
+			tessellateAt(beg, `~boxesAbove~`, tesBeg, tesEnd);`
 
+			// The static box is above all dynamic boxen: check for it with them
+			// as well.
+			~(isStatic ? "" : `
+			tessellateAt(beg, staticBox.BEG, staticBox.END, tesBeg, tesEnd);`)~`
+
+			auto begIdx = `~box~`.getIdx(beg);
+			auto endIdx = `~box~`.getIdx(getEndOfContiguousRange(
+				tesEnd, beg, aabb.end, aabb.beg, hitEnd, tesBeg, `~box~`.beg));
+			assert (begIdx < endIdx + 1);
+
+			f(`~box~`.data[begIdx .. endIdx+1],
+			  stats.space.lookups, stats.space.assignments);
+			if (hitEnd)
+				return;
+			else
+				continue iterating;
+		}`;
+	}
 	// Passes some extra data to the delegate, for matching array index
 	// calculations with the location of the cell[] (probably quite specific to
 	// file loading, where this is used):
@@ -1182,78 +1248,22 @@ private:
 	//   zero or negative (thus big numbers, since unsigned)).
 	//
 	// - Whether a new line or page was just reached, with one bit for each
-	//   boolean (LSB for line, next-most for page).
+	//   boolean (LSB for line, next-most for page). This may be updated by the
+	//   function to reflect that it's done with the line/page.
 	//
 	// Since this is currently only used from this class, we update stats
 	// directly instead of passing them to the delegate.
 	void mapNoPlace(
-		AABB aabb, void delegate(cell[], size_t,size_t,size_t,size_t, ubyte) f,
+		AABB aabb, void delegate(cell[],size_t,size_t,size_t,size_t,ref ubyte) f,
 		           void delegate(size_t) g)
 	{
 		auto beg = aabb.beg;
 
 		iterating: for (bool hitEnd = false;;) {
-			foreach (b, box; boxen) if (box.contains(beg)) {
-				size_t
-					width = void,
-					area = void,
-					pageStart = void;
+			mixin (MapNoPlace2!("staticBox", "cast(AABB[])[]", true));
 
-				// DMD doesn't like passing uninitialized things to functions...
-				version (DigitalMars) {
-					width = 0;
-					area = 0;
-					pageStart = 0;
-				}
-
-				// These depend on the original beg and thus have to be initialized
-				// before the call to getEndOfContiguousRange
-
-				// {box.beg.x, beg.y, beg.z}
-				Coords ls = beg;
-				ls.x = box.beg.x;
-
-				static if (dim >= 2) {
-					// {box.beg.x, box.beg.y, beg.z}
-					Coords ps = box.beg;
-					ps.v[2..$] = beg.v[2..$];
-				}
-
-				auto tesBeg = box.beg;
-				auto tesEnd = box.end;
-				tessellateAt(beg, boxen[0..b], tesBeg, tesEnd);
-
-				auto begIdx = box.getIdx(beg);
-				auto endIdx = box.getIdx(getEndOfContiguousRange(
-					tesEnd, beg, aabb.end, aabb.beg, hitEnd, tesBeg, box.beg));
-
-				assert (begIdx < endIdx + 1);
-				auto arr = box.data[begIdx .. endIdx + 1];
-
-				ubyte hit = 0;
-
-				// Unefunge needs this to skip leading spaces
-				auto lineStart = box.getIdx(ls) - (arr.ptr - box.data);
-
-				static if (dim >= 2) {
-					width = box.width;
-					hit |= (beg.x == aabb.beg.x && beg.y != ls.y) << 0;
-
-					// Befunge needs this to skip leading newlines
-					pageStart = box.getIdx(ps) - (arr.ptr - box.data);
-				}
-				static if (dim >= 3) {
-					area = box.area;
-					hit |= (beg.y == aabb.beg.y && beg.z != ls.z) << 1;
-				}
-
-				f(arr, width, area, lineStart, pageStart, hit);
-
-				if (hitEnd)
-					return;
-				else
-					continue iterating;
-			}
+			foreach (b, box; boxen)
+				mixin (MapNoPlace2!("box", "boxen[0..b]", false));
 
 			size_t skipped = 0;
 			auto found = getNextIn(beg, aabb, skipped);
@@ -1263,60 +1273,127 @@ private:
 				break;
 		}
 	}
+	template MapNoPlace2(char[] box, char[] boxesAbove, bool isStatic) {
+		const MapNoPlace2 = `
+		if (`~box~`.contains(beg)) {
+			size_t
+				width = void,
+				area = void,
+				pageStart = void;`
+
+			// DMD doesn't like passing uninitialized things to functions...
+			`version (DigitalMars) {
+				width = 0;
+				area = 0;
+				pageStart = 0;
+			}`
+
+			// These depend on the original beg and thus have to be initialized
+			// before the call to getEndOfContiguousRange
+
+			// {box.beg.x, beg.y, beg.z}
+			`Coords ls = beg;
+			ls.x = `~box~`.beg.x;
+
+			static if (dim >= 2) {`
+				// {box.beg.x, box.beg.y, beg.z}
+				`Coords ps = `~box~`.beg;
+				ps.v[2..$] = beg.v[2..$];
+			}
+
+			static if (dim >= 2) auto prevY = beg.y;
+			static if (dim >= 3) auto prevZ = beg.z;
+
+			auto tesBeg = `~box~`.beg;
+			auto tesEnd = `~box~`.end;
+			tessellateAt(beg, `~boxesAbove~`, tesBeg, tesEnd);`
+
+			// The static box is above all dynamic boxen: check for it with them
+			// as well.
+			~(isStatic ? "" : `
+			tessellateAt(beg, staticBox.BEG, staticBox.END, tesBeg, tesEnd);`)~`
+
+			auto begIdx = `~box~`.getIdx(beg);
+			auto endIdx = `~box~`.getIdx(getEndOfContiguousRange(
+				tesEnd, beg, aabb.end, aabb.beg, hitEnd, tesBeg, `~box~`.beg));
+
+			assert (begIdx < endIdx + 1);
+			auto arr = `~box~`.data[begIdx .. endIdx + 1];
+
+			ubyte hit = 0;`
+
+			// Unefunge needs this to skip leading spaces
+			`auto lineStart = `~box~`.getIdx(ls) - (arr.ptr - `~box~`.data);
+
+			static if (dim >= 2) {
+				width = `~box~`.width;
+				hit |= (beg.x == aabb.beg.x && beg.y != ls.y) << 0;`
+
+				// Befunge needs this to skip leading newlines
+				`pageStart = `~box~`.getIdx(ps) - (arr.ptr - `~box~`.data);
+			}
+			static if (dim >= 3) {
+				area = `~box~`.area;
+				hit |= (beg.y == aabb.beg.y && beg.z != ls.z) << 1;
+			}
+
+			f(arr, width, area, lineStart, pageStart, hit);
+
+			static if (dim >= 2) if (hit == 0b01) {`
+				// f hit an EOL: bump beg.y if it hasn't already been bumped
+				`if (beg.y == prevY) {
+					beg.x = aabb.beg.x;
+					if (++beg.y > aabb.end.y)
+						hitEnd = true;
+				}
+			}
+			static if (dim >= 3) if (hit == 0b10) {
+				// Ditto for EOP
+				if (beg.z == prevZ) {
+					beg.x = aabb.beg.x;
+					beg.y = aabb.beg.y;
+					if (++beg.z > aabb.end.z)
+						hitEnd = true;
+				}
+			}
+
+			if (hitEnd)
+				return;
+			else
+				continue iterating;
+		}`;
+	}
 
 	// The next allocated point after pt which is also within the given AABB.
 	// Updates skipped to reflect the number of unallocated cells skipped.
 	bool getNextIn(inout Coords pt, AABB aabb, inout size_t skipped)
 	in {
 		AABB _;
+		assert (!staticBox.contains(pt));
 		assert (!findBox(pt, _));
 	} out (found) {
 		if (found) {
 			AABB _;
-			assert (findBox(pt, _));
+			assert (staticBox.contains(pt) || findBox(pt, _));
 		}
 	} body {
-		auto bestIn = boxen.length;
+		// boxen.length means the static box.
+		auto bestIn = boxen.length + 1;
 		cell bestCoord = void;
 
-		auto wrappedIn = boxen.length;
+		auto wrappedIn = boxen.length + 1;
 		cell bestWrapped = void;
 
 		for (ucell i = 0; i < dim; ++i) {
-			foreach (b, box; boxen) {
-				if ((box.beg.v[i] < bestCoord || bestIn == boxen.length) &&
-				    AABB.unsafe(aabb.beg, aabb.end).safeContains(box.beg) &&
+			mixin (GetNextIn!("staticBox", "boxen.length"));
+			foreach (b, box; boxen)
+				mixin (GetNextIn!("box", "b"));
 
-				    // If pt has crossed an axis within the AABB, prevent us from
-				    // grabbing a new pt on the other side of the axis we're
-				    // wrapped around, or we'll just keep looping around that axis.
-				    (pt.v[i] >= aabb.beg.v[i] || box.beg.v[i] <= aabb.end.v[i]))
-				{
-					// If [pt,aabb.end] is wrapped around, take the global minimum
-					// box.beg as a last-resort option if nothing else is found, so
-					// that we wrap around if there's no non-wrapping solution.
-					//
-					// Note that bestWrapped <= bestCoord so we can test this within
-					// here.
-					if (pt.v[i] > aabb.end.v[i] &&
-					    (box.beg.v[i] < bestWrapped || wrappedIn == boxen.length))
-					{
-						bestWrapped = box.beg.v[i];
-						wrappedIn = b;
-
-					// The ordinary best solution is the minimal box.beg greater
-					// than pt.
-					} else if (box.beg.v[i] > pt.v[i]) {
-						bestCoord = box.beg.v[i];
-						bestIn = b;
-					}
-				}
-			}
-			if (bestIn == boxen.length && wrappedIn < boxen.length) {
+			if (bestIn > boxen.length && wrappedIn <= boxen.length) {
 				bestCoord = bestWrapped;
 				bestIn = wrappedIn;
 			}
-			if (bestIn < boxen.length) {
+			if (bestIn <= boxen.length) {
 				auto old = pt;
 
 				pt.v[0..i] = aabb.beg.v[0..i];
@@ -1334,13 +1411,43 @@ private:
 
 				// When setting pt.v[0..i] above, we may not end up in any box. So
 				// just go again with the updated pt.
-				if (i > 0 && !boxen[bestIn].contains(pt) && !findBox(pt, aabb))
+				if (i && (bestIn >= boxen.length || !boxen[bestIn].contains(pt))
+				 && !staticBox.contains(pt) && !findBox(pt, aabb))
 					return getNextIn(pt, aabb, skipped);
 
 				return true;
 			}
 		}
 		return false;
+	}
+	template GetNextIn(char[] box, char[] idx) {
+		const GetNextIn = `
+		if ((`~box~`.beg.v[i] < bestCoord || bestIn == boxen.length)
+		 && aabb.safeContains(`~box~`.beg)`
+
+			 // If pt has crossed an axis within the AABB, prevent us from
+			 // grabbing a new pt on the other side of the axis we're wrapped
+			 // around, or we'll just keep looping around that axis.
+		`&& (pt.v[i] >= aabb.beg.v[i] || `~box~`.beg.v[i] <= aabb.end.v[i]))
+		{`
+			// If [pt,aabb.end] is wrapped around, take the global minimum box.beg
+			// as a last-resort option if nothing else is found, so that we wrap
+			// around if there's no non-wrapping solution.
+			//
+			// Note that bestWrapped <= bestCoord so we can test this within here.
+			`if (pt.v[i] > aabb.end.v[i] &&
+				 (`~box~`.beg.v[i] < bestWrapped || wrappedIn == boxen.length))
+			{
+				bestWrapped = `~box~`.beg.v[i];
+				wrappedIn = `~idx~`;`
+
+			// The ordinary best solution is the minimal box.beg greater than pt.
+			`} else if (`~box~`.beg.v[i] > pt.v[i]) {
+				bestCoord = `~box~`.beg.v[i];
+				bestIn = `~idx~`;
+			}
+		}
+		`;
 	}
 
 	// Takes ownership of the Array, closing it.
@@ -1441,7 +1548,7 @@ private:
 
 				mapNoPlace(aabb, (cell[] arr, size_t width,     size_t area,
 				                              size_t lineStart, size_t pageStart,
-				                              ubyte hit)
+				                              ref ubyte hit)
 				{
 					size_t i = 0;
 					while (i < arr.length) {
@@ -1479,6 +1586,13 @@ private:
 								if (!leadingNewline) {
 									i = lineStart += width;
 									x = target.x;
+
+									if (i >= arr.length) {
+										// The next cell we would want to load falls on
+										// the next line: report that.
+										hit = 0b01;
+										return;
+									}
 								}
 								break;
 							}
@@ -1488,6 +1602,11 @@ private:
 								if (i != 0) {
 									i = lineStart = pageStart += area;
 									y = target.y;
+
+									if (i >= arr.length) {
+										hit = 0b10;
+										return;
+									}
 								}
 								break;
 							}
@@ -1496,9 +1615,9 @@ private:
 					if (i == arr.length && hit && p < pEnd) {
 						// We didn't find a newline yet (in which case i would exceed
 						// arr.length) but we finished with this block. We touched an
-						// EOL or EOP in the array, and likely a newline or form feed
-						// terminates them in the code. Eat them here lest we skip a
-						// line by seeing them in the next call.
+						// EOL or EOP in the array, and likely a line break or form
+						// feed terminates them in the code. Eat them here lest we
+						// skip a line by seeing them in the next call.
 
 						static if (dim >= 2) if (hit & 0b01) {
 							// Skip any trailing other whitespace
@@ -1522,6 +1641,7 @@ private:
 							}
 						}
 					}
+					hit = 0;
 				},
 				(size_t n) {
 					while (n--) {
@@ -1540,9 +1660,6 @@ private:
 
 	static if (befunge93)
 	void befunge93Load(ubyte[] input) {
-		auto aabb = AABB(InitCoords!(0,0), InitCoords!(79,24));
-		aabb.alloc;
-		boxen ~= aabb;
 
 		bool gotCR = false;
 		auto pos = InitCoords!(0,0);
@@ -1565,7 +1682,7 @@ private:
 					break loop;
 
 				if (input[i] != ' ')
-					aabb[pos] = input[i];
+					staticBox[pos] = input[i];
 
 				if (++pos.x < 80)
 					break;
@@ -1853,4 +1970,78 @@ private struct BakAABB(cell dim) {
 		}
 	}
 	bool contains(Coords p) { return Dimension!(dim).contains(p, beg, end); }
+}
+
+package struct StaticAABB(cell dim, bool befunge93) {
+	alias .Coords   !(dim) Coords;
+	alias .Dimension!(dim).Coords InitCoords;
+
+	static if (befunge93) {
+		// Easy...
+		package const
+			BEG     = InitCoords!( 0,  0),
+			SIZE    = InitCoords!(80, 25),
+			END     = InitCoords!(79, 24),
+			REL_END = END;
+	} else
+	package const
+		// We want the static area to cover the size of a "typical" program
+		// (whatever that is) and have power-of-two width and height for fast
+		// indexing calculations.
+		//
+		// We don't want it to be too big, not only for the sake of memory usage,
+		// but also due at least to get*Bounds.
+		BEG     = InitCoords!(-16, -16, -1),
+		SIZE    = InitCoords!(128, 512,  3),
+
+		// Not CTFE'able... checked at runtime instead
+		END     = InitCoords!(111, 495,  1),
+		REL_END = InitCoords!(127, 511,  2);
+
+	static if (dim == 1) private cell[SIZE.x]                   arr;
+	static if (dim == 2) private cell[SIZE.x * SIZE.y]          arr;
+	static if (dim == 3) private cell[SIZE.x * SIZE.y * SIZE.z] arr;
+
+	private void initialize() {
+		// Check these here in lieu of CTFE
+		assert (BEG + SIZE - 1 == END);
+		assert (END - BEG == REL_END);
+
+		arr[] = ' ';
+	}
+
+	// Used by some things that are generic over this and dynamic boxen.
+	private Coords beg()   { return BEG; }
+	private Coords end()   { return END; }
+	private size_t width() { return SIZE.x; }
+	private size_t area () { return SIZE.x * SIZE.y; }
+	private cell*  data () { return arr.ptr; }
+
+	cell opIndex(Coords p)
+	in {
+		assert (contains(p));
+	} body {
+		return arr[getIdx(p)];
+	}
+	void opIndexAssign(cell c, Coords p)
+	in {
+		assert (contains(p));
+	} body {
+		arr[getIdx(p)] = c;
+	}
+
+	cell getNoOffset(Coords p)         { return arr[getIdxNoOffset(p)]; }
+	void setNoOffset(Coords p, cell c) {        arr[getIdxNoOffset(p)] = c; }
+
+	bool contains(Coords p) { return Dimension!(dim).contains(p, BEG, END); }
+
+	private size_t getIdx        (Coords p) { return getIdxNoOffset(p - BEG); }
+	private size_t getIdxNoOffset(Coords p) {
+		size_t idx = p.x;
+
+		static if (dim >= 2) idx += SIZE.x * p.y;
+		static if (dim >= 3) idx += SIZE.y * p.z;
+
+		return idx;
+	}
 }
