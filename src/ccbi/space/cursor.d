@@ -355,15 +355,21 @@ continuePrevBox:
 
 		mixin DetectInfiniteLoopDecls!();
 
-		if (!inBox())
-			goto findBox;
+		Coords p = void;
+
+		if (!inBox()) {
+			// We should retreat only if we saw at least one space, so don't jump
+			// into the loop just because we fell out of the box: that doesn't
+			// necessarily mean a space.
+			if (!getBox(p = pos))
+				goto jumpToBox;
+		}
 
 		++space.stats.space.lookups;
 		if (unsafeGet() == ' ') {
 			while (!skipSpaces(delta)) {
-findBox:
-				auto p = pos;
-				if (!getBox(p)) {
+				if (!getBox(p = pos)) {
+jumpToBox:
 					mixin (DetectInfiniteLoop!("processing spaces in a string"));
 					if (space.tryJumpToBox(p, delta, box, boxIdx, bak))
 						tessellate(p);
