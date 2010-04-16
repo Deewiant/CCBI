@@ -370,7 +370,7 @@ end:
 			// If we were going to cross a line/page but we're actually in a box
 			// tessellated in such a way that we can't, wibble things so that we
 			// just go to the end of the line/page.
-			if (endPt.v[i+1] > from.v[i+1] && tessellBeg.v[i] != areaBeg.v[i]) {
+			if (endPt.v[i+1] > initFromV[i] && tessellBeg.v[i] != areaBeg.v[i]) {
 				endPt.v[i+1..$] = initFromV[i..$];
 				from .v[i+1]    = initFromV[i] + 1;
 				from .v[i+2..$] = initFromV[i+1..$];
