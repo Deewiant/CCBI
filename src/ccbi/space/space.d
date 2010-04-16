@@ -1555,8 +1555,7 @@ bumpZ`~box~`:
 				                              size_t lineStart, size_t pageStart,
 				                              ref ubyte hit)
 				{
-					size_t i = 0;
-					while (i < arr.length) {
+					for (size_t i = 0; i < arr.length;) {
 						assert (p < pEnd);
 						ubyte b = *p++;
 						switch (b) {
@@ -1617,36 +1616,53 @@ bumpZ`~box~`:
 							}
 						}
 					}
-					if (i == arr.length && hit && p < pEnd) {
-						// We didn't find a newline yet (in which case i would exceed
-						// arr.length) but we finished with this block. We touched an
-						// EOL or EOP in the array, and likely a line break or form
-						// feed terminates them in the code. Eat them here lest we
-						// skip a line by seeing them in the next call.
+					if (p >= pEnd)
+						return;
 
-						static if (dim >= 2) if (hit & 0b01) {
-							// Skip any trailing other whitespace
-							while (*p == ' ' || *p == '\f')
-								++p;
+					// When we've hit an EOL/EOP in Funge-Space, we need to skip any
+					// trailing whitespace until we hit it in the file as well.
+					static if (dim == 3) if (hit & 0b10) {
+						while (*p == '\r' || *p == '\n' || *p == ' ')
+							++p;
 
-							if (p < pEnd) {
-								assert (*p == '\r' || *p == '\n');
-								if (*p++ == '\r' && p < pEnd && *p == '\n')
-									++p;
-							}
+						if (p < pEnd) {
+							assert (*p == '\f');
+							++p;
 						}
-						static if (dim == 3) if (hit & 0b10 && p < pEnd) {
-							// Skip any trailing other whitespace
-							while (*p == '\r' || *p == '\n' || *p == ' ')
-								++p;
+						return;
+					}
+					static if (dim >= 2) if (hit & 0b01) {
+						while (*p == ' ' || (dim < 3 && *p == '\f'))
+							++p;
 
-							if (p < pEnd) {
-								assert (*p == '\f');
+						if (p < pEnd) {
+							assert (*p == '\r' || *p == '\n');
+							if (*p++ == '\r' && p < pEnd && *p == '\n')
 								++p;
-							}
+						}
+						return;
+					}
+
+					// See if we've just barely hit an EOL/EOP and report it if so.
+					// This is just an optimization, we'd catch it and handle it
+					// appropriately come next call anyway.
+					static if (dim >= 3) {
+						if (*p == '\f') {
+							++p;
+							hit = 0b10;
+							return;
 						}
 					}
-					hit = 0;
+					static if (dim >= 2) {
+						if (*p == '\r') {
+							++p;
+							hit = 0b01;
+						}
+						if (p < pEnd && *p == '\n') {
+							++p;
+							hit = 0b01;
+						}
+					}
 				},
 				(size_t n) {
 					while (n--) {
