@@ -489,11 +489,10 @@ struct BitFields(F...) {
 					return false;
 
 			auto last = bits[$-1];
-			for (ubyte i = 0; i < F.length % 8; ++i)
+			for (ubyte i = 0; i <= F.length % 8; ++i)
 				if (last & 1 << i)
 					return false;
 		}
-
 		return true;
 	}
 
