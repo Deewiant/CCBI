@@ -136,8 +136,6 @@ struct CellContainer {
 	mixin (F!("int", "topToBottom", "int delegate(inout cell c) f"));
 	mixin (F!("int", "bottomToTop", "int delegate(inout cell c) f"));
 
-	mixin (F!("cell[]", "elementsBottomToTop"));
-
 	// Abstraction-breaking stuff
 
 	// Makes sure that there's capacity for at least the given number of cells.
@@ -173,7 +171,7 @@ struct CellContainer {
 	mixin (F!("void", "mapFirstNHead",
 		"size_t n", "void delegate(cell[]) f", "void delegate(size_t) g"));
 
-	// at(x) is equivalent to elementsBottomToTop()[x] but doesn't allocate.
+	// at(x) gives the x'th element from the bottom without allocating.
 	//
 	// Another optimization on top of "pop".
 	//
@@ -264,7 +262,7 @@ struct Stack(T) {
 			return array[--head];
 	}
 
-	void pop(size_t i)  {
+	void pop(size_t i) {
 		stats.pops += i;
 
 		if (i >= head) {
@@ -385,10 +383,6 @@ struct Stack(T) {
 	int bottomToTop(int delegate(inout T t) dg) {
 		return opApply(dg);
 	}
-
-
-
-	T[] elementsBottomToTop() { return array[0..head]; }
 }
 
 enum : byte {
