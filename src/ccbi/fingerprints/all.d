@@ -54,6 +54,7 @@ version  (SUBR) public import ccbi.fingerprints.rcfunge98.subr;
 version  (TERM) public import ccbi.fingerprints.rcfunge98.term;
 version  (TIME) public import ccbi.fingerprints.rcfunge98.time;
 version  (TRDS) public import ccbi.fingerprints.rcfunge98.trds;
+version  (TRGR) public import ccbi.fingerprints.rcfunge98.trgr;
 
 alias Tuple!(
 	// Cat's Eye
@@ -123,6 +124,7 @@ private char[] RCFunge98Fingerprints() {
 	version  (TERM) s ~= `"TERM",`;
 	version  (TIME) s ~= `"TIME",`;
 	version  (TRDS) s ~= `"TRDS",`;
+	version  (TRGR) s ~= `"TRGR",`;
 	if (s[$-1] == ',')
 		s = s[0..$-1];
 	return s ~ ") FINGERPRINTS_RCFUNGE98;";

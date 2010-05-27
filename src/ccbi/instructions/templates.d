@@ -64,9 +64,19 @@ template MakeSingleIns(char[] s) {
 				)
 					mixin (\"this.\" ~ `~s~`InsFunc!("~C~") ~ \"; break;\");
 
+				// WORKAROUND: the typeof() below crashes LDC in the frontend
+				// (based on 1.057: DMD 1.058 is fine with it so it may've been
+				// fixed there)
+				else static if (
+					`~s~`InsFunc!("~C~").length >= 7 &&
+					`~s~`InsFunc!("~C~")[0..7] == \"return \"
+				)
+					mixin (`~s~`InsFunc!("~C~"));
+
 				else static if (mixin(\"
-					!isCallableType!(typeof(`~s~`.\"~`~s~`InsFunc!("~C~")~\")) ||
-					is(       ReturnTypeOf!(`~s~`.\"~`~s~`InsFunc!("~C~")~\") == void)
+					(/+!is(typeof(`~s~`.\"~`~s~`InsFunc!("~C~")~\") == Request) && +/
+					 !isCallableType!(typeof(`~s~`.\"~`~s~`InsFunc!("~C~")~\"))) ||
+					is(        ReturnTypeOf!(`~s~`.\"~`~s~`InsFunc!("~C~")~\") == void)
 				\"))
 					mixin (\"`~s~`.\" ~ `~s~`InsFunc!("~C~") ~ \"; break;\");
 				else
