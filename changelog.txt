@@ -1,6 +1,68 @@
 CCBI changelog
 --------------
 
+2010-05-27, 2.1:
+	New fingerprints, from Rc/Funge-98:
+		ARRY
+		BOOL
+		FPRT
+		ICAL
+		IMTH
+		LONG
+		RAND
+		TRGR
+
+	Removed argument: --detect-infinity.
+	Added argument: --infinite-loop: actually infinite loop instead of erroring
+	out if an infinite loop is detected.
+
+	New statistics:
+		Maximum number of IPs live
+		Maximum number of items in a container (stack, deque, stack stack,
+		semantic stack)
+
+	Bugfixes in Funge-Space:
+		Tight bounds were calculated incorrectly if the hash table was in use.
+
+		AABBs that were loaded on top of the hash table did not subsume cells
+		from the hash table.
+
+		Infinite loop error messages pointed to the wrong coordinates if using
+		the hash table.
+
+		Skipping spaces in stringmode would infinite-loop in some cases when the
+		string crossed over from one AABB to another without any space in
+		between.
+
+		Mapping over ranges in Trefunge mode and contiguous range getting were
+		subtly broken in some cases, leading to misloaded files and other
+		strange bugs.
+
+	Bugfix in STRN.G:
+		If the string wrapped around, crossed some unallocated space,
+		expensive infinite loop detection was enabled, and the string actually
+		would have terminated, it was pushed incorrectly.
+
+	Bugfix in TRDS:
+		If an IP had stopped time and then jumped into the past, the fact that
+		it was the time stopper was forgotten.
+
+	Bugfixes in tracer:
+		Non-integer args weren't correctly errored out on.
+
+		When stdin was set to a string, the string wasn't owned, leading to it
+		possibly becoming overwritten later on.
+
+	--help and company are now output to stdout, not stderr.
+
+	A statically allocated array is now used for Funge-Space around the (0,0)
+	area: while a micro-optimization, this is a significant speedup for
+	programs that spend most of their time there (as most programs do).
+
+	IPs are now stored in a linked list, which speeds up forking noticeably.
+
+	... and other minor fixes and micro-optimizations.
+
 2010-04-06, 2.0:
 	Unefunge-98, Trefunge-98, and Befunge-93 support.
 
