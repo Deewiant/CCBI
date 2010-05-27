@@ -46,6 +46,7 @@ version  (IMAP) public import ccbi.fingerprints.rcfunge98.imap;
 version  (IMTH) public import ccbi.fingerprints.rcfunge98.imth;
 version  (INDV) public import ccbi.fingerprints.rcfunge98.indv;
 version  (LONG) public import ccbi.fingerprints.rcfunge98.long_;
+version  (RAND) public import ccbi.fingerprints.rcfunge98.rand;
 version  (REXP) public import ccbi.fingerprints.rcfunge98.rexp;
 version  (SOCK) public import ccbi.fingerprints.rcfunge98.sock;
 version  (STRN) public import ccbi.fingerprints.rcfunge98.strn;
@@ -114,6 +115,7 @@ private char[] RCFunge98Fingerprints() {
 	version  (IMTH) s ~= `"IMTH",`;
 	version  (INDV) s ~= `"INDV",`;
 	version  (LONG) s ~= `"LONG",`;
+	version  (RAND) s ~= `"RAND",`;
 	version  (REXP) s ~= `"REXP",`;
 	version  (SOCK) s ~= `"SOCK",`;
 	version  (STRN) s ~= `"STRN",`;

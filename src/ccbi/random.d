@@ -56,3 +56,6 @@ U randomUpTo(U, float dummy = 0)(U max) {
 
 	return val % max;
 }
+
+void reseed()       { Twister.instance.seed(); }
+void reseed(uint s) { Twister.instance.seed(s); }
