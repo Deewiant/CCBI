@@ -66,9 +66,9 @@ void rand() {
 	auto c = cip.stack.pop;
 	if (c < 0) {
 		c = -c;
-		cip.stack.push(-randomUpTo(c));
+		cip.stack.push(-randomUpTo!(ulong)(c));
 	} else
-		cip.stack.push( randomUpTo(c));
+		cip.stack.push( randomUpTo!(ulong)(c));
 }
 void neg    () { cip.stack.push(-cip.stack.pop); }
 void mulpi  () { cip.stack.push(math.rndint(math.PI * cip.stack.pop)); }

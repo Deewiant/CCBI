@@ -7,35 +7,51 @@
 
 module ccbi.random;
 
-import tango.math.random.engines.Twister;
-import tango.time.Clock;
+import tango.math.random.Twister;
 
-private Twister twister;
+// [0,N.max] for integral, [0,1) for floating
+N random(N)() {
+	static if (is(N == uint))
+		return Twister.instance.natural();
 
-static this() {
-	auto entropy = cast(uint)Clock.now.ticks;
-	entropy -= cast(uint)&entropy;
-	twister.addEntropy({return entropy;});
+	else static if (is(N == ulong))
+		return cast(ulong)random!(uint) << 32 | random!(uint);
+
+	else static if (is(N == float) || is(N == double))
+		return cast(N)Twister.instance.fraction();
+
+	else
+		static assert (false, N.stringof);
 }
 
-uint randomUpTo(uint MAX)() {
-	const mod = uint.max - uint.max % MAX;
+// [0,MAX)
+U randomUpTo(U, U MAX)() {
+	static assert (is(U == uint) || is(U == ulong));
+	static assert (MAX > 0 && MAX < U.max);
 
-	uint val;
-	do val = twister.next();
+	const mod = U.max - U.max % MAX;
+
+	U val;
+	do val = random!(U);
 	while (val >= mod);
 
 	return val % MAX;
 }
 
-uint randomUpTo(float dummy = 0)(uint max) {
+// [0,max)
+U randomUpTo(U, float dummy = 0)(U max) {
+	static assert (is(U == uint) || is(U == ulong));
+
 	if (max == 0)
 		return 0;
 
-	auto mod = uint.max - uint.max % max;
+	if (max == U.max)
+		return random!(U)();
 
-	uint val;
-	do val = twister.next();
+	auto mod = U.max - U.max % max;
+
+	U val;
+	do val = random!(U);
 	while (val >= mod);
 
 	return val % max;
