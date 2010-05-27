@@ -49,7 +49,7 @@ private template StripNonVersion(char[] s, char[] v) {
 		const StripNonVersion = StripNonVersion!(s[1..$], "");
 }
 
-private const char[] VERSION_END = "Interpreter version 2.0.0";
+private const char[] VERSION_END = "Interpreter version 2.1";
 
 // Yay version combinations and --version strings
 version (unefunge98) version ( befunge98) version = funge98Multi;
