@@ -514,6 +514,7 @@ private:
 		ss ~= Stat("Underflowed stack during pop",  stackStats.popUnderflows,      "time");
 		ss ~= Stat("Underflowed stack during peek", stackStats.peekUnderflows,     "time");
 		ss ~= Stat("Resized stack",                 stackStats.resizes,            "time");
+		ss ~= Stat("Stack contained",               stackStats.maxSize,            "cell", "at maximum");
 		ss ~= Stat(null);
 		ss ~= Stat("Pushed onto deque",             dequeStats.pushes,             "cell");
 		ss ~= Stat("Popped from deque",             dequeStats.pops,               "cell");
@@ -523,6 +524,7 @@ private:
 		ss ~= Stat("Underflowed deque during pop",  dequeStats.popUnderflows,      "time");
 		ss ~= Stat("Underflowed deque during peek", dequeStats.peekUnderflows,     "time");
 		ss ~= Stat("Resized deque",                 dequeStats.resizes,            "time");
+		ss ~= Stat("Deque contained",               dequeStats.maxSize,            "cell", "at maximum");
 		ss ~= Stat(null);
 		ss ~= Stat("Pushed onto stack stack",       stackStackStats.pushes,        "container");
 		ss ~= Stat("Popped from stack stack",       stackStackStats.pops,          "container");
@@ -530,6 +532,7 @@ private:
 		ss ~= Stat("Peeked stack stack",            stackStackStats.peeks,         "time");
 		ss ~= Stat("Cleared stack stack",           stackStackStats.clears,        "time");
 		ss ~= Stat("Resized stack stack",           stackStackStats.resizes,       "time");
+		ss ~= Stat("Stack stack contained",         stackStackStats.maxSize,       "stack", "at maximum");
 		ss ~= Stat(null);
 		ss ~= Stat("Pushed onto semantic stack",    semanticStats.pushes,          "semantic");
 		ss ~= Stat("Popped from semantic stack",    semanticStats.pops,            "semantic");
@@ -537,6 +540,7 @@ private:
 		ss ~= Stat("Peeked semantic stack",         semanticStats.peeks,           "time");
 		ss ~= Stat("Cleared semantic stack",        semanticStats.clears,          "time");
 		ss ~= Stat("Resized semantic stack",        semanticStats.resizes,         "time");
+		ss ~= Stat("Any semantic stack contained",  semanticStats.maxSize,         "semantic", "at maximum");
 		ss ~= Stat(null);
 		ss ~= Stat("Forked",                        stats.ipForked,                "IP");
 		ss ~= Stat("Stopped",                       stats.ipStopped,               "IP");

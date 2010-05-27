@@ -303,6 +303,7 @@ struct Stack(T) {
 
 	void push(U...)(U ts) {
 		stats.pushes += ts.length;
+		stats.newMax(stats.maxSize, size + ts.length);
 
 		auto neededRoom = head + ts.length;
 		if (neededRoom > capacity) {
@@ -651,6 +652,7 @@ struct Deque {
 
 	void push(C...)(C cs) {
 		stats.pushes += cs.length;
+		stats.newMax(stats.maxSize, size + cs.length);
 
 		if (mode & INVERT_MODE)
 			pushTail(cs);

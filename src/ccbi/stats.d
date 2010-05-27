@@ -62,8 +62,14 @@ struct ContainerStats {
 		"peekUnderflows",
 		"resizes",
 		"clears",
-		"cleared"
+		"cleared",
+		"maxSize"
 	));
+
+	version (statistics)
+		static void newMax(ref ulong old, ulong n) { old = max(old, n); }
+	else
+		static void newMax(ref DummyStat, ulong) {}
 }
 
 version (statistics) {} else struct DummyStat {
