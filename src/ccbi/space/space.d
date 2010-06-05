@@ -1471,6 +1471,9 @@ bumpZ`~box~`:
 		} else {
 			auto aabbs = getAABBs(input, binary, target);
 
+			if (end)
+				*end = target;
+
 			if (aabbs.length == 0)
 				return;
 
